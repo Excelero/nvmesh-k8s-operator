@@ -1,0 +1,11 @@
+domain: excelero.com
+layout: go.kubebuilder.io/v2
+projectName: nvmesh-operator-go
+repo: git@gitlab.excelero.com:gilv/k8s-operator.git
+resources:
+- group: nvmesh
+  kind: NVMesh
+  version: v1alpha1
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}

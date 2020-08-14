@@ -1,0 +1,7 @@
+apiVersion: nvmesh.excelero.com/v1alpha1
+kind: NVMesh
+metadata:
+  name: nvmesh-sample
+spec:
+  # Add fields here
+  foo: bar
