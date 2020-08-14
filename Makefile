@@ -26,6 +26,9 @@ endif
 all: manager
 
 # Run tests
+test-short:
+	go test ./test/... -coverprofile cover.out
+
 test: generate fmt vet manifests
 	go test ./... -coverprofile cover.out
 

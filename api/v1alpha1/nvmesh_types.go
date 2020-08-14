@@ -24,15 +24,24 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type NVMeshCore struct {
-	Deploy bool `json:"deploy,omitempty"`
+	// Deploy controls wether to deploy NVMesh Core
+	Deploy bool `json:"deploy,omitempty" yaml:"deploy,omitempty"`
 }
 
 type NVMeshManagement struct {
-	Deploy bool `json:"deploy,omitempty"`
+	// Deploy controls wether to deploy NVMesh Management
+	Deploy bool `json:"deploy,omitempty" yaml:"deploy,omitempty"`
+
+	// DeployMongo controls wether to deploy a MongoDB Operator for NVMesh Management
+	DeployMongo bool `json:"deployMongo,omitempty" yaml:"deployMongo,omitempty"`
 }
 
 type NVMeshCSI struct {
-	Deploy bool `json:"deploy,omitempty"`
+	// Deploy controls wether the NVMesh CSI Driver should be deployed or not
+	Deploy bool `json:"deploy,omitempty" yaml:"deploy,omitempty"`
+
+	//ControllerReplicas describes the number of replicas for the NVMesh CSI Controller Statefulset
+	ControllerReplicas int32 `json:"controller,omitempty"`
 }
 
 // NVMeshSpec defines the desired state of NVMesh
@@ -40,10 +49,14 @@ type NVMeshSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of NVMesh. Edit NVMesh_types.go to remove/update
-	Core       NVMeshCore       `json:"core,omitempty"`
-	Management NVMeshManagement `json:"management,omitempty"`
-	CSI        NVMeshCSI        `json:"csi,omitempty"`
+	// Core is an object describing the nvmesh-core deployment
+	Core NVMeshCore `json:"core,omitempty" yaml:"core,omitempty"`
+
+	// Management is an object describing the nvmesh-management deployment
+	Management NVMeshManagement `json:"management,omitempty" yaml:"management,omitempty"`
+
+	// CSI is an object describing the nvmesh-csi-driver deployment
+	CSI NVMeshCSI `json:"csi,omitempty" yaml:"csi,omitempty"`
 }
 
 // NVMeshStatus defines the observed state of NVMesh

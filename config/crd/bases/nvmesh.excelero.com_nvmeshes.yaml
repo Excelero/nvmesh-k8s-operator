@@ -37,20 +37,35 @@ spec:
           description: NVMeshSpec defines the desired state of NVMesh
           properties:
             core:
-              description: Foo is an example field of NVMesh. Edit NVMesh_types.go
-                to remove/update
+              description: Core is an object describing the nvmesh-core deployment
               properties:
                 deploy:
+                  description: Deploy controls wether to deploy NVMesh Core
                   type: boolean
               type: object
             csi:
+              description: CSI is an object describing the nvmesh-csi-driver deployment
               properties:
+                controller:
+                  description: ControllerReplicas describes the number of replicas
+                    for the NVMesh CSI Controller Statefulset
+                  format: int32
+                  type: integer
                 deploy:
+                  description: Deploy controls wether the NVMesh CSI Driver should
+                    be deployed or not
                   type: boolean
               type: object
             management:
+              description: Management is an object describing the nvmesh-management
+                deployment
               properties:
                 deploy:
+                  description: Deploy controls wether to deploy NVMesh Management
+                  type: boolean
+                deployMongo:
+                  description: DeployMongo controls wether to deploy a MongoDB Operator
+                    for NVMesh Management
                   type: boolean
               type: object
           type: object
