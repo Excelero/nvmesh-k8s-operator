@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/nvmesh-operator-go/api/v1alpha1"
+	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -42,6 +42,10 @@ var k8sClient client.Client
 var testEnv *envtest.Environment
 
 func TestAPIs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Suite testing in test-short mode")
+	}
+
 	RegisterFailHandler(Fail)
 
 	RunSpecsWithDefaultAndCustomReporters(t,

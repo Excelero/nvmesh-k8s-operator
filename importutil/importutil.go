@@ -1,38 +1,45 @@
-package unittest
+package importutil
 
 import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"strconv"
-	"testing"
+	"net/http"
 
-	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/nvmesh-operator-go/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/rbac/v1beta1"
+	"k8s.io/api/rbac/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/kubectl/pkg/scheme"
 )
 
-func TestNVMeshType(t *testing.T) {
-	o := nvmeshv1alpha1.NVMesh{}
-	fmt.Printf("%s\n", strconv.FormatBool(o.Spec.CSI.Deploy))
+func YamlURLToObject(url string) runtime.Object {
+	resp, err := http.Get(url)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	yamlString := make([]byte, resp.ContentLength)
+	_, err = resp.Body.Read(yamlString)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	obj := YamlStringToObject(string(yamlString))
+	return obj
 }
 
-//TODO: move to utils
-func yamlFileToObject(filename string) runtime.Object {
-	bytes, err := ioutil.ReadFile("service_account.yaml")
+func YamlFileToObject(filename string) runtime.Object {
+	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	yamlString := string(bytes)
-	obj := yamlStringToObject(yamlString)
+	obj := YamlStringToObject(yamlString)
 	return obj
 }
 
-//TODO: move to utils
-func yamlStringToObject(yaml string) runtime.Object {
+func YamlStringToObject(yaml string) runtime.Object {
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, groupVersionKind, err := decode([]byte(yaml), nil, nil)
 
@@ -45,8 +52,7 @@ func yamlStringToObject(yaml string) runtime.Object {
 	return obj
 }
 
-//TODO: move to utils
-func printYamlObjectType(obj runtime.Object) {
+func PrintYamlObjectType(obj runtime.Object) {
 	// now use switch over the type of the object
 	// and match each type-case
 	switch o := obj.(type) {
@@ -63,9 +69,4 @@ func printYamlObjectType(obj runtime.Object) {
 		//o is unknown for us
 		fmt.Printf("o=%s", o)
 	}
-}
-
-func TestDeserialize(t *testing.T) {
-	obj := yamlFileToObject("service_account.yaml")
-	printYamlObjectType(obj)
 }

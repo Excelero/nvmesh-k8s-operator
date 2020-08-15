@@ -1,8 +1,0 @@
-apiVersion: nvmesh.excelero.com/v1alpha1
-kind: NVMesh
-metadata:
-  name: cluster1
-spec:
-  core: {}
-  management: {}
-  csi: {}

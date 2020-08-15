@@ -27,14 +27,21 @@ all: manager
 
 # Run tests
 test-short:
-	go test ./test/... -coverprofile cover.out
+	go test ./... -test.short -coverprofile cover.out
 
-test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
+ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
+test-full: generate fmt vet manifests
+	mkdir -p ${ENVTEST_ASSETS_DIR}
+	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/master/hack/setup-envtest.sh
+	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
+
+# go build
+build: generate fmt vet
+	go build ./...
 
 # Build manager binary
 manager: generate fmt vet
-	go build -o bin/manager main.go
+	go build -o bin/controller main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
