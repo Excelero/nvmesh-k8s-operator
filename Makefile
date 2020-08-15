@@ -27,7 +27,10 @@ all: manager
 
 # Run tests
 test-short:
-	go test ./... -test.short -coverprofile cover.out
+	go test ./... -test.short -coverprofile coverage.out
+
+show-coverage-report:
+	go tool cover -html=coverage.out
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 test-full: generate fmt vet manifests
