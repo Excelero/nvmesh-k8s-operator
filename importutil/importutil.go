@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubectl/pkg/scheme"
@@ -28,6 +29,8 @@ import (
 func YamlFileToObject(filename string) (runtime.Object, error) {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
+		workdir, _ := os.Getwd()
+		log.Println(fmt.Sprintf("Error while trying to read from YAML file. filename: %s, working dir: %s, Err was: %s", filename, workdir, err))
 		return nil, err
 	}
 

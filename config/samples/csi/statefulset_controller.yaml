@@ -1,0 +1,96 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: nvmesh-csi-controller
+spec:
+  serviceName: nvmesh-csi-driver
+  selector:
+    matchLabels:
+      app: nvmesh-csi
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nvmesh-csi
+    spec:
+      serviceAccount: nvmesh-csi-driver
+      containers:
+        # NVMesh Driver
+        - name: nvmesh-csi-driver
+          # if we use image tag :latest kubernetes will try to fetch from Docker Hub (hub.docker.com)
+          image: "excelero/nvmesh-csi-driver:v1.1.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DRIVER_TYPE
+              value: "Controller"
+            - name: SOCKET_PATH
+              value: unix:///csi/ctrl-csi.sock
+            - name: MANAGEMENT_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-csi-config
+                  key: management.servers
+            - name: MANAGEMENT_PROTOCOL
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-csi-config
+                  key: management.protocol
+            - name: MANAGEMENT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: nvmesh-credentials
+                  key: username
+            - name: MANAGEMENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nvmesh-credentials
+                  key: password
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+            - name: plugin-socket-dir
+              mountPath: /csi
+        # Provisioner
+        - name: csi-provisioner
+          image: quay.io/k8scsi/csi-provisioner:v1.6.0
+          args:
+            - "--provisioner=nvmesh-csi.excelero.com"
+            - "--csi-address=/csi/ctrl-csi.sock"
+            - "--v=5"
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: plugin-socket-dir
+              mountPath: /csi
+        # Attacher
+        - name: csi-attacher
+          image: quay.io/k8scsi/csi-attacher:v2.2.0
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--v=5"
+            - "--csi-address=/csi/ctrl-csi.sock"
+          volumeMounts:
+            - name: plugin-socket-dir
+              mountPath: /csi
+        # Resizer
+        - name: csi-resizer
+          image: quay.io/k8scsi/csi-resizer:v0.5.0
+          args:
+            - "--v=5"
+            - "--csi-address=/csi/ctrl-csi.sock"
+            - "--leader-election"
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: plugin-socket-dir
+              mountPath: /csi
+      volumes:
+        - name: config-volume
+          configMap:
+            name: nvmesh-csi-config
+        - name: plugin-socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/nvmesh-csi.excelero.com/
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory

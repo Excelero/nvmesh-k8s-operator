@@ -4,6 +4,9 @@ metadata:
   name: cluster1
 spec:
   core: {}
-  management: {}
+  management:
+    version: "2.0.3-4"
+    replicas: 3
   csi:
-    controllerReplica: 3
+    version: "v1.1.0"
+    controllerReplicas: 3

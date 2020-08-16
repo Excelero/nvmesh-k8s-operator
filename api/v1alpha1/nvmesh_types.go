@@ -25,23 +25,42 @@ import (
 
 type NVMeshCore struct {
 	// Deploy controls wether to deploy NVMesh Core
-	Deploy bool `json:"deploy,omitempty" yaml:"deploy,omitempty"`
+	Deploy bool `json:"deploy,omitempty"`
+
+	//The version of NVMesh Core to be deployed. to perform an upgrade simply update this value to the required version.
+	Version string `json:"version"`
 }
 
 type NVMeshManagement struct {
 	// Deploy controls wether to deploy NVMesh Management
-	Deploy bool `json:"deploy,omitempty" yaml:"deploy,omitempty"`
+	Deploy bool `json:"deploy,omitempty"`
 
+	//The version of NVMesh Management to be deployed. to perform an upgrade simply update this value to the required version.
+	Version string `json:"version"`
+
+	//The number of replicas of the NVMesh Managemnet
+	Replicas int32 `json:"replica"`
+
+	//TODO: who should be in charge of "installing" the mongodb Operator - Should we deploy the operator ? or only deploy the CustomResource for MongoDB ?
 	// DeployMongo controls wether to deploy a MongoDB Operator for NVMesh Management
-	DeployMongo bool `json:"deployMongo,omitempty" yaml:"deployMongo,omitempty"`
+	DeployMongo bool `json:"deployMongo,omitempty"`
+
+	//Image - Optional, overrides Version and sets the full image string for the nvmesh-management image
+	Image string `json:"image,omitempty"`
 }
 
 type NVMeshCSI struct {
 	// Deploy controls wether the NVMesh CSI Driver should be deployed or not
-	Deploy bool `json:"deploy,omitempty" yaml:"deploy,omitempty"`
+	Deploy bool `json:"deploy,omitempty"`
 
 	//ControllerReplicas describes the number of replicas for the NVMesh CSI Controller Statefulset
 	ControllerReplicas int32 `json:"controller,omitempty"`
+
+	//Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
+	Version string `json:"version"`
+
+	//Image - Optional, overrides Version and sets the full image string for the nvmesh-csi-driver image
+	Image string `json:"image,omitempty"`
 }
 
 // NVMeshSpec defines the desired state of NVMesh
@@ -50,13 +69,13 @@ type NVMeshSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Core is an object describing the nvmesh-core deployment
-	Core NVMeshCore `json:"core,omitempty" yaml:"core,omitempty"`
+	Core NVMeshCore `json:"core,omitempty"`
 
 	// Management is an object describing the nvmesh-management deployment
-	Management NVMeshManagement `json:"management,omitempty" yaml:"management,omitempty"`
+	Management NVMeshManagement `json:"management,omitempty"`
 
 	// CSI is an object describing the nvmesh-csi-driver deployment
-	CSI NVMeshCSI `json:"csi,omitempty" yaml:"csi,omitempty"`
+	CSI NVMeshCSI `json:"csi,omitempty"`
 }
 
 // NVMeshStatus defines the observed state of NVMesh

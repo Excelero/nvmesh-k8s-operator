@@ -20,9 +20,11 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 )
@@ -36,12 +38,42 @@ type NVMeshReconciler struct {
 
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes/status,verbs=get;update;patch
+// +kubebuilder:subresource:status
 
 func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("nvmesh", req.NamespacedName)
 
-	// your logic here
+	// Fetch the NVMesh instance
+	instance := &nvmeshv1alpha1.NVMesh{}
+	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return reconcile.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return reconcile.Result{}, err
+	}
+
+	csir := NVMeshCSIReconciler(*r)
+	csiErr := csir.Reconcile(instance)
+
+	// corer := NVMeshCoreReconciler(*r)
+	// coreErr := corer.Reconcile(instance.Spec.Core)
+
+	mgmtr := NVMeshMgmtReconciler(*r)
+	mgmtErr := mgmtr.Reconcile(instance)
+
+	if csiErr != nil {
+		return reconcile.Result{}, csiErr
+	}
+
+	if mgmtErr != nil {
+		return reconcile.Result{}, mgmtErr
+	}
 
 	return ctrl.Result{}, nil
 }

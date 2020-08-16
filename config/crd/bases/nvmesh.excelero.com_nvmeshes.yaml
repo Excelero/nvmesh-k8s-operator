@@ -42,6 +42,12 @@ spec:
                 deploy:
                   description: Deploy controls wether to deploy NVMesh Core
                   type: boolean
+                version:
+                  description: The version of NVMesh Core to be deployed. to perform
+                    an upgrade simply update this value to the required version.
+                  type: string
+              required:
+              - version
               type: object
             csi:
               description: CSI is an object describing the nvmesh-csi-driver deployment
@@ -55,6 +61,17 @@ spec:
                   description: Deploy controls wether the NVMesh CSI Driver should
                     be deployed or not
                   type: boolean
+                image:
+                  description: Image - Optional, overrides Version and sets the full
+                    image string for the nvmesh-csi-driver image
+                  type: string
+                version:
+                  description: Version controls which version of the NVMesh CSI Controller
+                    will be deployed. to perform an upgrade simply update this value
+                    to the required version.
+                  type: string
+              required:
+              - version
               type: object
             management:
               description: Management is an object describing the nvmesh-management
@@ -64,9 +81,26 @@ spec:
                   description: Deploy controls wether to deploy NVMesh Management
                   type: boolean
                 deployMongo:
-                  description: DeployMongo controls wether to deploy a MongoDB Operator
-                    for NVMesh Management
+                  description: 'TODO: who should be in charge of "installing" the
+                    mongodb Operator - Should we deploy the operator ? or only deploy
+                    the CustomResource for MongoDB ? DeployMongo controls wether to
+                    deploy a MongoDB Operator for NVMesh Management'
                   type: boolean
+                image:
+                  description: Image - Optional, overrides Version and sets the full
+                    image string for the nvmesh-management image
+                  type: string
+                replica:
+                  description: The number of replicas of the NVMesh Managemnet
+                  format: int32
+                  type: integer
+                version:
+                  description: The version of NVMesh Management to be deployed. to
+                    perform an upgrade simply update this value to the required version.
+                  type: string
+              required:
+              - replica
+              - version
               type: object
           type: object
         status:
