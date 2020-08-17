@@ -1,19 +1,15 @@
 package controllers
 
 import (
-	"path/filepath"
+	"context"
 	"testing"
 
 	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var mgmtDefaultImageName string
@@ -59,22 +55,34 @@ func TestManagementReconciler(t *testing.T) {
 	var err error
 
 	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
-	}
-
-	cfg, err = testEnv.Start()
-	myScheme := runtime.NewScheme()
-	c, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
+	e, err := NewTestEnv()
+	Expect(err).To(BeNil())
 
 	mgmtr := NVMeshMgmtReconciler{
-		Scheme: myScheme,
-		Log:    logf.Log.Logger,
-		Client: c,
+		Scheme: e.Scheme,
+		Log:    log.Log,
+		Client: e.Client,
 	}
 
-	err = mgmtr.Reconcile(cr)
+	// Start
+	mgmt := appsv1.StatefulSet{}
+	mgmt.SetNamespace(TestingNamespace)
+	mgmt.SetName("nvmesh-management")
 
+	err = e.Client.Delete(context.TODO(), &mgmt)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			By("No Managment StatefulSet to delete")
+		} else {
+			panic("Could not prepare environment - Failed to delete Management StatefulSet")
+		}
+	}
+
+	By("Reconciling First Attempt")
+	err = mgmtr.Reconcile(cr)
+	Expect(err).To(BeNil())
+
+	By("Reconciling Second Attempt")
+	err = mgmtr.Reconcile(cr)
 	Expect(err).To(BeNil())
 }

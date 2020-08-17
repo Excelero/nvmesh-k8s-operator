@@ -29,6 +29,9 @@ all: manager
 test-short:
 	go test ./... -test.short -coverprofile coverage.out
 
+test-short-verbose:
+	go test ./... -test.v -test.short -coverprofile coverage.out
+
 show-coverage-report:
 	go tool cover -html=coverage.out
 
@@ -131,3 +134,7 @@ bundle: manifests
 .PHONY: bundle-build
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
+.PHONY: list
+list:
+	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$'

@@ -13,6 +13,7 @@ require (
 	github.com/onsi/gomega v1.10.1
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/prometheus/common v0.6.0
+	github.com/sirupsen/logrus v1.4.2
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
