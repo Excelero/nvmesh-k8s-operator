@@ -32,8 +32,7 @@ type MyTestEnv struct {
 }
 
 func NewTestEnv() (*MyTestEnv, error) {
-	var err error
-	cfg, err = config.GetConfig()
+	cfg, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}

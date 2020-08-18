@@ -41,12 +41,8 @@ type NVMeshManagement struct {
 	//The number of replicas of the NVMesh Managemnet
 	Replicas int32 `json:"replica"`
 
-	//TODO: who should be in charge of "installing" the mongodb Operator - Should we deploy the operator ? or only deploy the CustomResource for MongoDB ?
 	// DeployMongo controls wether to deploy a MongoDB Operator for NVMesh Management
 	DeployMongo bool `json:"deployMongo,omitempty"`
-
-	//Image - Optional, overrides Version and sets the full image string for the nvmesh-management image
-	Image string `json:"image,omitempty"`
 }
 
 type NVMeshCSI struct {
@@ -58,9 +54,6 @@ type NVMeshCSI struct {
 
 	//Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
 	Version string `json:"version"`
-
-	//Image - Optional, overrides Version and sets the full image string for the nvmesh-csi-driver image
-	Image string `json:"image,omitempty"`
 }
 
 // NVMeshSpec defines the desired state of NVMesh

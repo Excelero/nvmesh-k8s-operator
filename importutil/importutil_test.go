@@ -10,30 +10,35 @@ import (
 
 func TestFailureToReadFile(t *testing.T) {
 	RegisterFailHandler(Fail)
-	_, err := YamlFileToObject("file/does/not/exists.yaml")
+	defer GinkgoRecover()
+
+	_, err := YamlFileToObjects("file/does/not/exists.yaml")
 	Expect(err).NotTo(BeNil())
+}
+
+func TestReadingYamlWFileWithMultipleDocuments(t *testing.T) {
+	RegisterFailHandler(Fail)
+	defer GinkgoRecover()
+
+	objs, err := YamlFileToObjects("../test/samples/multiple_yaml_docs_with_errors.yaml")
+	Expect(err).ToNot(BeNil())
+	Expect(len(objs)).To(Equal(2))
 }
 
 func TestReadingYamlFile(t *testing.T) {
 	RegisterFailHandler(Fail)
-	obj, err := YamlFileToObject("../test/samples/service_account.yaml")
+	defer GinkgoRecover()
+
+	objs, err := YamlFileToObjects("../test/samples/service_account.yaml")
 	Expect(err).To(BeNil())
-	objectTypeString := reflect.TypeOf(obj).String()
+	objectTypeString := reflect.TypeOf(objs[0]).String()
 	Expect(objectTypeString).To(Equal("*v1.ServiceAccount"))
 }
 
 func TestFailureReadingNonYamlFile(t *testing.T) {
 	RegisterFailHandler(Fail)
-	_, err := YamlFileToObject("../Makefile")
+	defer GinkgoRecover()
+
+	_, err := YamlFileToObjects("../Makefile")
 	Expect(err).NotTo(BeNil())
 }
-
-// func TestReadingYamlFromUrl(t *testing.T) {
-// 	RegisterFailHandler(Fail)
-// 	t.Skip("SKIP - issue with ContentLength = -1")
-
-// 	obj := YamlURLToObject("https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/application/deployment.yaml")
-
-// 	objectTypeString := reflect.TypeOf(obj).String()
-// 	Expect(objectTypeString).To(Equal("*v1.ServiceAccount"))
-// }

@@ -61,10 +61,6 @@ spec:
                   description: Deploy controls wether the NVMesh CSI Driver should
                     be deployed or not
                   type: boolean
-                image:
-                  description: Image - Optional, overrides Version and sets the full
-                    image string for the nvmesh-csi-driver image
-                  type: string
                 version:
                   description: Version controls which version of the NVMesh CSI Controller
                     will be deployed. to perform an upgrade simply update this value
@@ -81,15 +77,9 @@ spec:
                   description: Deploy controls wether to deploy NVMesh Management
                   type: boolean
                 deployMongo:
-                  description: 'TODO: who should be in charge of "installing" the
-                    mongodb Operator - Should we deploy the operator ? or only deploy
-                    the CustomResource for MongoDB ? DeployMongo controls wether to
-                    deploy a MongoDB Operator for NVMesh Management'
+                  description: DeployMongo controls wether to deploy a MongoDB Operator
+                    for NVMesh Management
                   type: boolean
-                image:
-                  description: Image - Optional, overrides Version and sets the full
-                    image string for the nvmesh-management image
-                  type: string
                 replica:
                   description: The number of replicas of the NVMesh Managemnet
                   format: int32

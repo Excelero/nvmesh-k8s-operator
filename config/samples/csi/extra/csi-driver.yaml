@@ -1,11 +1,16 @@
+---
+# Source: nvmesh-csi-driver/templates/csi-driver.yaml
 apiVersion: storage.k8s.io/v1beta1
 kind: CSIDriver
 metadata:
   name: nvmesh-csi.excelero.com
+  namespace: nvmesh-csi
   labels:
+    helm.sh/chart: nvmesh-csi-driver-1.1.0
     app.kubernetes.io/name: nvmesh-csi-driver
     app.kubernetes.io/instance: nvmesh-csi-driver
     app.kubernetes.io/version: "v1.1.0"
+    app.kubernetes.io/managed-by: Helm
 spec:
   attachRequired: false
   podInfoOnMount: false

@@ -36,6 +36,29 @@ type NVMeshReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+type NVMeshComponent interface {
+	ShouldUpdateObject(*nvmeshv1alpha1.NVMesh, *runtime.Object) bool
+	InitiateObject(*nvmeshv1alpha1.NVMesh, *runtime.Object) error
+}
+
+type NVMeshCSIReconciler struct {
+	client.Client
+	Log    logr.Logger
+	Scheme *runtime.Scheme
+}
+
+type NVMeshMgmtReconciler struct {
+	client.Client
+	Log    logr.Logger
+	Scheme *runtime.Scheme
+}
+
+type NVMeshCoreReconciler struct {
+	client.Client
+	Log    logr.Logger
+	Scheme *runtime.Scheme
+}
+
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes/status,verbs=get;update;patch
 // +kubebuilder:subresource:status
@@ -58,21 +81,23 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, err
 	}
 
-	csir := NVMeshCSIReconciler(*r)
-	csiErr := csir.Reconcile(instance)
-
-	// corer := NVMeshCoreReconciler(*r)
-	// coreErr := corer.Reconcile(instance.Spec.Core)
-
-	mgmtr := NVMeshMgmtReconciler(*r)
-	mgmtErr := mgmtr.Reconcile(instance)
-
-	if csiErr != nil {
-		return reconcile.Result{}, csiErr
+	csi := NVMeshCSIReconciler(*r)
+	mgmt := NVMeshMgmtReconciler(*r)
+	core := NVMeshCoreReconciler(*r)
+	components := []NVMeshComponent{&csi, &mgmt, &core}
+	var errorList []error
+	for _, component := range components {
+		err = r.ReconcileComponent(instance, component)
+		if err != nil {
+			errorList = append(errorList, err)
+		}
 	}
 
-	if mgmtErr != nil {
-		return reconcile.Result{}, mgmtErr
+	if len(errorList) > 0 {
+		for _, e := range errorList {
+			r.Log.Error(e, "Error from ReconcileComponent")
+		}
+		return reconcile.Result{}, errorList[0]
 	}
 
 	return ctrl.Result{}, nil
@@ -82,4 +107,20 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nvmeshv1alpha1.NVMesh{}).
 		Complete(r)
+}
+
+func (r *NVMeshReconciler) ReconcileComponent(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent) error {
+	files, err := ListFilesInSubDirs(CSIAssetsLocation)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		err = r.ReconcileYamlObjectsFromFile(cr, file, comp)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

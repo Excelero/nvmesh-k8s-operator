@@ -18,28 +18,6 @@ func init() {
 	mgmtDefaultImageName = "docker.excelero.com/nvmesh-management:2.0.3-4"
 }
 
-func TestNewMgmtStatefulSet(t *testing.T) {
-	RegisterFailHandler(Fail)
-	defer GinkgoRecover()
-
-	cr := nvmeshv1alpha1.NVMesh{
-		Spec: nvmeshv1alpha1.NVMeshSpec{
-			Management: nvmeshv1alpha1.NVMeshManagement{
-				Version: "2.0.3-4",
-			},
-		},
-	}
-	mgmt := mgmtStatefulset{}
-	obj, err := mgmt.newObject(&cr)
-	Expect(err).To(BeNil())
-	Expect(obj).NotTo(BeNil())
-
-	ss := (*obj).(*appsv1.StatefulSet)
-
-	foundImage := ss.Spec.Template.Spec.Containers[0].Image
-	Expect(foundImage).To(Equal(mgmtDefaultImageName))
-}
-
 func TestManagementReconciler(t *testing.T) {
 	RegisterFailHandler(Fail)
 	defer GinkgoRecover()
@@ -58,11 +36,13 @@ func TestManagementReconciler(t *testing.T) {
 	e, err := NewTestEnv()
 	Expect(err).To(BeNil())
 
-	mgmtr := NVMeshMgmtReconciler{
+	r := NVMeshReconciler{
 		Scheme: e.Scheme,
 		Log:    log.Log,
 		Client: e.Client,
 	}
+
+	mgmtr := NVMeshMgmtReconciler(r)
 
 	// Start
 	mgmt := appsv1.StatefulSet{}
@@ -79,10 +59,10 @@ func TestManagementReconciler(t *testing.T) {
 	}
 
 	By("Reconciling First Attempt")
-	err = mgmtr.Reconcile(cr)
+	err = r.ReconcileComponent(cr, &mgmtr)
 	Expect(err).To(BeNil())
 
 	By("Reconciling Second Attempt")
-	err = mgmtr.Reconcile(cr)
+	err = r.ReconcileComponent(cr, &mgmtr)
 	Expect(err).To(BeNil())
 }

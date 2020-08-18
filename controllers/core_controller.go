@@ -2,26 +2,29 @@ package controllers
 
 import (
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type NVMeshCoreReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+func (r *NVMeshCoreReconciler) InitiateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
+	//name, _ := GetRunetimeObjectNameAndKind(obj)
+	// switch o := (*obj).(type) {
+	// case *appsv1.DaemonSet:
+	// default:
+	// 	//o is unknown for us
+	// 	//log.Info(fmt.Sprintf("Object type %s not handled", o))
+	// }
+
+	return nil
 }
 
-type CoreManagedObject interface {
-	shouldUpdate(*nvmeshv1.NVMesh, *runtime.Object) bool
-	newObject(*nvmeshv1.NVMesh) (*runtime.Object, error)
-	getObject(*nvmeshv1.NVMesh, *NVMeshCoreReconciler) (*runtime.Object, error)
+func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) bool {
+	//name, _ := GetRunetimeObjectNameAndKind(obj)
+	// switch o := (*obj).(type) {
+	// case *appsv1.DaemonSet:
+	// default:
+	// 	//o is unknown for us
+	// 	//log.Info(fmt.Sprintf("Object type %s not handled", o))
+	// }
+
+	return false
 }
-
-type nvmeshClientDriverDaemonSet struct{}
-type nvmeshTargetDriverDaemonSet struct{}
-
-type nvmeshTomaDaemonSet struct{}
-type nvmeshMcsDaemonSet struct{}
-type nvmeshAgentDaemonSet struct{}

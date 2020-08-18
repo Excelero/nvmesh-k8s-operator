@@ -1,0 +1,20 @@
+apiVersion: mongodb.com/v1
+kind: MongoDB
+spec:
+    members: 1
+    security:
+      authentication:
+        enabled: false
+        modes: null
+      tls:
+        caConfigMapRef:
+          name: ""
+        certificateKeySecretRef:
+          name: ""
+        enabled: false
+        optional: false
+    type: ReplicaSet
+    version: 4.2.6
+status:
+    mongoUri: mongodb://
+    phase: Running
