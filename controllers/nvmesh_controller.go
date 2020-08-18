@@ -37,8 +37,8 @@ type NVMeshReconciler struct {
 }
 
 type NVMeshComponent interface {
-	ShouldUpdateObject(*nvmeshv1alpha1.NVMesh, *runtime.Object) bool
-	InitiateObject(*nvmeshv1alpha1.NVMesh, *runtime.Object) error
+	ShouldUpdateObject(cr *nvmeshv1alpha1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
+	InitObject(*nvmeshv1alpha1.NVMesh, *runtime.Object) error
 }
 
 type NVMeshCSIReconciler struct {

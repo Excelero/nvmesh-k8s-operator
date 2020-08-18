@@ -52,7 +52,7 @@ spec:
             csi:
               description: CSI is an object describing the nvmesh-csi-driver deployment
               properties:
-                controller:
+                controllerReplicas:
                   description: ControllerReplicas describes the number of replicas
                     for the NVMesh CSI Controller Statefulset
                   format: int32
@@ -66,8 +66,6 @@ spec:
                     will be deployed. to perform an upgrade simply update this value
                     to the required version.
                   type: string
-              required:
-              - version
               type: object
             management:
               description: Management is an object describing the nvmesh-management
@@ -80,7 +78,7 @@ spec:
                   description: DeployMongo controls wether to deploy a MongoDB Operator
                     for NVMesh Management
                   type: boolean
-                replica:
+                replicas:
                   description: The number of replicas of the NVMesh Managemnet
                   format: int32
                   type: integer
@@ -88,9 +86,6 @@ spec:
                   description: The version of NVMesh Management to be deployed. to
                     perform an upgrade simply update this value to the required version.
                   type: string
-              required:
-              - replica
-              - version
               type: object
           type: object
         status:

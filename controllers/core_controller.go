@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func (r *NVMeshCoreReconciler) InitiateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
+func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
 	//name, _ := GetRunetimeObjectNameAndKind(obj)
 	// switch o := (*obj).(type) {
 	// case *appsv1.DaemonSet:
@@ -17,7 +17,7 @@ func (r *NVMeshCoreReconciler) InitiateObject(cr *nvmeshv1.NVMesh, obj *runtime.
 	return nil
 }
 
-func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) bool {
+func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, obj *runtime.Object) bool {
 	//name, _ := GetRunetimeObjectNameAndKind(obj)
 	// switch o := (*obj).(type) {
 	// case *appsv1.DaemonSet:

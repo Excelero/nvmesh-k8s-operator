@@ -36,10 +36,10 @@ type NVMeshManagement struct {
 	Deploy bool `json:"deploy,omitempty"`
 
 	//The version of NVMesh Management to be deployed. to perform an upgrade simply update this value to the required version.
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
 
 	//The number of replicas of the NVMesh Managemnet
-	Replicas int32 `json:"replica"`
+	Replicas int32 `json:"replicas,omitempty"`
 
 	// DeployMongo controls wether to deploy a MongoDB Operator for NVMesh Management
 	DeployMongo bool `json:"deployMongo,omitempty"`
@@ -50,10 +50,10 @@ type NVMeshCSI struct {
 	Deploy bool `json:"deploy,omitempty"`
 
 	//ControllerReplicas describes the number of replicas for the NVMesh CSI Controller Statefulset
-	ControllerReplicas int32 `json:"controller,omitempty"`
+	ControllerReplicas int32 `json:"controllerReplicas,omitempty"`
 
 	//Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
 }
 
 // NVMeshSpec defines the desired state of NVMesh

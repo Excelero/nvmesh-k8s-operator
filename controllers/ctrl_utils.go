@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"reflect"
 
-	appsv1 "k8s.io/api/apps/v1"
-
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	"excelero.com/nvmesh-k8s-operator/importutil"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -18,26 +16,21 @@ import (
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component NVMeshComponent) error {
+func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
 	v1obj := (*newObj).(v1.Object)
 	v1obj.SetNamespace(cr.GetNamespace())
 	name, kind := GetRunetimeObjectNameAndKind(newObj)
 	log := r.Log.WithValues("method", "ReconcileGenericObject", "name", name, "kind", kind)
-	if kind == "StatefulSet" {
-		o := (*newObj).(*appsv1.StatefulSet)
-		fmt.Printf("before callInitObj name: %s kind: %s version: %s\n", name, kind, o.Spec.Template.Spec.Containers[0].Image)
-	}
 
-	component.InitiateObject(cr, newObj)
-
-	if kind == "StatefulSet" {
-		o := (*newObj).(*appsv1.StatefulSet)
-		fmt.Printf("after callInitObj name: %s kind: %s version: %s\n", name, kind, o.Spec.Template.Spec.Containers[0].Image)
+	err := (*component).InitObject(cr, newObj)
+	if err != nil {
+		log.Info("Error running InitObject")
+		return err
 	}
 
 	// Set NVMesh instance as the owner and controller
 	if err := controllerutil.SetControllerReference(cr, v1obj, r.Scheme); err != nil {
-		//return err
+		return err
 	}
 
 	foundObj, err := r.getGenericObject(newObj, cr.GetNamespace())
@@ -48,7 +41,7 @@ func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *r
 	} else if err != nil {
 		log.Error(err, "Error while getting object")
 		return err
-	} else if component.ShouldUpdateObject(cr, foundObj) {
+	} else if (*component).ShouldUpdateObject(cr, newObj, foundObj) {
 		log.Info("shouldUpdate returned true > Updating...")
 		err = r.Client.Update(context.TODO(), *newObj)
 		//FIXME - Update not having any effect
@@ -66,8 +59,6 @@ func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *r
 }
 
 func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespace string) (*runtime.Object, error) {
-	runtimeObj := (*fromObject).(runtime.Object)
-
 	// Extract name and namespace without knowing the type
 	name, kind := GetRunetimeObjectNameAndKind(fromObject)
 	//r.Log.Info("Going to get Object", "ns", namespace, "name", name, "kind", kind)
@@ -75,8 +66,9 @@ func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespac
 		namespace = ""
 	}
 
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, runtimeObj)
-	return &runtimeObj, err
+	newObj := (*fromObject).DeepCopyObject()
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, newObj)
+	return &newObj, err
 }
 
 func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent) error {
@@ -96,7 +88,7 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 
 	var reconcileErrors []error
 	for _, obj := range objects {
-		err = r.ReconcileGenericObject(cr, &obj, component)
+		err = r.ReconcileGenericObject(cr, &obj, &component)
 		if err != nil {
 			fmt.Printf("Failed to Reconcile %s %+v", reflect.TypeOf(obj), err)
 			reconcileErrors = append(reconcileErrors, err)

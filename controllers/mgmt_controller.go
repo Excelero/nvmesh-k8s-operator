@@ -14,7 +14,7 @@ const (
 	MgmtImageName       = "docker.excelero.com/nvmesh-management"
 )
 
-func (r *NVMeshMgmtReconciler) InitiateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
+func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
 	name, _ := GetRunetimeObjectNameAndKind(obj)
 	switch o := (*obj).(type) {
 	case *appsv1.StatefulSet:
@@ -30,7 +30,7 @@ func (r *NVMeshMgmtReconciler) InitiateObject(cr *nvmeshv1.NVMesh, obj *runtime.
 	return nil
 }
 
-func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) bool {
+func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, obj *runtime.Object) bool {
 	name, _ := GetRunetimeObjectNameAndKind(obj)
 	switch o := (*obj).(type) {
 	case *appsv1.StatefulSet:

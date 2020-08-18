@@ -2,6 +2,7 @@ package controllers
 
 import (
 	goerrors "errors"
+	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -24,21 +25,14 @@ var GloballyNamedKinds = []string{
 	"StorageClass",
 }
 
-func (r *NVMeshCSIReconciler) InitiateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
-	name, kind := GetRunetimeObjectNameAndKind(obj)
-	if kind == "StatefulSet" {
-		r.Log.Info("InitiateObject before switch ", "name", name, "kind", kind)
-	}
+func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
+	name, _ := GetRunetimeObjectNameAndKind(obj)
 
 	switch o := (*obj).(type) {
 	case *appsv1.StatefulSet:
-		r.Log.Info("InitiateObject case *appsv1.StatefulSet", "name", name, "kind", kind)
-
 		switch name {
 		case "nvmesh-csi-controller":
-			r.Log.Info("InitiateObject case nvmesh-csi-controller", "name", name, "kind", kind)
-			err := initiateCSIControllerStatefulSet(cr, o)
-			r.Log.Info("InitiateObject case *appsv1.StatefulSet", "name", name, "kind", kind, "version", o.Spec.Template.Spec.Containers[0].Image)
+			err := initiateCSIControllerStatefulSet(cr, (*obj).(*appsv1.StatefulSet))
 			return err
 		}
 	case *appsv1.DaemonSet:
@@ -57,17 +51,15 @@ func (r *NVMeshCSIReconciler) InitiateObject(cr *nvmeshv1.NVMesh, obj *runtime.O
 	return nil
 }
 
-func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) bool {
-	name, kind := GetRunetimeObjectNameAndKind(obj)
+func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, found *runtime.Object) bool {
+	name, _ := GetRunetimeObjectNameAndKind(found)
 
-	switch o := (*obj).(type) {
+	switch o := (*found).(type) {
 	case *appsv1.StatefulSet:
-		r.Log.Info("ShouldUpdateObject case *appsv1.StatefulSet", "name", name, "kind", kind)
-
 		switch name {
 		case "nvmesh-csi-controller":
-			r.Log.Info("ShouldUpdateObject case nvmesh-csi-controller", "name", name, "kind", kind)
-			return shouldUpdateCSIControllerStatefulSet(cr, o)
+			expected := (*exp).(*appsv1.StatefulSet)
+			return shouldUpdateCSIControllerStatefulSet(cr, expected, o)
 		}
 	case *appsv1.DaemonSet:
 		switch name {
@@ -116,18 +108,21 @@ func getCSIImageFromVersion(version string) string {
 
 func shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) bool {
 	if getCSIImageFromVersion(cr.Spec.CSI.Version) != ds.Spec.Template.Spec.Containers[0].Image {
+		fmt.Printf("CSI Node Driver Image needs to be updated expected: %s found: %s\n", getCSIImageFromVersion(cr.Spec.CSI.Version), ds.Spec.Template.Spec.Containers[0].Image)
 		return true
 	}
 
 	return false
 }
 
-func shouldUpdateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, ss *appsv1.StatefulSet) bool {
-	if cr.Spec.CSI.ControllerReplicas != *ss.Spec.Replicas {
+func shouldUpdateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
+	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
+		fmt.Printf("CSI controller replica number needs to be updated expected: %d found: %d\n", *expected.Spec.Replicas, *ss.Spec.Replicas)
 		return true
 	}
 
-	if getCSIImageFromVersion(cr.Spec.CSI.Version) != ss.Spec.Template.Spec.Containers[0].Image {
+	if expected.Spec.Template.Spec.Containers[0].Image != ss.Spec.Template.Spec.Containers[0].Image {
+		fmt.Printf("CSI controller Image needs to be updated expected: %s found: %s\n", getCSIImageFromVersion(cr.Spec.CSI.Version), ss.Spec.Template.Spec.Containers[0].Image)
 		return true
 	}
 
