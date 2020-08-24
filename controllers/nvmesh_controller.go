@@ -22,12 +22,21 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 )
+
+var GloballyNamedKinds = []string{
+	"CSIDriver",
+	"ClusterRole",
+	"ClusterRoleBinding",
+	"StorageClass",
+}
 
 // NVMeshReconciler reconciles a NVMesh object
 type NVMeshReconciler struct {
@@ -35,28 +44,10 @@ type NVMeshReconciler struct {
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
-
 type NVMeshComponent interface {
-	ShouldUpdateObject(cr *nvmeshv1alpha1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
 	InitObject(*nvmeshv1alpha1.NVMesh, *runtime.Object) error
-}
-
-type NVMeshCSIReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-}
-
-type NVMeshMgmtReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-}
-
-type NVMeshCoreReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	ShouldUpdateObject(cr *nvmeshv1alpha1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
+	Reconcile(*nvmeshv1alpha1.NVMesh, *NVMeshReconciler) error
 }
 
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes,verbs=get;list;watch;create;update;patch;delete
@@ -68,8 +59,8 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("nvmesh", req.NamespacedName)
 
 	// Fetch the NVMesh instance
-	instance := &nvmeshv1alpha1.NVMesh{}
-	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
+	cr := &nvmeshv1alpha1.NVMesh{}
+	err := r.Client.Get(context.TODO(), req.NamespacedName, cr)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -87,7 +78,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	components := []NVMeshComponent{&csi, &mgmt, &core}
 	var errorList []error
 	for _, component := range components {
-		err = r.ReconcileComponent(instance, component)
+		err = component.Reconcile(cr, r)
 		if err != nil {
 			errorList = append(errorList, err)
 		}
@@ -109,18 +100,11 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *NVMeshReconciler) ReconcileComponent(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent) error {
-	files, err := ListFilesInSubDirs(CSIAssetsLocation)
-	if err != nil {
-		return err
-	}
+// Add MongoDB Community Operator Schema's Group and version
+var (
+	// SchemeGroupVersion is group version used to register these objects
+	SchemeGroupVersion = schema.GroupVersion{Group: "mongodb.com", Version: "v1"}
 
-	for _, file := range files {
-		err = r.ReconcileYamlObjectsFromFile(cr, file, comp)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
+	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
+	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+)

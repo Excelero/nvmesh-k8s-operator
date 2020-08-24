@@ -4,9 +4,8 @@ metadata:
   name: nvmesh-management
   labels:
     app: nvmesh-management
-    app.kubernetes.io/version: "2.0.2"
 spec:
-  replicas: 3
+  replicas: 1
   serviceName: nvmesh-management-svc-0
   selector:
     matchLabels:
@@ -18,7 +17,7 @@ spec:
     spec:
       containers:
         - name: nvmesh-management
-          image: "excelero/nvmesh-management:2.0.2"
+          image: "excelero/nvmesh-management:2.0.3-4"
           imagePullPolicy: IfNotPresent
           env:
             # This will inject the configuration from the ConfigMap into the container

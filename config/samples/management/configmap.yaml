@@ -1,0 +1,18 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nvmesh-mgmt-config
+data:
+  configVersion: 2.0.3
+  config: |-
+    {
+      "loggingLevel": "DEBUG",
+      "useSSL": true,
+      "mongoConnection": {
+        "hosts": "mongo-0.mongo.nvmesh.svc:27017",
+      },
+      "statisticsMongoConnection": {
+        "hosts": "mongo-0.mongo.nvmesh.svc:27017",
+      },
+      "statisticsCores": 5
+    }

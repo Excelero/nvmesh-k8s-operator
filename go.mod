@@ -1,6 +1,6 @@
 module excelero.com/nvmesh-k8s-operator
 
-go 1.13
+go 1.12
 
 require (
 	github.com/containerd/fifo v0.0.0-20200410184934-f15a3290365b // indirect

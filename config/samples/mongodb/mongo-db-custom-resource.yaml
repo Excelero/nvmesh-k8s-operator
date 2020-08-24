@@ -1,8 +1,7 @@
 apiVersion: mongodb.com/v1
 kind: MongoDB
 metadata:
-  name: mongodb-for-nvmesh
-  namespace: nvmesh
+  name: mongo
 spec:
   members: 1
   security:

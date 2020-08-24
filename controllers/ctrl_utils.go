@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
+	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	"excelero.com/nvmesh-k8s-operator/importutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,11 +17,19 @@ import (
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
+func (r *NVMeshReconciler) ReconcileObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent, removeObject bool) error {
+	if removeObject == false {
+		return r.MakeSureObjectExists(cr, newObj, component)
+	} else {
+		return r.MakeSureObjectRemoved(cr, newObj, component)
+	}
+}
+
+func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
 	v1obj := (*newObj).(v1.Object)
 	v1obj.SetNamespace(cr.GetNamespace())
 	name, kind := GetRunetimeObjectNameAndKind(newObj)
-	log := r.Log.WithValues("method", "ReconcileGenericObject", "name", name, "kind", kind)
+	log := r.Log.WithValues("method", "MakeSureObjectExists", "name", name, "kind", kind)
 
 	err := (*component).InitObject(cr, newObj)
 	if err != nil {
@@ -30,7 +39,7 @@ func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *r
 
 	// Set NVMesh instance as the owner and controller
 	if err := controllerutil.SetControllerReference(cr, v1obj, r.Scheme); err != nil {
-		return err
+		//return err
 	}
 
 	foundObj, err := r.getGenericObject(newObj, cr.GetNamespace())
@@ -44,7 +53,6 @@ func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *r
 	} else if (*component).ShouldUpdateObject(cr, newObj, foundObj) {
 		log.Info("shouldUpdate returned true > Updating...")
 		err = r.Client.Update(context.TODO(), *newObj)
-		//FIXME - Update not having any effect
 		if err != nil {
 			log.Info("Error updating object")
 		} else {
@@ -52,7 +60,31 @@ func (r *NVMeshReconciler) ReconcileGenericObject(cr *nvmeshv1.NVMesh, newObj *r
 		}
 		return err
 	} else {
-		log.Info("reconcileObject Nothing to do")
+		log.Info("Nothing to do")
+	}
+
+	return nil
+}
+
+func (r *NVMeshReconciler) MakeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
+	v1obj := (*newObj).(v1.Object)
+	v1obj.SetNamespace(cr.GetNamespace())
+	name, kind := GetRunetimeObjectNameAndKind(newObj)
+	log := r.Log.WithValues("method", "MakeSureObjectRemoved", "name", name, "kind", kind)
+
+	_, err := r.getGenericObject(newObj, cr.GetNamespace())
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("Nothing to do")
+	} else if err != nil {
+		log.Error(err, "Error while trying to find out if object exists")
+		return err
+	} else {
+		log.Info("Deleting Object")
+		err = r.Client.Delete(context.TODO(), *newObj)
+		if err != nil {
+			log.Info("Error deleting object")
+		}
+		return err
 	}
 
 	return nil
@@ -71,7 +103,7 @@ func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespac
 	return &newObj, err
 }
 
-func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent) error {
+func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent, removeObject bool) error {
 	log := r.Log.WithValues("method", "reconcileYamlObjectsFromFile", "filename", filename)
 
 	objects, err := importutil.YamlFileToObjects(filename)
@@ -88,7 +120,7 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 
 	var reconcileErrors []error
 	for _, obj := range objects {
-		err = r.ReconcileGenericObject(cr, &obj, &component)
+		err = r.ReconcileObject(cr, &obj, &component, removeObject)
 		if err != nil {
 			fmt.Printf("Failed to Reconcile %s %+v", reflect.TypeOf(obj), err)
 			reconcileErrors = append(reconcileErrors, err)
@@ -97,6 +129,30 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 
 	if len(reconcileErrors) > 0 {
 		return reconcileErrors[0]
+	}
+
+	return nil
+}
+
+func (r *NVMeshReconciler) CreateObjectsFromDir(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent, dir string) error {
+	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, false)
+}
+
+func (r *NVMeshReconciler) RemoveObjectsFromDir(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent, dir string) error {
+	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, true)
+}
+
+func (r *NVMeshReconciler) ReconcileYamlObjectsFromDir(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent, dir string, removeObjects bool) error {
+	files, err := ListFilesInSubDirs(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		err = r.ReconcileYamlObjectsFromFile(cr, file, comp, removeObjects)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

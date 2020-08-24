@@ -25,10 +25,14 @@ func TestManagementReconciler(t *testing.T) {
 	cr := &nvmeshv1alpha1.NVMesh{
 		Spec: nvmeshv1alpha1.NVMeshSpec{
 			Management: nvmeshv1alpha1.NVMeshManagement{
-				Version: "2.0.3-test",
+				Deploy:      true,
+				DeployMongo: true,
+				Version:     "2.0.3-test",
 			},
 		},
 	}
+	cr.SetNamespace(TestingNamespace)
+	cr.SetName("cluster1")
 
 	var err error
 
@@ -58,11 +62,11 @@ func TestManagementReconciler(t *testing.T) {
 		}
 	}
 
-	By("Reconciling First Attempt")
-	err = r.ReconcileComponent(cr, &mgmtr)
+	By("TestManagementReconciler - Reconciling First Attempt")
+	err = mgmtr.Reconcile(cr, &r)
 	Expect(err).To(BeNil())
 
-	By("Reconciling Second Attempt")
-	err = r.ReconcileComponent(cr, &mgmtr)
+	By("TestManagementReconciler - Reconciling Second Attempt")
+	err = mgmtr.Reconcile(cr, &r)
 	Expect(err).To(BeNil())
 }

@@ -4,8 +4,10 @@ import (
 	goerrors "errors"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,11 +20,22 @@ const (
 	CSIDriverImageName = "excelero/nvmesh-csi-driver"
 )
 
-var GloballyNamedKinds = []string{
-	"CSIDriver",
-	"ClusterRole",
-	"ClusterRoleBinding",
-	"StorageClass",
+type NVMeshCSIReconciler struct {
+	client.Client
+	Log    logr.Logger
+	Scheme *runtime.Scheme
+}
+
+func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	var err error
+
+	if cr.Spec.CSI.Deploy {
+		err = nvmeshr.CreateObjectsFromDir(cr, r, CSIAssetsLocation)
+	} else {
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, CSIAssetsLocation)
+	}
+
+	return err
 }
 
 func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {

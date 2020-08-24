@@ -75,12 +75,14 @@ func TestCsiReconciler(t *testing.T) {
 	}
 
 	By("Reconciling First Attempt")
-	err = nvmeshr.ReconcileComponent(cr, &csir)
+	err = csir.Reconcile(cr, &nvmeshr)
 	Expect(err).To(BeNil())
 
 	By("Reconciling Second Attempt")
-	err = nvmeshr.ReconcileComponent(cr, &csir)
+	err = csir.Reconcile(cr, &nvmeshr)
 	Expect(err).To(BeNil())
+
+	By("Test CSI Reconciler finished")
 }
 
 func TestCsiReconcileGenericObject(t *testing.T) {
@@ -138,11 +140,19 @@ func TestCsiReconcileGenericObject(t *testing.T) {
 		}
 	}
 
-	By("Reconciling First Attempt")
-	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir)
+	By("Make sure exists First Attempt")
+	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, false)
 	Expect(err).To(BeNil())
 
-	By("Reconciling Second Attempt")
-	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir)
+	By("Make sure exists Second Attempt")
+	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, false)
+	Expect(err).To(BeNil())
+
+	By("Make sure *removed* First Attempt")
+	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, true)
+	Expect(err).To(BeNil())
+
+	By("Make sure *removed* Second Attempt")
+	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, true)
 	Expect(err).To(BeNil())
 }
