@@ -46,7 +46,7 @@ func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Objec
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-csi-controller":
-			err := initiateCSIControllerStatefulSet(cr, (*obj).(*appsv1.StatefulSet))
+			err := initiateCSIControllerStatefulSet(cr, o)
 			return err
 		}
 	case *appsv1.DaemonSet:

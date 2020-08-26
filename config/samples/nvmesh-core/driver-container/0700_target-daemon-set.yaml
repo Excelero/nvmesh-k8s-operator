@@ -1,0 +1,43 @@
+﻿apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvmesh-target-driver-container
+  labels:
+    k8s-app: nvmesh-target-driver-container
+spec:
+  selector:
+    matchLabels:
+      name: nvmesh-driver-container
+      nvmesh.driver-container-type: target
+  template:
+    metadata:
+      labels:
+        name: nvmesh-driver-container
+        nvmesh.driver-container-type: target
+    spec:
+      nodeSelector:
+        nvmesh.excelero.com/nvmesh-target: ""
+      containers:
+        - name: driver-container
+          image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:b2
+          command: ["/bin/bash", "-c", "/init.sh --type target --insert --remove-on-terminate --wait"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: device-dir
+              mountPath: /dev
+            - name: lib-modules-dir
+              mountPath: /host/lib/modules
+            - name: var
+              mountPath: /host/var/
+          terminationGracePeriodSeconds: 60
+      volumes:
+        - name: device-dir
+          hostPath:
+            path: /dev
+        - name: lib-modules-dir
+          hostPath:
+            path: /lib/modules
+        - name: var
+          hostPath:
+            path: /var
