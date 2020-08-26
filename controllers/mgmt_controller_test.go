@@ -25,9 +25,8 @@ func TestManagementReconciler(t *testing.T) {
 	cr := &nvmeshv1alpha1.NVMesh{
 		Spec: nvmeshv1alpha1.NVMeshSpec{
 			Management: nvmeshv1alpha1.NVMeshManagement{
-				Deploy:      true,
-				DeployMongo: true,
-				Version:     "2.0.3-test",
+				Deploy:  true,
+				Version: "2.0.3-test",
 			},
 		},
 	}

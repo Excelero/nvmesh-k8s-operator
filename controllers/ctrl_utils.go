@@ -10,8 +10,10 @@ import (
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	"excelero.com/nvmesh-k8s-operator/importutil"
+	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -39,7 +41,9 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 
 	// Set NVMesh instance as the owner and controller
 	if err := controllerutil.SetControllerReference(cr, v1obj, r.Scheme); err != nil {
-		//return err
+		if err != nil {
+			log.Error(err, "Error running SetControllerReference")
+		}
 	}
 
 	foundObj, err := r.getGenericObject(newObj, cr.GetNamespace())
@@ -98,9 +102,9 @@ func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespac
 		namespace = ""
 	}
 
-	newObj := (*fromObject).DeepCopyObject()
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, newObj)
-	return &newObj, err
+	foundObject := (*fromObject).DeepCopyObject()
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundObject)
+	return &foundObject, err
 }
 
 func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent, removeObject bool) error {
@@ -122,7 +126,7 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 	for _, obj := range objects {
 		err = r.ReconcileObject(cr, &obj, &component, removeObject)
 		if err != nil {
-			fmt.Printf("Failed to Reconcile %s %+v", reflect.TypeOf(obj), err)
+			fmt.Printf("Failed to Reconcile %s %+v\n", reflect.TypeOf(obj), err)
 			reconcileErrors = append(reconcileErrors, err)
 		}
 	}
@@ -186,4 +190,11 @@ func ListFilesInSubDirs(root string) ([]string, error) {
 	})
 
 	return files, err
+}
+
+func addNamespaceToClusterRoleBinding(cr *nvmeshv1.NVMesh, crb *rbac.ClusterRoleBinding) {
+	ns := cr.GetNamespace()
+	for _, sub := range crb.Subjects {
+		sub.Namespace = ns
+	}
 }

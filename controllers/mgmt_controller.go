@@ -1,13 +1,16 @@
 package controllers
 
 import (
+	"context"
 	goerrors "errors"
+	"fmt"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -15,7 +18,9 @@ const (
 	MgmtAssetsLocation    = "config/samples/management/"
 	MongoDBAssestLocation = "config/samples/mongodb"
 	MgmtStatefulSetName   = "nvmesh-management"
-	MgmtImageName         = "docker.excelero.com/nvmesh-management"
+	MgmtImageName         = "docker.excelero.com/excelero/nvmesh-management"
+	MgmtGuiServiceName    = "nvmesh-management-gui"
+	MgmtProtocol          = "https"
 )
 
 type NVMeshMgmtReconciler struct {
@@ -27,18 +32,6 @@ type NVMeshMgmtReconciler struct {
 func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	var err error
 
-	if cr.Spec.Management.DeployMongo {
-		err = r.DeployMongoDB(cr, nvmeshr)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = r.RemoveMongoDB(cr, nvmeshr)
-		if err != nil {
-			return err
-		}
-	}
-
 	if cr.Spec.Management.Deploy {
 		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation)
 	} else {
@@ -48,40 +41,21 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	return err
 }
 
-func (r *NVMeshMgmtReconciler) DeployMongoDB(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	// First deploy the crd
-	crdFile := MongoDBAssestLocation + "/mongodb.com_mongodb_crd.yaml"
-	err := nvmeshr.ReconcileYamlObjectsFromFile(cr, crdFile, r, false)
-	if err != nil {
-		return err
-	}
-
-	// Then deploy all the rest
-	err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBAssestLocation)
-	return err
-}
-
-func (r *NVMeshMgmtReconciler) RemoveMongoDB(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	err := nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBAssestLocation)
-	return err
-}
-
 func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
 	name, _ := GetRunetimeObjectNameAndKind(obj)
 	switch o := (*obj).(type) {
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-management":
-			return initiateMgmtStatefulSet(cr, o)
+			return r.initiateMgmtStatefulSet(cr, o)
 		}
 	case *v1.Service:
 		switch name {
 		case "nvmesh-management-svc-0":
-			return initiateServiceMcs(cr, o)
+			return r.initiateServiceMcs(cr, o)
 		}
 	case *v1.ConfigMap:
-		// TODO: we will probably need to parse the json value edit it and encode as json again
-
+		return r.initiateConfigMap(cr, o)
 	default:
 		//o is unknown for us
 		//log.Info(fmt.Sprintf("Object type %s not handled", o))
@@ -96,7 +70,15 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-management":
-			return shouldUpdateMgmtStatefulSet(cr, o)
+			expectedStatefulSet := (*exp).(*appsv1.StatefulSet)
+			return r.shouldUpdateStatefulSet(cr, expectedStatefulSet, o)
+		}
+	case *v1.ConfigMap:
+		var expectedConf *v1.ConfigMap = (*exp).(*v1.ConfigMap)
+		shouldUpdateConf := r.shouldUpdateConfigMap(cr, expectedConf, o)
+		if shouldUpdateConf == true {
+			r.updateConfAndRestartMgmt(cr, expectedConf, o)
+			return false
 		}
 	default:
 		//o is unknown for us
@@ -106,12 +88,36 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 	return false
 }
 
-func initiateServiceMcs(cr *nvmeshv1.NVMesh, o *v1.Service) error {
+func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.ConfigMap) error {
+	o.Data["configVersion"] = cr.Spec.Management.Version
+
+	loggingLevel := "DEBUG"
+	useSSL := "true"
+	mongoConnectionString := cr.Spec.Management.MongoAddress
+	statisticsCores := 5
+
+	jsonTemplate := `{
+		"loggingLevel": "%s",
+		"useSSL": %s,
+		"mongoConnection": {
+		  "hosts": "%s"
+		},
+		"statisticsMongoConnection": {
+		  "hosts": "%s"
+		},
+		"statisticsCores": %d
+	  }`
+
+	o.Data["config"] = fmt.Sprintf(jsonTemplate, loggingLevel, useSSL, mongoConnectionString, mongoConnectionString, statisticsCores)
+	return nil
+}
+
+func (r *NVMeshMgmtReconciler) initiateServiceMcs(cr *nvmeshv1.NVMesh, o *v1.Service) error {
 	// TODO: we need to template the service and duplicate it as replica size times
 	return nil
 }
 
-func initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
+func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
 
 	if cr.Spec.Management.Version == "" {
 		return goerrors.New("Missing Management Version (NVMesh.Spec.Management.Version)")
@@ -127,11 +133,94 @@ func getMgmtImageFromVersion(version string) string {
 	return MgmtImageName + ":" + version
 }
 
-func shouldUpdateMgmtStatefulSet(cr *nvmeshv1.NVMesh, ss *appsv1.StatefulSet) bool {
+func (r *NVMeshMgmtReconciler) shouldUpdateStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
 
-	if getMgmtImageFromVersion(cr.Spec.Management.Version) != ss.Spec.Template.Spec.Containers[0].Image {
+	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
+	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
+	if expectedVersion != foundVersion {
+		fmt.Printf("found mgmt version missmatch - expected: %s found: %s\n", expectedVersion, foundVersion)
+		return true
+	}
+
+	expectedReplicas := *expected.Spec.Replicas
+	foundReplicas := *ss.Spec.Replicas
+	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
+		fmt.Printf("Management replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas)
 		return true
 	}
 
 	return false
+}
+
+func (r *NVMeshMgmtReconciler) shouldUpdateConfigMap(cr *nvmeshv1.NVMesh, expected *v1.ConfigMap, conf *v1.ConfigMap) bool {
+	expectedConfig := expected.Data["config"]
+	foundConfig := conf.Data["config"]
+	if expectedConfig != foundConfig {
+		fmt.Printf("found mgmt config missmatch - expected: %s\n found: %s\n", expectedConfig, foundConfig)
+		return true
+	}
+
+	expectedConfVersion := expected.Data["configVersion"]
+	foundConfVersion := conf.Data["configVersion"]
+	if expectedConfig != foundConfig {
+		fmt.Printf("found mgmt config version missmatch - expected: %s found: %s\n", expectedConfVersion, foundConfVersion)
+		return true
+	}
+	return false
+}
+
+func (r *NVMeshMgmtReconciler) updateConfAndRestartMgmt(cr *nvmeshv1.NVMesh, expected *v1.ConfigMap, conf *v1.ConfigMap) error {
+	log := r.Log.WithValues("method", "updateConfAndRestartMgmt")
+
+	log.Info("Updating ConfigMap\n")
+
+	err := r.Client.Update(context.TODO(), expected)
+	if err != nil {
+		log.Error(err, "Error while updating object")
+		return err
+	}
+
+	return r.restartManagement(cr.GetNamespace())
+}
+
+func (r *NVMeshMgmtReconciler) restartManagement(namespace string) error {
+	log := r.Log.WithValues("method", "restartManagement")
+
+	log.Info("restarting Managements\n")
+	var ss appsv1.StatefulSet
+
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: MgmtStatefulSetName, Namespace: namespace}, &ss)
+	if err != nil {
+		log.Error(err, "Error while getting object")
+		return err
+	}
+
+	var originalValue int32 = *ss.Spec.Replicas
+	var newValue int32 = 0
+	ss.Spec.Replicas = &newValue
+
+	err = r.Client.Update(context.TODO(), &ss)
+	if err != nil {
+		log.Error(err, "Error while updating object")
+		return err
+	}
+
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: MgmtStatefulSetName, Namespace: namespace}, &ss)
+	if err != nil {
+		log.Error(err, "Error while getting object")
+		return err
+	}
+
+	ss.Spec.Replicas = &originalValue
+	updateAttempts := 5
+	var updated bool = false
+	for updated == false && updateAttempts > 0 {
+		updateAttempts = updateAttempts - 1
+		err = r.Client.Update(context.TODO(), &ss)
+		if err == nil {
+			updated = true
+		}
+	}
+
+	return err
 }

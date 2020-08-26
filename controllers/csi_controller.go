@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
@@ -56,6 +57,10 @@ func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Objec
 	case *appsv1.Deployment:
 	case *v1.ServiceAccount:
 	case *v1.ConfigMap:
+		return initiateCSIConfigMap(cr, o)
+	case *rbac.ClusterRoleBinding:
+		addNamespaceToClusterRoleBinding(cr, o)
+		return nil
 	default:
 		//o is unknown for us
 		//log.Info(fmt.Sprintf("Object type %s not handled", o))
@@ -112,6 +117,12 @@ func initiateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, ss *appsv1.StatefulSe
 	// set replicas from CustomResource
 	ss.Spec.Replicas = &cr.Spec.CSI.ControllerReplicas
 
+	return nil
+}
+
+func initiateCSIConfigMap(cr *nvmeshv1.NVMesh, conf *v1.ConfigMap) error {
+	conf.Data["management.protocol"] = MgmtProtocol
+	conf.Data["management.servers"] = MgmtGuiServiceName + "." + cr.GetNamespace() + ".svc.cluster.local:4000"
 	return nil
 }
 

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: nvmesh-management
-          image: "excelero/nvmesh-management:2.0.3-4"
+          image: "docker.excelero.com/excelero/nvmesh-management:2.0.3-4"
           imagePullPolicy: IfNotPresent
           env:
             # This will inject the configuration from the ConfigMap into the container

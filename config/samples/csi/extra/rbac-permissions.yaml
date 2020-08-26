@@ -91,7 +91,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: nvmesh-csi
+    namespace: <template>
 roleRef:
   kind: ClusterRole
   name: external-provisioner-runner
@@ -105,7 +105,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: nvmesh-csi
+    namespace: <template>
 roleRef:
   kind: ClusterRole
   name: external-attacher-runner
@@ -119,7 +119,8 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: nvmesh-csi
+    namespace: <template>
+
 roleRef:
   kind: ClusterRole
   name: external-resizer-runner
@@ -131,7 +132,6 @@ roleRef:
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  namespace: nvmesh-csi
   name: external-provisioner-cfg
 rules:
 # Only one of the following rules for endpoints or leases is required based on
@@ -149,7 +149,6 @@ rules:
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  namespace: nvmesh-csi
   name: external-attacher-cfg
 rules:
 # access to configmaps is only supported for backwards compatibility reasons
@@ -167,7 +166,6 @@ rules:
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  namespace: nvmesh-csi
   name: external-resizer-cfg
 rules:
 - apiGroups: ["coordination.k8s.io"]
@@ -179,11 +177,11 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-provisioner-role-cfg
-  namespace: nvmesh-csi
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: nvmesh-csi
+    namespace: <template>
+
 roleRef:
   kind: Role
   name: external-provisioner-cfg
@@ -199,11 +197,9 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-attacher-role-cfg
-  namespace: nvmesh-csi
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: nvmesh-csi
 roleRef:
   kind: Role
   name: external-attacher-cfg
@@ -227,11 +223,9 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-resizer-role-cfg
-  namespace: nvmesh-csi
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: nvmesh-csi
 roleRef:
   kind: Role
   name: external-resizer-cfg

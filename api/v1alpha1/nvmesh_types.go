@@ -41,8 +41,8 @@ type NVMeshManagement struct {
 	//The number of replicas of the NVMesh Managemnet
 	Replicas int32 `json:"replicas,omitempty"`
 
-	// DeployMongo controls wether to deploy a MongoDB Operator for NVMesh Management
-	DeployMongo bool `json:"deployMongo,omitempty"`
+	//The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
+	MongoAddress string `json:"mongoAddress,omitempty"`
 }
 
 type NVMeshCSI struct {
