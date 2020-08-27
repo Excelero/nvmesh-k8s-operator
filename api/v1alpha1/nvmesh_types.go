@@ -29,6 +29,9 @@ type NVMeshCore struct {
 
 	//The version of NVMesh Core to be deployed. to perform an upgrade simply update this value to the required version.
 	Version string `json:"version"`
+
+	//The address of the image registry where the nvmesh core images are stored
+	ImageRegistry string `json:"imageRegistry"`
 }
 
 type NVMeshManagement struct {
@@ -37,6 +40,9 @@ type NVMeshManagement struct {
 
 	//The version of NVMesh Management to be deployed. to perform an upgrade simply update this value to the required version.
 	Version string `json:"version,omitempty"`
+
+	//The address of the image registry where the nvmesh management image is stored
+	ImageRegistry string `json:"imageRegistry"`
 
 	//The number of replicas of the NVMesh Managemnet
 	Replicas int32 `json:"replicas,omitempty"`

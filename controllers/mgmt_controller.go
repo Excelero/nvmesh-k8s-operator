@@ -4,6 +4,7 @@ import (
 	"context"
 	goerrors "errors"
 	"fmt"
+	"strings"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	"github.com/go-logr/logr"
@@ -18,7 +19,7 @@ const (
 	MgmtAssetsLocation    = "config/samples/management/"
 	MongoDBAssestLocation = "config/samples/mongodb"
 	MgmtStatefulSetName   = "nvmesh-management"
-	MgmtImageName         = "docker.excelero.com/excelero/nvmesh-management"
+	MgmtImageName         = "nvmesh-management"
 	MgmtGuiServiceName    = "nvmesh-management-gui"
 	MgmtProtocol          = "https"
 )
@@ -114,6 +115,7 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 
 func (r *NVMeshMgmtReconciler) initiateServiceMcs(cr *nvmeshv1.NVMesh, o *v1.Service) error {
 	// TODO: we need to template the service and duplicate it as replica size times
+	// Check the option of routing using <statefulset-instance>.<statefulset-name>.<ns>.svc.cluster.local:<port>
 	return nil
 }
 
@@ -123,14 +125,17 @@ func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *a
 		return goerrors.New("Missing Management Version (NVMesh.Spec.Management.Version)")
 	}
 
-	o.Spec.Template.Spec.Containers[0].Image = getMgmtImageFromVersion(cr.Spec.Management.Version)
-
-	//TODO: set still use configMap or set values directly into the daemonset ?
+	o.Spec.Template.Spec.Containers[0].Image = getMgmtImageFromResource(cr)
 	return nil
 }
 
-func getMgmtImageFromVersion(version string) string {
-	return MgmtImageName + ":" + version
+func getMgmtImageFromResource(cr *nvmeshv1.NVMesh) string {
+	imageRegistry := cr.Spec.Management.ImageRegistry
+	if imageRegistry != "" && !strings.HasSuffix(imageRegistry, "/") {
+		imageRegistry = imageRegistry + "/"
+	}
+
+	return imageRegistry + MgmtImageName + ":" + cr.Spec.Management.Version
 }
 
 func (r *NVMeshMgmtReconciler) shouldUpdateStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {

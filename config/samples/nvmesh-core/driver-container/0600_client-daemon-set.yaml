@@ -5,6 +5,8 @@ metadata:
   labels:
     k8s-app: nvmesh-client-driver-container
 spec:
+  # TODO: This is not good enough - if a machine is both target and client we will have 2 mcs and agents
+  # >> do we need another daemonset for 'converged'/ 'both' ?
   selector:
     matchLabels:
       name: nvmesh-driver-container

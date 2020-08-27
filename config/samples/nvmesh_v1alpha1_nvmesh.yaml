@@ -3,10 +3,17 @@ kind: NVMesh
 metadata:
   name: cluster1
 spec:
-  core: {}
-  management:
-    version: "2.0.3-4"
-    replicas: 3
+  core:
+    deploy: true
+    imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
+    version: b2
   csi:
-    version: "v1.1.0"
-    controllerReplicas: 3
+    controllerReplicas: 1
+    deploy: true
+    version: v1.1.0
+  management:
+    deploy: true
+    imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
+    mongoAddress: 'mongo-svc.nvmesh.svc.cluster.local:27017'
+    replicas: 1
+    version: 2.0.3-4

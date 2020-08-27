@@ -13,11 +13,8 @@ spec:
     spec:
       serviceAccount: nvmesh-csi-driver
       hostNetwork: true
-      tolerations:
-        # This would make the DaemonSet to be deployed also on the master node
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
-          operator: Exists
+      nodeSelector:
+        nvmesh.excelero.com/nvmesh-client: ''
       containers:
         # NVMesh Driver
         - name: nvmesh-csi-driver

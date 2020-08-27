@@ -16,8 +16,6 @@ const (
 	TargetDriverDaemonSetName  = "nvmesh-target-driver-container"
 	ClientDriverDaemonSetName  = "nvmesh-client-driver-container"
 	DriverContainerImageName   = "nvmesh-driver-container"
-	//TODO: expose ImageRegistry to user in custom resource
-	ImageRegistry = ""
 )
 
 type NVMeshCoreReconciler struct {
@@ -93,14 +91,15 @@ func (r *NVMeshCoreReconciler) initUserspaceDaemonSet(cr *nvmeshv1.NVMesh, ds *a
 		case "mcs":
 			fallthrough
 		case "agent":
-			imageName = "nvmesh-mcs"
+			imageName = "nvmesh-mcs:b2"
 		case "toma":
-			imageName = "nvmesh-toma"
+			imageName = "nvmesh-toma:b8"
 		case "tracer":
-			imageName = "nvmesh-tracer"
+			imageName = "nvmesh-tracer:b6"
 		}
 
-		ds.Spec.Template.Spec.Containers[i].Image = ImageRegistry + imageName + ":" + cr.Spec.Core.Version
+		// TODO: restore generic logic (and remove version tags from the switch above) when images in the testing registry are all in the same version
+		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + imageName // + ":" + cr.Spec.Core.Version
 	}
 
 	return nil
@@ -109,7 +108,7 @@ func (r *NVMeshCoreReconciler) initUserspaceDaemonSet(cr *nvmeshv1.NVMesh, ds *a
 func (r *NVMeshCoreReconciler) initDriverContainerDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
 	for _, c := range ds.Spec.Template.Spec.Containers {
 		if c.Name == "driver-container" {
-			c.Image = ImageRegistry + DriverContainerImageName + ":" + cr.Spec.Core.Version
+			c.Image = cr.Spec.Core.ImageRegistry + DriverContainerImageName + ":" + cr.Spec.Core.Version
 		}
 	}
 
