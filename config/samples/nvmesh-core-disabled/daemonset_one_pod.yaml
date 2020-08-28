@@ -18,24 +18,34 @@ spec:
       containers:
         - name: mcs
           image: nvmesh-mcs
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh mcs"]
+          env:
+          - name: NVMESH_CONF
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: nvmesh.conf
           securityContext:
             privileged: true
           volumeMounts:
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
-            - name: etc-opt-nvmesh
-              mountPath: /etc/opt/NVMesh/
         - name: agent
           image: nvmesh-mcs
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh agent"]
-          securityContext:
-            privileged: true
+          env:
+          - name: NVMESH_CONF
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: nvmesh.conf
           volumeMounts:
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
-            - name: etc-opt-nvmesh
-              mountPath: /etc/opt/NVMesh/
+          securityContext:
+            privileged: true
         - name: toma
           image: nvmesh-toma
           command: ["/bin/bash", "-c", "/init.sh"]
@@ -62,6 +72,8 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
             - name: tracer-logs
               mountPath: /var/log/NVMesh/
       volumes:
@@ -89,3 +101,6 @@ spec:
         - name: tracer-logs
           hostPath:
             path: /var/log/NVMesh/
+        - name: nvmesh-conf
+          configMap:
+            name: nvmesh-core-config

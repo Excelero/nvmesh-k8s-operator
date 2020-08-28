@@ -1,0 +1,73 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: nvmesh-toma
+spec:
+  selector:
+    matchLabels:
+      app: nvmesh-toma
+  template:
+    metadata:
+      name: nvmesh-toma
+      labels:
+        app: nvmesh-toma
+    spec:
+      serviceAccount: kmod-manager
+      hostPID: true
+      hostNetwork: true
+      containers:
+        - name: toma
+          image: nvmesh-toma
+          command: ["/bin/bash", "-c", "/init.sh"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
+            - name: etc-opt-nvmesh
+              mountPath: /etc/opt/NVMesh/
+            - name: etc-libibverbs
+              mountPath: /etc/libibverbs.d/
+            - name: lib-libibverbs
+              mountPath: /usr/lib64/libibverbs/
+            - name: libibverbs-mlx5
+              mountPath: /usr/lib64/libmlx5.so.1.11.26.0
+            - name: sys
+              mountPath: /sys/
+            - name: dev
+              mountPath: /dev/
+        - name: tracer
+          image: nvmesh-tracer
+          command: ["/bin/bash", "-c", "/init.sh"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
+            - name: tracer-logs
+              mountPath: /var/log/NVMesh/
+      volumes:
+        - name: var-run-nvmesh
+          hostPath:
+            path: /var/run/NVMesh/
+        - name: etc-opt-nvmesh
+          hostPath:
+            path: /etc/opt/NVMesh/
+        - name: etc-libibverbs
+          hostPath:
+            path: /etc/libibverbs.d/
+        - name: lib-libibverbs
+          hostPath:
+            path: /usr/lib64/libibverbs/
+        - name: libibverbs-mlx5
+          hostPath:
+            path: /usr/lib64/libmlx5.so.1.11.26.0
+        - name: sys
+          hostPath:
+            path: /sys/
+        - name: dev
+          hostPath:
+            path: /dev/
+        - name: tracer-logs
+          hostPath:
+            path: /var/log/NVMesh/

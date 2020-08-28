@@ -4,6 +4,7 @@ import (
 	"context"
 	goerrors "errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
@@ -93,7 +94,8 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 	o.Data["configVersion"] = cr.Spec.Management.Version
 
 	loggingLevel := "DEBUG"
-	useSSL := "true"
+	useSSL := strconv.FormatBool(cr.Spec.Management.UseSSL)
+
 	mongoConnectionString := cr.Spec.Management.MongoAddress
 	statisticsCores := 5
 

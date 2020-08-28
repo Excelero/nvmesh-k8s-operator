@@ -49,6 +49,9 @@ type NVMeshManagement struct {
 
 	//The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
 	MongoAddress string `json:"mongoAddress,omitempty"`
+
+	// Wether the management should a secure TLS/SSL connection on websocket and HTTP connections
+	UseSSL bool `json:"useSSL,omitempty"`
 }
 
 type NVMeshCSI struct {

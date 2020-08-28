@@ -90,6 +90,10 @@ spec:
                   description: The number of replicas of the NVMesh Managemnet
                   format: int32
                   type: integer
+                useSSL:
+                  description: Wether the management should a secure TLS/SSL connection
+                    on websocket and HTTP connections
+                  type: boolean
                 version:
                   description: The version of NVMesh Management to be deployed. to
                     perform an upgrade simply update this value to the required version.

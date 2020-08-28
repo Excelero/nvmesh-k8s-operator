@@ -1,0 +1,11 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nvmesh-core-config
+data:
+  nvmesh.conf: |-
+    MANAGEMENT_PROTOCOL="https"
+    MANAGEMENT_SERVERS="nvmesh-management-svc-0.default.svc.cluster.local:4001"
+    MCS_LOG_TO_STDOUT="True"
+    MCS_LOGGING_LEVEL="DEBUG"
+    AGENT_LOGGING_LEVEL="DEBUG"

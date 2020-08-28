@@ -1,0 +1,52 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: nvmesh-mcs-agent
+spec:
+  selector:
+    matchLabels:
+      app: nvmesh-mcs-agent
+  template:
+    metadata:
+      name: nvmesh-mcs-agent
+      labels:
+        app: nvmesh-mcs-agent
+    spec:
+      serviceAccount: kmod-manager
+      containers:
+        - name: mcs
+          image: nvmesh-mcs
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c", "/init.sh mcs"]
+          env:
+          - name: NVMESH_CONF
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: nvmesh.conf
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
+          securityContext:
+            privileged: true
+        - name: agent
+          image: nvmesh-mcs
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c", "/init.sh agent"]
+          env:
+          - name: NVMESH_CONF
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: nvmesh.conf
+      volumes:
+        - name: var-run-nvmesh
+          hostPath:
+            path: /var/run/NVMesh/
+        - name: etc-opt-nvmesh
+          hostPath:
+            path: /etc/opt/NVMesh/
