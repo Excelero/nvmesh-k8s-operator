@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -22,9 +22,9 @@ func TestCsiReconciler(t *testing.T) {
 	RegisterFailHandler(Fail)
 	defer GinkgoRecover()
 
-	cr := &nvmeshv1alpha1.NVMesh{
-		Spec: nvmeshv1alpha1.NVMeshSpec{
-			CSI: nvmeshv1alpha1.NVMeshCSI{
+	cr := &nvmeshv1.NVMesh{
+		Spec: nvmeshv1.NVMeshSpec{
+			CSI: nvmeshv1.NVMeshCSI{
 				Version: "v1.1.0",
 			},
 		},
@@ -89,9 +89,9 @@ func TestCsiReconcileGenericObject(t *testing.T) {
 	RegisterFailHandler(Fail)
 	defer GinkgoRecover()
 
-	cr := &nvmeshv1alpha1.NVMesh{
-		Spec: nvmeshv1alpha1.NVMeshSpec{
-			CSI: nvmeshv1alpha1.NVMeshCSI{
+	cr := &nvmeshv1.NVMesh{
+		Spec: nvmeshv1.NVMeshSpec{
+			CSI: nvmeshv1.NVMeshCSI{
 				Version: "csi-test",
 			},
 		},

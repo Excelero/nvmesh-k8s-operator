@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
-	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 )
 
 var GloballyNamedKinds = []string{
@@ -45,9 +45,9 @@ type NVMeshReconciler struct {
 	Scheme *runtime.Scheme
 }
 type NVMeshComponent interface {
-	InitObject(*nvmeshv1alpha1.NVMesh, *runtime.Object) error
-	ShouldUpdateObject(cr *nvmeshv1alpha1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
-	Reconcile(*nvmeshv1alpha1.NVMesh, *NVMeshReconciler) error
+	InitObject(*nvmeshv1.NVMesh, *runtime.Object) error
+	ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
+	Reconcile(*nvmeshv1.NVMesh, *NVMeshReconciler) error
 }
 
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes,verbs=get;list;watch;create;update;patch;delete
@@ -59,7 +59,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("nvmesh", req.NamespacedName)
 
 	// Fetch the NVMesh instance
-	cr := &nvmeshv1alpha1.NVMesh{}
+	cr := &nvmeshv1.NVMesh{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, cr)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -96,7 +96,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&nvmeshv1alpha1.NVMesh{}).
+		For(&nvmeshv1.NVMesh{}).
 		Complete(r)
 }
 

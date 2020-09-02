@@ -1,4 +1,4 @@
-apiVersion: nvmesh.excelero.com/v1alpha1
+apiVersion: nvmesh.excelero.com/v1
 kind: NVMesh
 metadata:
   name: cluster1

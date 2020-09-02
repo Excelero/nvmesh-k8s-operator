@@ -27,7 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 
 	"excelero.com/nvmesh-k8s-operator/controllers"
 	// +kubebuilder:scaffold:imports
@@ -41,7 +41,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(nvmeshv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(nvmeshv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

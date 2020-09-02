@@ -1,4 +1,4 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
-- nvmesh_v1alpha1_nvmesh.yaml
+- nvmesh_v1_nvmesh.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

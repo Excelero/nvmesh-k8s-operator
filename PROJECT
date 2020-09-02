@@ -5,7 +5,7 @@ repo: git@gitlab.excelero.com:gilv/k8s-operator.git
 resources:
 - group: nvmesh
   kind: NVMesh
-  version: v1alpha1
+  version: v1
 version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}

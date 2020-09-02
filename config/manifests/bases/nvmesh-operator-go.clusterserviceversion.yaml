@@ -1,4 +1,4 @@
-apiVersion: operators.coreos.com/v1alpha1
+apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
@@ -16,7 +16,7 @@ spec:
       displayName: NVMesh
       kind: NVMesh
       name: nvmeshes.nvmesh.excelero.com
-      version: v1alpha1
+      version: v1
   description: Excelero NVMesh Kubernetes Operator
   displayName: NVMesh Operator
   icon:

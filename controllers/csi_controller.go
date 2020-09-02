@@ -10,7 +10,7 @@ import (
 	rbac "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 

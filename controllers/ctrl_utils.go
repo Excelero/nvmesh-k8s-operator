@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
-	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -137,15 +136,15 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 	return nil
 }
 
-func (r *NVMeshReconciler) CreateObjectsFromDir(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent, dir string) error {
+func (r *NVMeshReconciler) CreateObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string) error {
 	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, false)
 }
 
-func (r *NVMeshReconciler) RemoveObjectsFromDir(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent, dir string) error {
+func (r *NVMeshReconciler) RemoveObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string) error {
 	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, true)
 }
 
-func (r *NVMeshReconciler) ReconcileYamlObjectsFromDir(cr *nvmeshv1alpha1.NVMesh, comp NVMeshComponent, dir string, removeObjects bool) error {
+func (r *NVMeshReconciler) ReconcileYamlObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, removeObjects bool) error {
 	files, err := ListFilesInSubDirs(dir)
 	if err != nil {
 		return err
