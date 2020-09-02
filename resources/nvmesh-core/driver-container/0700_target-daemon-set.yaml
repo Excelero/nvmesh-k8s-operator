@@ -19,7 +19,8 @@ spec:
         nvmesh.excelero.com/nvmesh-target: ""
       containers:
         - name: driver-container
-          image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:b2
+          image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:dev
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh --type target --insert --remove-on-terminate --wait"]
           securityContext:
             privileged: true

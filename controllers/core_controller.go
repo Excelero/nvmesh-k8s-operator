@@ -101,7 +101,7 @@ func (r *NVMeshCoreReconciler) initUserspaceDaemonSets(cr *nvmeshv1.NVMesh, ds *
 		case "tracer":
 			imageName = "nvmesh-tracer:b6"
 		case "driver-container":
-			imageName = "nvmesh-driver-container:b2"
+			imageName = "nvmesh-driver-container:dev"
 		}
 
 		// TODO: restore generic logic (and remove version tags from the switch above) when images in the testing registry are all in the same version

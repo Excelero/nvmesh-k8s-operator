@@ -5,8 +5,6 @@ metadata:
   labels:
     k8s-app: nvmesh-client-driver-container
 spec:
-  # TODO: This is not good enough - if a machine is both target and client we will have 2 mcs and agents
-  # >> do we need another daemonset for 'converged'/ 'both' ?
   selector:
     matchLabels:
       name: nvmesh-driver-container
@@ -21,7 +19,8 @@ spec:
         nvmesh.excelero.com/nvmesh-client: ""
       containers:
         - name: driver-container
-          image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:b2
+          image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:dev
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh --type client --insert --remove-on-terminate --wait"]
           securityContext:
             privileged: true
