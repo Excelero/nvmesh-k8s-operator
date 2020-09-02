@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	MgmtAssetsLocation    = "config/samples/management/"
-	MongoDBAssestLocation = "config/samples/mongodb"
+	MgmtAssetsLocation    = "resources/management/"
+	MongoDBAssestLocation = "resources/mongodb"
 	MgmtStatefulSetName   = "nvmesh-management"
 	MgmtImageName         = "nvmesh-management"
 	MgmtGuiServiceName    = "nvmesh-management-gui"

@@ -12,6 +12,8 @@ spec:
       labels:
         app: nvmesh-toma
     spec:
+      nodeSelector:
+        nvmesh.excelero.com/nvmesh-target: ""
       serviceAccount: kmod-manager
       hostPID: true
       hostNetwork: true

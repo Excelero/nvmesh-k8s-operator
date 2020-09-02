@@ -12,7 +12,25 @@ spec:
       labels:
         app: nvmesh-mcs-agent
     spec:
+      # TODO: decide how to implement running on each client OR target
+      # nodeSelector might not be enough here (Does it has an OR option ?)
+      #nodeSelector:
+      #  nvmesh.excelero.com/nvmesh-target: ""
+
+      # Un-tested example of affinity
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #           - key: nvmesh.excelero.com/nvmesh-target: ""
+      #             operator: Exists
       serviceAccount: kmod-manager
+
+      # hostNetwork: true allows the pod to have the hostname of the node where the pod is run
+      hostNetwork: true
+      # dnsPolicy: ClusterFirstWithHostNet allows the pod to have cluster DNS to be able to resolve service dns names. this is needed only when hostNetwork is true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: mcs
           image: nvmesh-mcs
@@ -24,10 +42,6 @@ spec:
               configMapKeyRef:
                 name: nvmesh-core-config
                 key: nvmesh.conf
-          - name: HOSTNAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
           volumeMounts:
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
@@ -43,6 +57,11 @@ spec:
               configMapKeyRef:
                 name: nvmesh-core-config
                 key: nvmesh.conf
+          volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
+            - name: dev
+              mountPath: /dev/
       volumes:
         - name: var-run-nvmesh
           hostPath:
@@ -50,3 +69,6 @@ spec:
         - name: etc-opt-nvmesh
           hostPath:
             path: /etc/opt/NVMesh/
+        - name: dev
+          hostPath:
+            path: /dev/

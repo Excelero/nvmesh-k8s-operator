@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	CSIAssetsLocation  = "config/samples/csi/"
+	CSIAssetsLocation  = "resources/csi/"
 	CSIDaemonSetName   = "nvmesh-csi-node-driver"
 	CSIStatefulSetName = "nvmesh-csi-controller"
 	CSIDriverImageName = "excelero/nvmesh-csi-driver"

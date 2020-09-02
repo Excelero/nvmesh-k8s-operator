@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	NVMeshCoreAssestLocation   = "config/samples/nvmesh-core"
+	NVMeshCoreAssestLocation   = "resources/nvmesh-core"
 	CoreUserspaceDaemonSetName = "nvmesh-core-user-space"
 	TargetDriverDaemonSetName  = "nvmesh-target-driver-container"
 	ClientDriverDaemonSetName  = "nvmesh-client-driver-container"
@@ -82,15 +82,12 @@ func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expect
 }
 
 func (r *NVMeshCoreReconciler) initUserspaceDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
-	fmt.Println("in initUserspaceDaemonSets")
 	var imageName string
 	for i, c := range ds.Spec.Template.Spec.Containers {
 		switch c.Name {
 		case "mcs":
 			fallthrough
 		case "agent":
-			fmt.Println("in case agent")
-
 			imageName = "nvmesh-mcs:dev"
 		case "toma":
 			imageName = "nvmesh-toma:b8"
@@ -99,11 +96,9 @@ func (r *NVMeshCoreReconciler) initUserspaceDaemonSets(cr *nvmeshv1.NVMesh, ds *
 		case "driver-container":
 			imageName = "nvmesh-driver-container:b2"
 		}
-		fmt.Println("out of switch")
 
 		// TODO: restore generic logic (and remove version tags from the switch above) when images in the testing registry are all in the same version
 		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + imageName // + ":" + cr.Spec.Core.Version
-		fmt.Printf("image: %s\n", ds.Spec.Template.Spec.Containers[i].Image)
 	}
 
 	return nil

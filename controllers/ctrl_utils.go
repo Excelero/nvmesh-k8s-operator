@@ -9,7 +9,6 @@ import (
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
 	nvmeshv1alpha1 "excelero.com/nvmesh-k8s-operator/api/v1alpha1"
-	"excelero.com/nvmesh-k8s-operator/importutil"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,9 +109,9 @@ func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespac
 func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent, removeObject bool) error {
 	log := r.Log.WithValues("method", "reconcileYamlObjectsFromFile", "filename", filename)
 
-	objects, err := importutil.YamlFileToObjects(filename)
+	objects, err := YamlFileToObjects(filename)
 	if err != nil {
-		if _, ok := err.(*importutil.YamlFileParseError); ok {
+		if _, ok := err.(*YamlFileParseError); ok {
 			// this is ok
 			msg := fmt.Sprintf("Some Documents in the file failed to parse %+v", err)
 			fmt.Print(msg)
