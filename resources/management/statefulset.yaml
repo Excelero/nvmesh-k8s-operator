@@ -6,7 +6,7 @@ metadata:
     app: nvmesh-management
 spec:
   replicas: 1
-  serviceName: nvmesh-management-svc-0
+  serviceName: nvmesh-management-ws
   selector:
     matchLabels:
       app: nvmesh-management

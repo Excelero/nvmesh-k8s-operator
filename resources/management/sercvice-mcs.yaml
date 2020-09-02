@@ -1,14 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nvmesh-management-svc-0
+  name: nvmesh-management-ws
   labels:
     app: nvmesh-management
 spec:
-  type: ClusterIP
+  clusterIP: None
   selector:
     app: nvmesh-management
-    statefulset.kubernetes.io/pod-name: nvmesh-management-0
   ports:
   - name: ws
     protocol: TCP

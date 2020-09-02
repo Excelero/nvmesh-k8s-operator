@@ -51,11 +51,6 @@ func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 		case "nvmesh-management":
 			return r.initiateMgmtStatefulSet(cr, o)
 		}
-	case *v1.Service:
-		switch name {
-		case "nvmesh-management-svc-0":
-			return r.initiateServiceMcs(cr, o)
-		}
 	case *v1.ConfigMap:
 		return r.initiateConfigMap(cr, o)
 	default:
@@ -115,12 +110,6 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 	return nil
 }
 
-func (r *NVMeshMgmtReconciler) initiateServiceMcs(cr *nvmeshv1.NVMesh, o *v1.Service) error {
-	// TODO: we need to template the service and duplicate it as replica size times
-	// Check the option of routing using <statefulset-instance>.<statefulset-name>.<ns>.svc.cluster.local:<port>
-	return nil
-}
-
 func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
 
 	if cr.Spec.Management.Version == "" {
@@ -128,6 +117,8 @@ func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *a
 	}
 
 	o.Spec.Template.Spec.Containers[0].Image = getMgmtImageFromResource(cr)
+	o.Spec.Replicas = &cr.Spec.Management.Replicas
+
 	return nil
 }
 

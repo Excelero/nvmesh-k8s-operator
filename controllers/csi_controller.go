@@ -103,7 +103,6 @@ func initiateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) e
 
 	ds.Spec.Template.Spec.Containers[0].Image = getCSIImageFromVersion(cr.Spec.CSI.Version)
 
-	//TODO: set still use configMap or set values directly into the daemonset ?
 	return nil
 }
 

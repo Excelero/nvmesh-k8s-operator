@@ -5,9 +5,9 @@ metadata:
 data:
   nvmesh.conf: |-
     MANAGEMENT_PROTOCOL="https"
-    MANAGEMENT_SERVERS="nvmesh-management-svc-0.default.svc.cluster.local:4001"
+    MANAGEMENT_SERVERS="nvmesh-management-0.nvmesh-management-ws.default.svc.cluster.local:4001"
     MCS_LOG_TO_STDOUT="True"
     MCS_LOGGING_LEVEL="VERBOSE"
-    MCS_LOGGING_VERBOSE_TYPES="MGMT<>*"
+    MCS_LOGGING_VERBOSE_TYPES="MGMT>*,*>MGMT"
     AGENT_LOGGING_LEVEL="DEBUG"
     AGENT_LOG_TO_STDOUT="True"
