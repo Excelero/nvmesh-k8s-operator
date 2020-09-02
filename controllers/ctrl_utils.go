@@ -192,7 +192,14 @@ func ListFilesInSubDirs(root string) ([]string, error) {
 
 func addNamespaceToClusterRoleBinding(cr *nvmeshv1.NVMesh, crb *rbac.ClusterRoleBinding) {
 	ns := cr.GetNamespace()
-	for _, sub := range crb.Subjects {
-		sub.Namespace = ns
+	for i, _ := range crb.Subjects {
+		crb.Subjects[i].Namespace = ns
+	}
+}
+
+func addNamespaceToRoleBinding(cr *nvmeshv1.NVMesh, rb *rbac.RoleBinding) {
+	ns := cr.GetNamespace()
+	for i, _ := range rb.Subjects {
+		rb.Subjects[i].Namespace = ns
 	}
 }

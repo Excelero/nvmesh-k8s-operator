@@ -58,6 +58,9 @@ func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Objec
 	case *v1.ServiceAccount:
 	case *v1.ConfigMap:
 		return initiateCSIConfigMap(cr, o)
+	case *rbac.RoleBinding:
+		addNamespaceToRoleBinding(cr, o)
+		return nil
 	case *rbac.ClusterRoleBinding:
 		addNamespaceToClusterRoleBinding(cr, o)
 		return nil

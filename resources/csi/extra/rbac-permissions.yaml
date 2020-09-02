@@ -91,7 +91,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: <template>
+    namespace: to-be-updated-by-operator
 roleRef:
   kind: ClusterRole
   name: external-provisioner-runner
@@ -105,7 +105,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: <template>
+    namespace: to-be-updated-by-operator
 roleRef:
   kind: ClusterRole
   name: external-attacher-runner
@@ -119,8 +119,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: <template>
-
+    namespace: to-be-updated-by-operator
 roleRef:
   kind: ClusterRole
   name: external-resizer-runner
@@ -180,8 +179,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
-    namespace: <template>
-
+    namespace: to-be-updated-by-operator
 roleRef:
   kind: Role
   name: external-provisioner-cfg
@@ -200,6 +198,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
+    namespace: to-be-updated-by-operator
 roleRef:
   kind: Role
   name: external-attacher-cfg
@@ -226,6 +225,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: nvmesh-csi-driver
+    namespace: to-be-updated-by-operator
 roleRef:
   kind: Role
   name: external-resizer-cfg

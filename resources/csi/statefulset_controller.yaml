@@ -6,17 +6,17 @@ spec:
   serviceName: nvmesh-csi-driver
   selector:
     matchLabels:
-      app: nvmesh-csi
+      app: nvmesh-csi-controller
   replicas: 1
   template:
     metadata:
       labels:
-        app: nvmesh-csi
+        app: nvmesh-csi-controller
     spec:
       serviceAccount: nvmesh-csi-driver
       containers:
         # NVMesh Driver
-        - name: nvmesh-csi-driver
+        - name: nvmesh-csi-controller
           # if we use image tag :latest kubernetes will try to fetch from Docker Hub (hub.docker.com)
           image: "placeholder"
           imagePullPolicy: IfNotPresent
