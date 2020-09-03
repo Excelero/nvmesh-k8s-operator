@@ -75,7 +75,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	csi := NVMeshCSIReconciler(*r)
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
-	components := []NVMeshComponent{&csi, &mgmt, &core}
+	components := []NVMeshComponent{&mgmt, &core, &csi}
 	var errorList []error
 	for _, component := range components {
 		err = component.Reconcile(cr, r)

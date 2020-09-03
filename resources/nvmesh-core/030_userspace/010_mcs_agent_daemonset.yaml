@@ -45,6 +45,12 @@ spec:
           volumeMounts:
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
+            - name: var-bin-nvmesh
+              mountPath: /var/bin/nvmesh
+            - name: opt-nvmesh
+              mountPath: /host/opt/NVMesh
+            - name: etc-opt-nvmesh
+              mountPath: /etc/opt/NVMesh
           securityContext:
             privileged: true
         - name: agent
@@ -66,9 +72,15 @@ spec:
         - name: var-run-nvmesh
           hostPath:
             path: /var/run/NVMesh/
+        - name: var-bin-nvmesh
+          hostPath:
+            path: /var/bin/nvmesh
         - name: etc-opt-nvmesh
           hostPath:
             path: /etc/opt/NVMesh/
         - name: dev
           hostPath:
             path: /dev/
+        - name: opt-nvmesh
+          hostPath:
+            path: /opt/NVMesh
