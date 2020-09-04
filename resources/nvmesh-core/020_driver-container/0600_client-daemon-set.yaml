@@ -31,7 +31,10 @@ spec:
               mountPath: /host/lib/modules
             - name: var
               mountPath: /host/var/
-          terminationGracePeriodSeconds: 60
+            - name: opt-nvmesh
+              mountPath: /opt/NVMesh/
+          # terminationGracePeriodSeconds - one hour
+          terminationGracePeriodSeconds: 3600
       volumes:
         - name: device-dir
           hostPath:
@@ -42,3 +45,6 @@ spec:
         - name: var
           hostPath:
             path: /var
+        - name: opt-nvmesh
+          hostPath:
+            path: /opt/NVMesh

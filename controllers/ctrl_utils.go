@@ -11,6 +11,7 @@ import (
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -105,10 +106,16 @@ func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespac
 	return &foundObject, err
 }
 
+func (r *NVMeshReconciler) getDecoder() runtime.Decoder {
+	var Codecs = serializer.NewCodecFactory(r.Scheme)
+	return Codecs.UniversalDeserializer()
+}
+
 func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent, removeObject bool) error {
 	log := r.Log.WithValues("method", "reconcileYamlObjectsFromFile", "filename", filename)
 
-	objects, err := YamlFileToObjects(filename)
+	decoder := r.getDecoder()
+	objects, err := YamlFileToObjects(filename, decoder)
 	if err != nil {
 		if _, ok := err.(*YamlFileParseError); ok {
 			// this is ok

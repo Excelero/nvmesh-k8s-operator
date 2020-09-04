@@ -46,18 +46,18 @@ func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Objec
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-csi-controller":
-			err := initiateCSIControllerStatefulSet(cr, o)
+			err := initCSIControllerStatefulSet(cr, o)
 			return err
 		}
 	case *appsv1.DaemonSet:
 		switch name {
 		case "nvmesh-csi-node-driver":
-			return initiateCSINodeDriverDaemonSet(cr, o)
+			return initCSINodeDriverDaemonSet(cr, o)
 		}
 	case *appsv1.Deployment:
 	case *v1.ServiceAccount:
 	case *v1.ConfigMap:
-		return initiateCSIConfigMap(cr, o)
+		return initCSIConfigMap(cr, o)
 	case *rbac.RoleBinding:
 		addNamespaceToRoleBinding(cr, o)
 		return nil
@@ -99,22 +99,22 @@ func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runti
 	return false
 }
 
-func initiateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
+func initCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
 	if cr.Spec.CSI.Version == "" {
 		return goerrors.New("Missing NVMesh CSI Driver Version (NVMesh.Spec.CSI.Version)")
 	}
 
-	ds.Spec.Template.Spec.Containers[0].Image = getCSIImageFromVersion(cr.Spec.CSI.Version)
+	ds.Spec.Template.Spec.Containers[0].Image = getCSIFullImageName(cr)
 
 	return nil
 }
 
-func initiateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, ss *appsv1.StatefulSet) error {
+func initCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, ss *appsv1.StatefulSet) error {
 	if cr.Spec.CSI.Version == "" {
 		return goerrors.New("Missing NVMesh CSI Driver Version (NVMesh.Spec.CSI.Version)")
 	}
 
-	ss.Spec.Template.Spec.Containers[0].Image = getCSIImageFromVersion(cr.Spec.CSI.Version)
+	ss.Spec.Template.Spec.Containers[0].Image = getCSIFullImageName(cr)
 
 	// set replicas from CustomResource
 	ss.Spec.Replicas = &cr.Spec.CSI.ControllerReplicas
@@ -122,19 +122,26 @@ func initiateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, ss *appsv1.StatefulSe
 	return nil
 }
 
-func initiateCSIConfigMap(cr *nvmeshv1.NVMesh, conf *v1.ConfigMap) error {
+func initCSIConfigMap(cr *nvmeshv1.NVMesh, conf *v1.ConfigMap) error {
 	conf.Data["management.protocol"] = MgmtProtocol
 	conf.Data["management.servers"] = MgmtGuiServiceName + "." + cr.GetNamespace() + ".svc.cluster.local:4000"
 	return nil
 }
 
-func getCSIImageFromVersion(version string) string {
-	return CSIDriverImageName + ":" + version
+func getCSIFullImageName(cr *nvmeshv1.NVMesh) string {
+	imageName := CSIDriverImageName
+	if cr.Spec.CSI.ImageName != "" {
+		imageName = cr.Spec.CSI.ImageName
+	}
+
+	version := cr.Spec.CSI.Version
+
+	return imageName + ":" + version
 }
 
 func shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) bool {
-	if getCSIImageFromVersion(cr.Spec.CSI.Version) != ds.Spec.Template.Spec.Containers[0].Image {
-		fmt.Printf("CSI Node Driver Image needs to be updated expected: %s found: %s\n", getCSIImageFromVersion(cr.Spec.CSI.Version), ds.Spec.Template.Spec.Containers[0].Image)
+	if getCSIFullImageName(cr) != ds.Spec.Template.Spec.Containers[0].Image {
+		fmt.Printf("CSI Node Driver Image needs to be updated expected: %s found: %s\n", getCSIFullImageName(cr), ds.Spec.Template.Spec.Containers[0].Image)
 		return true
 	}
 
@@ -148,7 +155,7 @@ func shouldUpdateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.
 	}
 
 	if expected.Spec.Template.Spec.Containers[0].Image != ss.Spec.Template.Spec.Containers[0].Image {
-		fmt.Printf("CSI controller Image needs to be updated expected: %s found: %s\n", getCSIImageFromVersion(cr.Spec.CSI.Version), ss.Spec.Template.Spec.Containers[0].Image)
+		fmt.Printf("CSI controller Image needs to be updated expected: %s found: %s\n", getCSIFullImageName(cr), ss.Spec.Template.Spec.Containers[0].Image)
 		return true
 	}
 

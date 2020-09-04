@@ -63,6 +63,9 @@ type NVMeshCSI struct {
 
 	//Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
 	Version string `json:"version,omitempty"`
+
+	//ImageName - Optional, if given will override the default repositroy/image-name
+	ImageName string `json:"imageName,omitempty"`
 }
 
 // NVMeshSpec defines the desired state of NVMesh

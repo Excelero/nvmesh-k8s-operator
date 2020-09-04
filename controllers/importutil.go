@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/kubectl/pkg/scheme"
 )
 
 type YamlDocumentParseError struct {
@@ -28,7 +27,7 @@ type YamlFileParseError struct {
 
 func (e *YamlFileParseError) Error() string { return e.Message }
 
-func YamlFileToObjects(filename string) ([]runtime.Object, error) {
+func YamlFileToObjects(filename string, decoder runtime.Decoder) ([]runtime.Object, error) {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		workdir, _ := os.Getwd()
@@ -37,17 +36,17 @@ func YamlFileToObjects(filename string) ([]runtime.Object, error) {
 	}
 
 	yamlString := string(bytes)
-	return YamlStringToObjects(yamlString)
+	return YamlStringToObjects(yamlString, decoder)
 }
 
-func YamlStringToObjects(yamlString string) ([]runtime.Object, error) {
+func YamlStringToObjects(yamlString string, decoder runtime.Decoder) ([]runtime.Object, error) {
 	yamlDocs := strings.Split(yamlString, "\n---\n")
 
 	var objs []runtime.Object
 	var failedDocs []YamlDocumentParseError
 
 	for i, doc := range yamlDocs {
-		obj, err := SingleYamlDocStringToObject(doc)
+		obj, err := SingleYamlDocStringToObject(doc, decoder)
 		if err != nil {
 			newError := YamlDocumentParseError{Message: "Failed to parse yaml document", YamlContent: doc, DocumentIndexInFile: i, Err: err}
 			failedDocs = append(failedDocs, newError)
@@ -64,9 +63,8 @@ func YamlStringToObjects(yamlString string) ([]runtime.Object, error) {
 	return objs, nil
 }
 
-func SingleYamlDocStringToObject(yaml string) (runtime.Object, error) {
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-	obj, _, err := decode([]byte(yaml), nil, nil)
+func SingleYamlDocStringToObject(yaml string, decoder runtime.Decoder) (runtime.Object, error) {
+	obj, _, err := decoder.Decode([]byte(yaml), nil, nil)
 
 	if err != nil {
 		err = errors.Wrap(err, "Error while decoding YAML object")

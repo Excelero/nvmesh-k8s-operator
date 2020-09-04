@@ -1,0 +1,26 @@
+TODO: Add SCC to Scheme
+
+securityv1 "github.com/openshift/api/security/v1"
+//[...]
+//Add OpenShift security to scheme
+	if err := securityv1.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+
+
+
+
+TODO: Add watches for child objects (Statefulsets, daemonsets , etc.. )
+//[...]
+func add(mgr manager.Manager, r reconcile.Reconciler) error {
+//[...]
+err = c.Watch(&source.Kind{Type: &securityv1.SecurityContextConstraints{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &sccv1alpha1.SccOp{},
+	})
+	if err != nil {
+		return err
+	}
+//[...]

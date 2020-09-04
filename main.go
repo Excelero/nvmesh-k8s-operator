@@ -20,12 +20,15 @@ import (
 	"flag"
 	"os"
 
+	"github.com/prometheus/common/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	securityv1 "github.com/openshift/api/security/v1"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 
@@ -45,6 +48,18 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+func addToScheme(scheme *runtime.Scheme) {
+	// This function adds custom objects to the scheme
+	// this scheme will be used by the api client (watch / get /delete etc. ) and by the yaml decoder
+
+	//Add OpenShift security to scheme
+	// This is to allow us to handle OpenShift SecurityContextConstraints objects
+	if err := securityv1.AddToScheme(scheme); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+}
+
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -55,6 +70,8 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+
+	addToScheme(scheme)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,

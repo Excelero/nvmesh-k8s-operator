@@ -31,7 +31,7 @@ spec:
               mountPath: /host/lib/modules
             - name: var
               mountPath: /host/var/
-          terminationGracePeriodSeconds: 60
+          terminationGracePeriodSeconds: 3600
       volumes:
         - name: device-dir
           hostPath:
