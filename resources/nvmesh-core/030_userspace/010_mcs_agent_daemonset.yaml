@@ -34,7 +34,7 @@ spec:
       containers:
         - name: mcs
           image: nvmesh-mcs
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c", "/init.sh mcs"]
           env:
           - name: NVMESH_CONF
@@ -55,7 +55,7 @@ spec:
             privileged: true
         - name: agent
           image: nvmesh-mcs
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c", "/init.sh agent"]
           env:
           - name: NVMESH_CONF

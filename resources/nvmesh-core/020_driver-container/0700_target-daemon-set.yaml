@@ -17,10 +17,12 @@ spec:
     spec:
       nodeSelector:
         nvmesh.excelero.com/nvmesh-target: ""
+      hostPID: true
+      hostNetwork: true
       containers:
         - name: driver-container
-          image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:dev
-          imagePullPolicy: Always
+          image: nvmesh-driver-container:dev
+          imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c", "/init.sh --type target --insert --remove-on-terminate --wait"]
           securityContext:
             privileged: true
@@ -32,6 +34,38 @@ spec:
             - name: var
               mountPath: /host/var/
           terminationGracePeriodSeconds: 3600
+        - name: toma
+          image: nvmesh-toma
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c", "/init.sh"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
+            - name: etc-opt-nvmesh
+              mountPath: /etc/opt/NVMesh/
+            - name: etc-libibverbs
+              mountPath: /etc/libibverbs.d/
+            - name: lib-libibverbs
+              mountPath: /usr/lib64/libibverbs/
+            - name: libibverbs-mlx5
+              mountPath: /usr/lib64/libmlx5.so.1.11.26.0
+            - name: sys
+              mountPath: /sys/
+            - name: dev
+              mountPath: /dev/
+        - name: tracer
+          image: nvmesh-tracer
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c", "/init.sh"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
+            - name: tracer-logs
+              mountPath: /var/log/NVMesh/
       volumes:
         - name: device-dir
           hostPath:
@@ -42,3 +76,27 @@ spec:
         - name: var
           hostPath:
             path: /var
+        - name: var-run-nvmesh
+          hostPath:
+            path: /var/run/NVMesh/
+        - name: etc-opt-nvmesh
+          hostPath:
+            path: /etc/opt/NVMesh/
+        - name: etc-libibverbs
+          hostPath:
+            path: /etc/libibverbs.d/
+        - name: lib-libibverbs
+          hostPath:
+            path: /usr/lib64/libibverbs/
+        - name: libibverbs-mlx5
+          hostPath:
+            path: /usr/lib64/libmlx5.so.1.11.26.0
+        - name: sys
+          hostPath:
+            path: /sys/
+        - name: dev
+          hostPath:
+            path: /dev/
+        - name: tracer-logs
+          hostPath:
+            path: /var/log/NVMesh/

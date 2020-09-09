@@ -9,10 +9,10 @@ data:
       "loggingLevel": "DEBUG",
       "useSSL": false,
       "mongoConnection": {
-        "hosts": "mongo-0.mongo.nvmesh.svc:27017",
+        "hosts": "",
       },
       "statisticsMongoConnection": {
-        "hosts": "mongo-0.mongo.nvmesh.svc:27017",
+        "hosts": "",
       },
       "statisticsCores": 5
     }
