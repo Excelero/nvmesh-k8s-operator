@@ -14,7 +14,7 @@ import (
 
 const (
 	NVMeshCoreAssestLocation   = "resources/nvmesh-core"
-	CoreUserspaceDaemonSetName = "nvmesh-core-user-space"
+	CoreUserspaceDaemonSetName = "nvmesh-mcs-agent"
 	TargetDriverDaemonSetName  = "nvmesh-target-driver-container"
 	ClientDriverDaemonSetName  = "nvmesh-client-driver-container"
 	DriverContainerImageName   = "nvmesh-driver-container"
@@ -97,9 +97,9 @@ func (r *NVMeshCoreReconciler) initUserspaceDaemonSets(cr *nvmeshv1.NVMesh, ds *
 		case "agent":
 			imageName = "nvmesh-mcs:dev"
 		case "toma":
-			imageName = "nvmesh-toma:b8"
+			imageName = "nvmesh-toma:dev"
 		case "tracer":
-			imageName = "nvmesh-tracer:b6"
+			imageName = "nvmesh-tracer:dev"
 		case "driver-container":
 			imageName = "nvmesh-driver-container:dev"
 		}

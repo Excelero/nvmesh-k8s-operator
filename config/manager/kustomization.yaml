@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: nvmesh-operator
-  newTag: latest
+  newTag: dev

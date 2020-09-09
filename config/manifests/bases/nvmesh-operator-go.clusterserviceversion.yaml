@@ -6,7 +6,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.0.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: nvmesh-operator-go.vX.Y.Z
+  name: nvmesh-operator.vX.Y.Z
   namespace: placeholder
 spec:
   apiservicedefinitions: {}

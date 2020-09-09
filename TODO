@@ -24,3 +24,21 @@ err = c.Watch(&source.Kind{Type: &securityv1.SecurityContextConstraints{}}, &han
 		return err
 	}
 //[...]
+
+
+TODO: TOMAs persistent cache is being deleted everytime toma pods are restarted
+* toma cache - nvmeibt_read_config.c:2684 [nvmeibt_read_persisted_config]  No previous config file /var/opt/NVMesh/toma/toma_config.csv_bufs   
+* check what the consequences are and try to find a solution (mount a hostPath volume?)
+
+
+TODO: Test restarting each component in the solution   
+
+
+TODO: decide where to keep the yamls to deploy the components ?
+  * only in the operator ?
+  * management yamls, csi yamls, core yamls, and there are the operator yamls (rbac and deployment to deploy the operator)
+
+
+TODO: upload nvmesh-io-test image to dockerhub
+
+TODO: TOMA crashes ahen treace daemon logs too long, requires manual clean up of /var/log/NVMesh
