@@ -1,0 +1,20 @@
+apiVersion: nvmesh.excelero.com/v1
+kind: NVMesh
+metadata:
+  name: cluster1
+spec:
+  core:
+    deploy: true
+    imageRegistry: 'excelero/'
+    version: '2.0.3-4'
+  csi:
+    controllerReplicas: 1
+    deploy: true
+    version: v1.1.0
+  management:
+    deploy: true
+    imageRegistry: 'docker.excelero.com/excelero/'
+    mongoAddress: 'mongo-svc.default.svc.cluster.local:27017'
+    useSSL: true
+    replicas: 1
+    version: 2.0.3-4

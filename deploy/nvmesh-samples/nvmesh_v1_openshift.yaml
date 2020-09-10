@@ -5,17 +5,15 @@ metadata:
 spec:
   core:
     deploy: true
-    #imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
-    imageRegistry: 'excelero/'
-    version: ''
+    imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
+    version: '2.0.3-4'
   csi:
     controllerReplicas: 1
     deploy: true
     version: v1.1.0
   management:
     deploy: true
-    #imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
-    imageRegistry: 'docker.excelero.com/excelero/'
+    imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
     mongoAddress: 'mongo-svc.default.svc.cluster.local:27017'
     useSSL: true
     replicas: 1

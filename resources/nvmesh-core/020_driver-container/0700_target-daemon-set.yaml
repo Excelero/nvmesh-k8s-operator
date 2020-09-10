@@ -33,6 +33,8 @@ spec:
               mountPath: /host/lib/modules
             - name: var
               mountPath: /host/var/
+            - name: etc-infiniband
+              mountPath: /etc/infiniband
           terminationGracePeriodSeconds: 3600
         - name: toma
           image: nvmesh-toma
@@ -45,6 +47,8 @@ spec:
               mountPath: /var/run/NVMesh/
             - name: etc-opt-nvmesh
               mountPath: /etc/opt/NVMesh/
+            - name: var-opt-nvmesh
+              mountPath: /var/opt/NVMesh/
             - name: etc-libibverbs
               mountPath: /etc/libibverbs.d/
             - name: lib-libibverbs
@@ -79,6 +83,9 @@ spec:
         - name: var-run-nvmesh
           hostPath:
             path: /var/run/NVMesh/
+        - name: var-opt-nvmesh
+          hostPath:
+            path: /var/opt/NVMesh/
         - name: etc-opt-nvmesh
           hostPath:
             path: /etc/opt/NVMesh/
@@ -100,3 +107,6 @@ spec:
         - name: tracer-logs
           hostPath:
             path: /var/log/NVMesh/
+        - name: etc-infiniband
+          hostPath:
+            path: /etc/infiniband

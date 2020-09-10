@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: nvmesh-management-gui
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: nvmesh-management
   ports:

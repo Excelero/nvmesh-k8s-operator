@@ -51,6 +51,8 @@ spec:
               mountPath: /host/opt/NVMesh
             - name: etc-opt-nvmesh
               mountPath: /etc/opt/NVMesh
+            - name: var-opt-nvmesh
+              mountPath: /var/opt/NVMesh
           securityContext:
             privileged: true
         - name: agent
@@ -84,3 +86,6 @@ spec:
         - name: opt-nvmesh
           hostPath:
             path: /opt/NVMesh
+        - name: var-opt-nvmesh
+          hostPath:
+            path: /var/opt/NVMesh/
