@@ -1,13 +1,19 @@
 package controllers
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 )
 
 type YamlDocumentParseError struct {
@@ -27,15 +33,52 @@ type YamlFileParseError struct {
 
 func (e *YamlFileParseError) Error() string { return e.Message }
 
-func YamlFileToObjects(filename string, decoder runtime.Decoder) ([]runtime.Object, error) {
+func YamlFileToString(filename string) (string, error) {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		workdir, _ := os.Getwd()
 		err = errors.Wrap(err, fmt.Sprintf("Error while trying to read from YAML file. filename: %s, working dir: %s", filename, workdir))
-		return nil, err
+		return "", err
 	}
 
 	yamlString := string(bytes)
+	return yamlString, nil
+}
+
+func UnstructuredToString(obj unstructured.Unstructured) string {
+	buf := bytes.NewBufferString("")
+	enc := json.NewEncoder(buf)
+	enc.SetIndent("", "    ")
+	enc.Encode(obj)
+	return buf.String()
+}
+
+func YamlFileToUnstructured(filename string) (*unstructured.Unstructured, *schema.GroupVersionKind, error) {
+	yamlString, err := YamlFileToString(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	obj := &unstructured.Unstructured{}
+
+	// decode YAML into unstructured.Unstructured
+	dec := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	_, gvk, err := dec.Decode([]byte(yamlString), nil, obj)
+
+	if err != nil {
+		err = errors.Wrap(err, fmt.Sprintf("Error while trying to read from YAML file. filename: %s, content: %s", filename, yamlString))
+		return nil, nil, err
+	}
+
+	return obj, gvk, err
+}
+
+func YamlFileToObjects(filename string, decoder runtime.Decoder) ([]runtime.Object, error) {
+	yamlString, err := YamlFileToString(filename)
+	if err != nil {
+		return nil, err
+	}
+
 	return YamlStringToObjects(yamlString, decoder)
 }
 

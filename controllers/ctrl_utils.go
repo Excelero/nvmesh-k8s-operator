@@ -55,6 +55,12 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 		return err
 	} else if (*component).ShouldUpdateObject(cr, newObj, foundObj) {
 		log.Info("shouldUpdate returned true > Updating...")
+
+		// Update the resource version before an update
+		v1objFound := (*foundObj).(v1.Object)
+		v1objNew := (*newObj).(v1.Object)
+		v1objNew.SetResourceVersion(v1objFound.GetResourceVersion())
+
 		err = r.Client.Update(context.TODO(), *newObj)
 		if err != nil {
 			log.Info("Error updating object")

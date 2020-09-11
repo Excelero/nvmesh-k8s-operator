@@ -34,6 +34,11 @@ type NVMeshCore struct {
 	ImageRegistry string `json:"imageRegistry"`
 }
 
+type MongoDBCluster struct {
+	// Deploy MongoDB for NVMesh Management, if this is true a MongoDB cluster will automatically be deployed. If this is false the Management server will try to connect to an external MongoDB cluster using the address defined NVMesh.Spec.Management.MongoAddress
+	Deploy bool `json:"deploy,omitempty"`
+}
+
 type NVMeshManagement struct {
 	// Deploy controls wether to deploy NVMesh Management
 	Deploy bool `json:"deploy,omitempty"`
@@ -49,6 +54,12 @@ type NVMeshManagement struct {
 
 	//The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
 	MongoAddress string `json:"mongoAddress,omitempty"`
+
+	//Configuration for deploying a MongoDB cluster"
+	MongoDB MongoDBCluster `json:"mongoDB,omitempty"`
+
+	//The ExternalIP that will be used for the management GUI service LoadBalancer
+	ExternalIPs []string `json:"externalIPs,omitempty"`
 
 	// Wether the management should a secure TLS/SSL connection on websocket and HTTP connections
 	UseSSL bool `json:"useSSL,omitempty"`

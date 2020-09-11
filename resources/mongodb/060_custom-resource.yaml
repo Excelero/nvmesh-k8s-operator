@@ -1,0 +1,19 @@
+apiVersion: mongodb.com/v1
+kind: MongoDB
+metadata:
+  name: mongo
+spec:
+  members: 1
+  security:
+    authentication:
+      enabled: false
+      modes: null
+    tls:
+      caConfigMapRef:
+        name: ""
+      certificateKeySecretRef:
+        name: ""
+      enabled: false
+      optional: false
+  type: ReplicaSet
+  version: 4.2.6

@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -36,14 +37,18 @@ var GloballyNamedKinds = []string{
 	"ClusterRole",
 	"ClusterRoleBinding",
 	"StorageClass",
+	"CustomResourceDefinition",
 }
 
 // NVMeshReconciler reconciles a NVMesh object
 type NVMeshReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	DynamicClient dynamic.Interface
+	Manager       ctrl.Manager
 }
+
 type NVMeshComponent interface {
 	InitObject(*nvmeshv1.NVMesh, *runtime.Object) error
 	ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
@@ -72,9 +77,10 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, err
 	}
 
-	csi := NVMeshCSIReconciler(*r)
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
+	csi := NVMeshCSIReconciler(*r)
+
 	components := []NVMeshComponent{&mgmt, &core, &csi}
 	var errorList []error
 	for _, component := range components {

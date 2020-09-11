@@ -18,13 +18,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"os/user"
+	"path/filepath"
 
 	"github.com/prometheus/common/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -60,6 +65,30 @@ func addToScheme(scheme *runtime.Scheme) {
 	}
 }
 
+func getUserKubeConfigPath() string {
+	usr, err := user.Current()
+
+	if err != nil {
+		fmt.Println("Failed to get current user")
+		panic(err)
+	}
+
+	return filepath.Join(usr.HomeDir, ".kube", "config")
+}
+
+func GetDynamicClientOrDie(config *rest.Config) dynamic.Interface {
+	// userKubeConfigPath := getUserKubeConfigPath()
+	// restConfig, err := clientcmd.BuildConfigFromFlags("", userKubeConfigPath)
+
+	client, err := dynamic.NewForConfig(config)
+	if err != nil {
+		setupLog.Error(err, "Unable to initialize dynamic client")
+		os.Exit(1)
+	}
+
+	return client
+}
+
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -86,9 +115,11 @@ func main() {
 	}
 
 	if err = (&controllers.NVMeshReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("NVMesh"),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Log:           ctrl.Log.WithName("controllers").WithName("NVMesh"),
+		Scheme:        mgr.GetScheme(),
+		DynamicClient: GetDynamicClientOrDie(mgr.GetConfig()),
+		Manager:       mgr,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NVMesh")
 		os.Exit(1)

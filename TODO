@@ -26,12 +26,37 @@ err = c.Watch(&source.Kind{Type: &securityv1.SecurityContextConstraints{}}, &han
 TODO: Test restarting each component in the solution   
 
 
-
 TODO: TOMA crashes when trace daemon logs too long, requires manual clean up of /var/log/NVMesh
 
 TODO: Create Script to collect TOMA trace logs
 
-
-
-
 TODO: overlayfs: upper fs needs to support d_type. This is an invalid configuration - shows in dmesg - we should investigate
+
+TODO: should core ConfigMap changes initiate restart of components (mcs , target, client ) ?
+
+TODO: set MongoDB objects as controlled by NVMesh using the dynamic client
+
+TODO: Refactor General loop to reconcile objects, so that we have a SimpleObjectHandler that twill just create and delete, and this can be inherited by for example MgmtStatefulSetHandler that will have an initObject() and shouldUpdate() and so on.
+
+TODO: Refactor - make dynamic client code used in the MongoDB reconcile function to be more generic
+
+TODO: change label behavior for cvlient and target to :
+  - nvmesh.excelero.com/nvmesh-client: ""
+  - nvmesh.excelero.com/nvmesh-target-type: ""
+
+  Client Daemonsets should apply to client
+  Target Daemonset should apply to target
+  MCS should apply to client
+
+  User should label a node with client or both client and target or no nvmesh label
+  labelling node with only target is not allowed
+
+TODO: Add GUI service external IP  to status
+
+TODO: Management update config using SIGUSR instead of restarting the Pod - mount config as volume, have the init.sh listen to file changes and trigger a signal upon change
+
+TODO: Check Management handler
+
+TODO: Cluster Shutdown will not work - should we do anything about it ?
+
+TODO: How to perform service restarts?

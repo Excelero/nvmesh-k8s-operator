@@ -14,7 +14,10 @@ spec:
   management:
     deploy: true
     imageRegistry: 'docker.excelero.com/excelero/'
+    mongoDB:
+      deploy: true
     mongoAddress: 'mongo-svc.default.svc.cluster.local:27017'
+    externalIP: 10.0.1.117
     useSSL: true
     replicas: 1
     version: 2.0.3-4

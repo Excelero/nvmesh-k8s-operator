@@ -7,12 +7,24 @@ import (
 	"strconv"
 	"strings"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/discovery"
+	memory "k8s.io/client-go/discovery/cached"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,20 +39,135 @@ const (
 
 type NVMeshMgmtReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	DynamicClient dynamic.Interface
+	Manager       ctrl.Manager
 }
 
 func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	var err error
 
+	err = r.ReconcileMongoDBObjects(cr, nvmeshr)
+	if err != nil {
+		return err
+	}
+
 	if cr.Spec.Management.Deploy {
 		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation)
+
+		if cr.Spec.Management.MongoDB.Deploy {
+
+		} else {
+			// TODO: remove mongodb objects
+		}
 	} else {
 		err = nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation)
+		// TODO: remove mongodb objects
 	}
 
 	return err
+}
+
+// find the corresponding GVR (available in *meta.RESTMapping) for gvk
+func findGVR(gvk *schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping, error) {
+
+	// DiscoveryClient queries API server about the resources
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+func assertNoError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r *NVMeshMgmtReconciler) ReconcileMongoDBObjects(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	var errList []error = make([]error, 0)
+	shouldDeployMongo := cr.Spec.Management.Deploy && cr.Spec.Management.MongoDB.Deploy
+
+	files, listFilesErr := ListFilesInSubDirs(MongoDBAssestLocation)
+	if listFilesErr != nil {
+		return listFilesErr
+	}
+
+	for _, file := range files {
+		obj, gvk, err := YamlFileToUnstructured(file)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Error while trying to read Unstructured Object from YAML file %s", file))
+		}
+
+		//fmt.Printf("Found MongoDB Yaml: %s %s\n", gvk.GroupKind(), obj.GetName()+"s")
+
+		gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
+		if err != nil {
+			fmt.Printf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk)
+			continue
+		}
+
+		var ns string
+		if stringInSlice(gvk.Kind, GloballyNamedKinds) {
+			// Object Kind does not require namespace
+			ns = ""
+		} else {
+			// Object Kind requires namespace
+			ns = cr.GetNamespace()
+		}
+
+		// TODO: We should set the NVMesh CustomResource as the owner of all MongoDB objects created here
+		// checkout controllerutil.SetControllerReference(cr, v1obj, r.Scheme)
+
+		res := r.DynamicClient.Resource(gvrMapping.Resource).Namespace(ns)
+
+		metadata := obj.Object["metadata"].(map[string]interface{})
+		name := metadata["name"].(string)
+		_, err = res.Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil && k8serrors.IsNotFound(err) {
+			if shouldDeployMongo == true {
+				_, err = res.Create(context.TODO(), obj, metav1.CreateOptions{})
+				if err != nil {
+					objJson := UnstructuredToString(*obj)
+					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to create object using dynamic client %s. Object: %s", gvrMapping.Resource, objJson))
+					errList = append(errList, wrappedErr)
+					fmt.Println(wrappedErr)
+				} else {
+					fmt.Printf("%s %s Object Created\n", gvk.Kind, name)
+				}
+			} else {
+				fmt.Printf("%s %s Nothing to do\n", gvk.Kind, name)
+			}
+
+		} else if err != nil {
+			wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to get object using dynamic client %s", gvrMapping.Resource))
+			errList = append(errList, wrappedErr)
+		} else {
+			//TODO: Object found - check if we need to update ?
+			if shouldDeployMongo == true {
+				fmt.Printf("%s %s already exists\n", gvk.Kind, name)
+			} else {
+				err = res.Delete(context.TODO(), name, metav1.DeleteOptions{})
+				if err != nil {
+					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to delete object using dynamic client %s", gvrMapping.Resource))
+					errList = append(errList, wrappedErr)
+					fmt.Println(wrappedErr)
+				} else {
+					fmt.Printf("%s %s Object Deleted\n", gvk.Kind, name)
+				}
+			}
+		}
+	}
+
+	if len(errList) > 0 {
+		return errList[0]
+	} else {
+		return nil
+	}
 }
 
 func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
@@ -53,6 +180,11 @@ func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 		}
 	case *v1.ConfigMap:
 		return r.initiateConfigMap(cr, o)
+	case *v1.Service:
+		switch name {
+		case "nvmesh-management-gui":
+			return r.initiateMgmtGuiService(cr, o)
+		}
 	default:
 		//o is unknown for us
 		//log.Info(fmt.Sprintf("Object type %s not handled", o))
@@ -76,6 +208,12 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 		if shouldUpdateConf == true {
 			r.updateConfAndRestartMgmt(cr, expectedConf, o)
 			return false
+		}
+	case *v1.Service:
+		switch name {
+		case "nvmesh-management-gui":
+			expectedService := (*exp).(*v1.Service)
+			return r.shouldUpdateGuiService(cr, expectedService, o)
 		}
 	default:
 		//o is unknown for us
@@ -122,6 +260,14 @@ func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *a
 	return nil
 }
 
+func (r *NVMeshMgmtReconciler) initiateMgmtGuiService(cr *nvmeshv1.NVMesh, svc *v1.Service) error {
+	if cr.Spec.Management.ExternalIPs != nil {
+		svc.Spec.ExternalIPs = cr.Spec.Management.ExternalIPs
+	}
+
+	return nil
+}
+
 func getMgmtImageFromResource(cr *nvmeshv1.NVMesh) string {
 	imageRegistry := cr.Spec.Management.ImageRegistry
 	if imageRegistry != "" && !strings.HasSuffix(imageRegistry, "/") {
@@ -145,6 +291,44 @@ func (r *NVMeshMgmtReconciler) shouldUpdateStatefulSet(cr *nvmeshv1.NVMesh, expe
 	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
 		fmt.Printf("Management replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas)
 		return true
+	}
+
+	return false
+}
+
+func isStringArraysEqualElements(a []string, b []string) bool {
+	dict := make(map[string]bool)
+
+	// add all a items to dict
+	for _, key := range a {
+		dict[key] = false
+	}
+
+	for _, key := range b {
+		// if item in dict, mark it as found
+		if _, ok := dict[key]; ok {
+			dict[key] = true
+		} else {
+			// item is not expected
+			return false
+		}
+	}
+
+	for _, val := range dict {
+		if val == false {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (r *NVMeshMgmtReconciler) shouldUpdateGuiService(cr *nvmeshv1.NVMesh, expected *v1.Service, svc *v1.Service) bool {
+	// We first copy the already assigned clusterIP otherwise update fails since ClusterIP: "" is an invalid  value for an update
+	expected.Spec.ClusterIP = svc.Spec.ClusterIP
+
+	if expected.Spec.ExternalIPs != nil {
+		return !isStringArraysEqualElements(expected.Spec.ExternalIPs, svc.Spec.ExternalIPs)
 	}
 
 	return false

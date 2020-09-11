@@ -83,6 +83,10 @@ spec:
                 deploy:
                   description: Deploy controls wether to deploy NVMesh Management
                   type: boolean
+                externalIP:
+                  description: The ExternalIP that will be used for the management
+                    GUI service LoadBalancer
+                  type: string
                 imageRegistry:
                   description: The address of the image registry where the nvmesh
                     management image is stored
@@ -90,6 +94,16 @@ spec:
                 mongoAddress:
                   description: The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
                   type: string
+                mongoDB:
+                  description: Configuration for deploying a MongoDB cluster"
+                  properties:
+                    deploy:
+                      description: Deploy MongoDB for NVMesh Management, if this is
+                        true a MongoDB cluster will automatically be deployed. If
+                        this is false the Management server will try to connect to
+                        an external MongoDB cluster using the address defined NVMesh.Spec.Management.MongoAddress
+                      type: boolean
+                  type: object
                 replicas:
                   description: The number of replicas of the NVMesh Managemnet
                   format: int32
