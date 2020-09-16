@@ -7,15 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -55,15 +51,8 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 
 	if cr.Spec.Management.Deploy {
 		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation)
-
-		if cr.Spec.Management.MongoDB.Deploy {
-
-		} else {
-			// TODO: remove mongodb objects
-		}
 	} else {
 		err = nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation)
-		// TODO: remove mongodb objects
 	}
 
 	return err
@@ -82,92 +71,10 @@ func findGVR(gvk *schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping,
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 }
 
-func assertNoError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (r *NVMeshMgmtReconciler) ReconcileMongoDBObjects(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	var errList []error = make([]error, 0)
 	shouldDeployMongo := cr.Spec.Management.Deploy && cr.Spec.Management.MongoDB.Deploy
-
-	files, listFilesErr := ListFilesInSubDirs(MongoDBAssestLocation)
-	if listFilesErr != nil {
-		return listFilesErr
-	}
-
-	for _, file := range files {
-		obj, gvk, err := YamlFileToUnstructured(file)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Error while trying to read Unstructured Object from YAML file %s", file))
-		}
-
-		//fmt.Printf("Found MongoDB Yaml: %s %s\n", gvk.GroupKind(), obj.GetName()+"s")
-
-		gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
-		if err != nil {
-			fmt.Printf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk)
-			continue
-		}
-
-		var ns string
-		if stringInSlice(gvk.Kind, GloballyNamedKinds) {
-			// Object Kind does not require namespace
-			ns = ""
-		} else {
-			// Object Kind requires namespace
-			ns = cr.GetNamespace()
-		}
-
-		// TODO: We should set the NVMesh CustomResource as the owner of all MongoDB objects created here
-		// checkout controllerutil.SetControllerReference(cr, v1obj, r.Scheme)
-
-		res := r.DynamicClient.Resource(gvrMapping.Resource).Namespace(ns)
-
-		metadata := obj.Object["metadata"].(map[string]interface{})
-		name := metadata["name"].(string)
-		_, err = res.Get(context.TODO(), name, metav1.GetOptions{})
-		if err != nil && k8serrors.IsNotFound(err) {
-			if shouldDeployMongo == true {
-				_, err = res.Create(context.TODO(), obj, metav1.CreateOptions{})
-				if err != nil {
-					objJson := UnstructuredToString(*obj)
-					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to create object using dynamic client %s. Object: %s", gvrMapping.Resource, objJson))
-					errList = append(errList, wrappedErr)
-					fmt.Println(wrappedErr)
-				} else {
-					fmt.Printf("%s %s Object Created\n", gvk.Kind, name)
-				}
-			} else {
-				fmt.Printf("%s %s Nothing to do\n", gvk.Kind, name)
-			}
-
-		} else if err != nil {
-			wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to get object using dynamic client %s", gvrMapping.Resource))
-			errList = append(errList, wrappedErr)
-		} else {
-			//TODO: Object found - check if we need to update ?
-			if shouldDeployMongo == true {
-				fmt.Printf("%s %s already exists\n", gvk.Kind, name)
-			} else {
-				err = res.Delete(context.TODO(), name, metav1.DeleteOptions{})
-				if err != nil {
-					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to delete object using dynamic client %s", gvrMapping.Resource))
-					errList = append(errList, wrappedErr)
-					fmt.Println(wrappedErr)
-				} else {
-					fmt.Printf("%s %s Object Deleted\n", gvk.Kind, name)
-				}
-			}
-		}
-	}
-
-	if len(errList) > 0 {
-		return errList[0]
-	} else {
-		return nil
-	}
+	err := nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBAssestLocation, shouldDeployMongo)
+	return err
 }
 
 func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {

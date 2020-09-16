@@ -12,21 +12,9 @@ spec:
       labels:
         app: nvmesh-mcs-agent
     spec:
-      # TODO: decide how to implement running on each client OR target
-      # nodeSelector might not be enough here (Does it has an OR option ?)
-      #nodeSelector:
-      #  nvmesh.excelero.com/nvmesh-target: ""
-
-      # Un-tested example of affinity
-      # affinity:
-      #   nodeAffinity:
-      #     requiredDuringSchedulingIgnoredDuringExecution:
-      #       nodeSelectorTerms:
-      #         - matchExpressions:
-      #           - key: nvmesh.excelero.com/nvmesh-target: ""
-      #             operator: Exists
+      nodeSelector:
+       nvmesh.excelero.com/nvmesh-client: ""
       serviceAccount: kmod-manager
-
       # hostNetwork: true allows the pod to have the hostname of the node where the pod is run
       hostNetwork: true
       # dnsPolicy: ClusterFirstWithHostNet allows the pod to have cluster DNS to be able to resolve service dns names. this is needed only when hostNetwork is true

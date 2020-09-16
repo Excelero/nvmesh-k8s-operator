@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -97,7 +98,41 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, errorList[0]
 	}
 
+	err = r.updateStatus(cr)
+	if err != nil {
+		r.Log.Error(err, "Failed to update CustomResource Status")
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {
+	// Get Management GUI External URL
+	var protocol string
+
+	if cr.Spec.Management.UseSSL {
+		protocol = "https"
+	} else {
+		protocol = "http"
+	}
+
+	address := cr.Spec.Management.ExternalIPs[0]
+	port := 4000
+
+	url := fmt.Sprintf("%s://%s:%d", protocol, address, port)
+	return url
+}
+
+func (r *NVMeshReconciler) setStatusOnCustomResource(cr *nvmeshv1.NVMesh) {
+	cr.Status.WebUIURL = r.getManagementGUIURL(cr)
+}
+
+func (r *NVMeshReconciler) updateStatus(cr *nvmeshv1.NVMesh) error {
+	r.setStatusOnCustomResource(cr)
+
+	// FIXME: The next line causes another reconcile cycle
+	// we should fix this, solutions can be found in this article: https://www.openshift.com/blog/kubernetes-operators-best-practices (but links are broken)
+	return r.Status().Update(context.Background(), cr)
 }
 
 func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {

@@ -50,6 +50,7 @@ type NVMeshManagement struct {
 	ImageRegistry string `json:"imageRegistry"`
 
 	//The number of replicas of the NVMesh Managemnet
+	// +kubebuilder:validation:Minimum=1
 	Replicas int32 `json:"replicas,omitempty"`
 
 	//The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
@@ -59,6 +60,7 @@ type NVMeshManagement struct {
 	MongoDB MongoDBCluster `json:"mongoDB,omitempty"`
 
 	//The ExternalIP that will be used for the management GUI service LoadBalancer
+	// +kubebuilder:validation:UniqueItems=true
 	ExternalIPs []string `json:"externalIPs,omitempty"`
 
 	// Wether the management should a secure TLS/SSL connection on websocket and HTTP connections
@@ -70,6 +72,7 @@ type NVMeshCSI struct {
 	Deploy bool `json:"deploy,omitempty"`
 
 	//ControllerReplicas describes the number of replicas for the NVMesh CSI Controller Statefulset
+	// +kubebuilder:validation:Minimum=1
 	ControllerReplicas int32 `json:"controllerReplicas,omitempty"`
 
 	//Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
@@ -96,8 +99,11 @@ type NVMeshSpec struct {
 
 // NVMeshStatus defines the observed state of NVMesh
 type NVMeshStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// The URL of NVMesh Web GUI
+	WebUIURL string `json:"WebUIURL,omitempty"`
 }
 
 // +kubebuilder:object:root=true

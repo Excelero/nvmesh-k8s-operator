@@ -61,6 +61,7 @@ spec:
                   description: ControllerReplicas describes the number of replicas
                     for the NVMesh CSI Controller Statefulset
                   format: int32
+                  minimum: 1
                   type: integer
                 deploy:
                   description: Deploy controls wether the NVMesh CSI Driver should
@@ -83,10 +84,13 @@ spec:
                 deploy:
                   description: Deploy controls wether to deploy NVMesh Management
                   type: boolean
-                externalIP:
+                externalIPs:
                   description: The ExternalIP that will be used for the management
                     GUI service LoadBalancer
-                  type: string
+                  items:
+                    type: string
+                  type: array
+                  uniqueItems: true
                 imageRegistry:
                   description: The address of the image registry where the nvmesh
                     management image is stored
@@ -107,6 +111,7 @@ spec:
                 replicas:
                   description: The number of replicas of the NVMesh Managemnet
                   format: int32
+                  minimum: 1
                   type: integer
                 useSSL:
                   description: Wether the management should a secure TLS/SSL connection
@@ -122,6 +127,10 @@ spec:
           type: object
         status:
           description: NVMeshStatus defines the observed state of NVMesh
+          properties:
+            WebUIURL:
+              description: The URL of NVMesh Web GUI
+              type: string
           type: object
       type: object
   version: v1
