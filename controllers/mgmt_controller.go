@@ -197,18 +197,19 @@ func getMgmtImageFromResource(cr *nvmeshv1.NVMesh) string {
 }
 
 func (r *NVMeshMgmtReconciler) shouldUpdateStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
+	log := r.Log.WithValues("method", "shouldUpdateStatefulSet")
 
 	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
 	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
 	if expectedVersion != foundVersion {
-		fmt.Printf("found mgmt version missmatch - expected: %s found: %s\n", expectedVersion, foundVersion)
+		log.Info(fmt.Sprintf("found mgmt version missmatch - expected: %s found: %s\n", expectedVersion, foundVersion))
 		return true
 	}
 
 	expectedReplicas := *expected.Spec.Replicas
 	foundReplicas := *ss.Spec.Replicas
 	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
-		fmt.Printf("Management replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas)
+		log.Info(fmt.Sprintf("Management replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas))
 		return true
 	}
 
@@ -254,17 +255,19 @@ func (r *NVMeshMgmtReconciler) shouldUpdateGuiService(cr *nvmeshv1.NVMesh, expec
 }
 
 func (r *NVMeshMgmtReconciler) shouldUpdateConfigMap(cr *nvmeshv1.NVMesh, expected *v1.ConfigMap, conf *v1.ConfigMap) bool {
+	log := r.Log.WithValues("method", "shouldUpdateConfigMap")
+
 	expectedConfig := expected.Data["config"]
 	foundConfig := conf.Data["config"]
 	if expectedConfig != foundConfig {
-		fmt.Printf("found mgmt config missmatch - expected: %s\n found: %s\n", expectedConfig, foundConfig)
+		log.Info(fmt.Sprintf("found mgmt config missmatch - expected: %s\n found: %s\n", expectedConfig, foundConfig))
 		return true
 	}
 
 	expectedConfVersion := expected.Data["configVersion"]
 	foundConfVersion := conf.Data["configVersion"]
 	if expectedConfig != foundConfig {
-		fmt.Printf("found mgmt config version missmatch - expected: %s found: %s\n", expectedConfVersion, foundConfVersion)
+		log.Info(fmt.Sprintf("found mgmt config version missmatch - expected: %s found: %s\n", expectedConfVersion, foundConfVersion))
 		return true
 	}
 	return false

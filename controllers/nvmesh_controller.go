@@ -87,6 +87,8 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, err
 	}
 
+	r.stopAllUnstructuredWatchers()
+
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
 	csi := NVMeshCSIReconciler(*r)
@@ -146,7 +148,7 @@ func (r *NVMeshReconciler) updateStatus(cr *nvmeshv1.NVMesh) error {
 
 func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	// this handler will initiate Reconcile loop whenever an object is Created, Deleted or Updated
+	// this handler will initiate Reconcile cycle whenever an object is Created, Deleted or Updated
 	handler := &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &v1.NVMesh{},

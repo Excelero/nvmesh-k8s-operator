@@ -15,6 +15,7 @@ import (
 
 	errors "github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/watch"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,6 +27,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+var (
+
+	// keep all watcher to stop them before cerating new ones
+	watchers []watch.Interface
 )
 
 func (r *NVMeshReconciler) ReconcileObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent, removeObject bool) error {
@@ -66,7 +73,7 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 
 	foundObj, err := r.getGenericObject(newObj, cr.GetNamespace())
 	if err != nil && k8serrors.IsNotFound(err) {
-		log.Info("Object not found, creating new object")
+		log.Info("Creating new object")
 		err = r.Client.Create(context.TODO(), *newObj)
 		return err
 	} else if err != nil {
@@ -145,7 +152,6 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 		if _, ok := err.(*YamlFileParseError); ok {
 			// this is ok
 			msg := fmt.Sprintf("Some Documents in the file failed to parse %+v", err)
-			fmt.Print(msg)
 			log.Info(msg)
 		} else {
 			return err
@@ -156,7 +162,7 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 	for _, obj := range objects {
 		err = r.ReconcileObject(cr, &obj, &component, removeObject)
 		if err != nil {
-			fmt.Printf("Failed to Reconcile %s %+v\n", reflect.TypeOf(obj), err)
+			log.Info(fmt.Sprintf("Failed to Reconcile %s %+v\n", reflect.TypeOf(obj), err))
 			reconcileErrors = append(reconcileErrors, err)
 		}
 	}
@@ -305,17 +311,37 @@ func indexOwnerRef(ownerReferences []metav1.OwnerReference, ref metav1.OwnerRefe
 	return -1
 }
 
-func addUnstructuredWatch(res dynamic.ResourceInterface, obj *unstructured.Unstructured) error {
+func (r *NVMeshReconciler) stopAllUnstructuredWatchers() {
+	for _, w := range watchers {
+		w.Stop()
+	}
+}
+
+func (r *NVMeshReconciler) listenOnChanAndReconcile(ch <-chan watch.Event) {
+	log := r.Log.WithValues("method", "listenOnChanAndReconcile")
+
+	for e := range ch {
+		log.Info(fmt.Sprintf("received Event %s %s", e.Object.GetObjectKind().GroupVersionKind().Kind, e.Type))
+		//fmt.Printf("received Event %+v", e)
+		// TODO: Enqueue Reconcile
+		// NOTE: this runs in a separate goroutine so we should not reconcile here but enqueue the reconcile request
+	}
+}
+
+func (r *NVMeshReconciler) addUnstructuredWatch(res dynamic.ResourceInterface, obj *unstructured.Unstructured) error {
 	opt := metav1.ListOptions{FieldSelector: "metadata.name=" + obj.GetName()}
 	watcher, err := res.Watch(context.TODO(), opt)
 	if err != nil {
 		return err
 	}
-	fmt.Println(watcher)
+	watchers = append(watchers, watcher)
+	go r.listenOnChanAndReconcile(watcher.ResultChan())
 	return nil
 }
 
 func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, directoryPath string, shouldCreate bool) error {
+	log := r.Log.WithValues("method", "ReconcileUnstructuredObjects")
+
 	var errList []error = make([]error, 0)
 
 	files, listFilesErr := ListFilesInSubDirs(directoryPath)
@@ -331,7 +357,7 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 
 		gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
 		if err != nil {
-			fmt.Printf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk)
+			log.Info(fmt.Sprintf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk))
 			continue
 		}
 
@@ -345,22 +371,27 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 		}
 		res := r.DynamicClient.Resource(gvrMapping.Resource).Namespace(ns)
 		objName := obj.GetName()
+
+		err = r.addUnstructuredWatch(res, obj)
+		if err != nil {
+			return err
+		}
+
 		_, err = res.Get(context.TODO(), objName, metav1.GetOptions{})
 		if err != nil && k8serrors.IsNotFound(err) {
 			if shouldCreate == true {
 				SetControllerReferenceOnUnstructured(cr, obj, gvk)
-				addUnstructuredWatch(res, obj)
 				_, err = res.Create(context.TODO(), obj, metav1.CreateOptions{})
 				if err != nil {
 					objJson := UnstructuredToString(*obj)
 					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to create object using dynamic client %s. Object: %s", gvrMapping.Resource, objJson))
 					errList = append(errList, wrappedErr)
-					fmt.Println(wrappedErr)
+					log.Info(fmt.Sprintln(wrappedErr))
 				} else {
-					fmt.Printf("%s %s Object Created\n", gvk.Kind, objName)
+					log.Info(fmt.Sprintf("%s %s Object Created\n", gvk.Kind, objName))
 				}
 			} else {
-				fmt.Printf("%s %s Nothing to do\n", gvk.Kind, objName)
+				log.Info(fmt.Sprintf("%s %s Nothing to do\n", gvk.Kind, objName))
 			}
 
 		} else if err != nil {
@@ -369,15 +400,15 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 		} else {
 			//TODO: Object found - check if we need to update ?
 			if shouldCreate == true {
-				fmt.Printf("%s %s already exists\n", gvk.Kind, objName)
+				log.Info(fmt.Sprintf("%s %s already exists\n", gvk.Kind, objName))
 			} else {
 				err = res.Delete(context.TODO(), objName, metav1.DeleteOptions{})
 				if err != nil {
 					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to delete object using dynamic client %s", gvrMapping.Resource))
 					errList = append(errList, wrappedErr)
-					fmt.Println(wrappedErr)
+					log.Info(fmt.Sprintln(wrappedErr))
 				} else {
-					fmt.Printf("%s %s Object Deleted\n", gvk.Kind, objName)
+					log.Info(fmt.Sprintf("%s %s Object Deleted\n", gvk.Kind, objName))
 				}
 			}
 		}
