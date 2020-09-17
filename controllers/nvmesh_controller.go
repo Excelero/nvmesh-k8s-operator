@@ -21,16 +21,23 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	v1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
+	storagev1 "k8s.io/api/storage/v1"
 )
 
 var GloballyNamedKinds = []string{
@@ -136,8 +143,29 @@ func (r *NVMeshReconciler) updateStatus(cr *nvmeshv1.NVMesh) error {
 }
 
 func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	// this handler will initiate Reconcile loop whenever an object is Created, Deleted or Updated
+	handler := &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1.NVMesh{},
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nvmeshv1.NVMesh{}).
+		Watches(&source.Kind{Type: &appsv1.StatefulSet{}}, handler).
+		Watches(&source.Kind{Type: &appsv1.Deployment{}}, handler).
+		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, handler).
+		Watches(&source.Kind{Type: &corev1.Service{}}, handler).
+		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, handler).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, handler).
+		Watches(&source.Kind{Type: &corev1.Secret{}}, handler).
+		Watches(&source.Kind{Type: &corev1.Service{}}, handler).
+		Watches(&source.Kind{Type: &rbac.ClusterRole{}}, handler).
+		Watches(&source.Kind{Type: &rbac.ClusterRoleBinding{}}, handler).
+		Watches(&source.Kind{Type: &rbac.Role{}}, handler).
+		Watches(&source.Kind{Type: &rbac.RoleBinding{}}, handler).
+		Watches(&source.Kind{Type: &storagev1.CSIDriver{}}, handler).
+		Watches(&source.Kind{Type: &storagev1.StorageClass{}}, handler).
 		Complete(r)
 }
 
