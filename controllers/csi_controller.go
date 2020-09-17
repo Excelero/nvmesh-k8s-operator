@@ -33,11 +33,12 @@ type NVMeshCSIReconciler struct {
 
 func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	var err error
+	recursive := true
 
 	if cr.Spec.CSI.Deploy {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, CSIAssetsLocation)
+		err = nvmeshr.CreateObjectsFromDir(cr, r, CSIAssetsLocation, recursive)
 	} else {
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, CSIAssetsLocation)
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, CSIAssetsLocation, recursive)
 	}
 
 	return err

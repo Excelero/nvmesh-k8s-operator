@@ -25,12 +25,13 @@ import (
 )
 
 const (
-	MgmtAssetsLocation    = "resources/management/"
-	MongoDBAssestLocation = "resources/mongodb"
-	MgmtStatefulSetName   = "nvmesh-management"
-	MgmtImageName         = "nvmesh-management"
-	MgmtGuiServiceName    = "nvmesh-management-gui"
-	MgmtProtocol          = "https"
+	MgmtAssetsLocation            = "resources/management/"
+	MongoDBAssestLocation         = "resources/mongodb"
+	MongoDBCustomResourceLocation = "resources/mongodb/custom-resource"
+	MgmtStatefulSetName           = "nvmesh-management"
+	MgmtImageName                 = "nvmesh-management"
+	MgmtGuiServiceName            = "nvmesh-management-gui"
+	MgmtProtocol                  = "https"
 )
 
 type NVMeshMgmtReconciler struct {
@@ -43,16 +44,33 @@ type NVMeshMgmtReconciler struct {
 
 func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	var err error
+	recursive := true
+	nonRecursive := false
 
-	err = r.ReconcileMongoDBObjects(cr, nvmeshr)
+	// Reconcile MongoDB objects using typed client (except the MongoDB CustomResource)
+	if cr.Spec.Management.Deploy && cr.Spec.Management.MongoDB.Deploy {
+		err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBAssestLocation, nonRecursive)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBAssestLocation, nonRecursive)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Reconcile MongoDB custom resource using the unstructured client
+	shouldDeployMongo := cr.Spec.Management.Deploy && cr.Spec.Management.MongoDB.Deploy
+	err = nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBCustomResourceLocation, shouldDeployMongo)
 	if err != nil {
 		return err
 	}
 
 	if cr.Spec.Management.Deploy {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation)
+		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation, recursive)
 	} else {
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation)
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation, recursive)
 	}
 
 	return err
@@ -69,12 +87,6 @@ func findGVR(gvk *schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping,
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-}
-
-func (r *NVMeshMgmtReconciler) ReconcileMongoDBObjects(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	shouldDeployMongo := cr.Spec.Management.Deploy && cr.Spec.Management.MongoDB.Deploy
-	err := nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBAssestLocation, shouldDeployMongo)
-	return err
 }
 
 func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {

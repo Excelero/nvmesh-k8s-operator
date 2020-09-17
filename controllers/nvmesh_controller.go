@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,6 +39,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	storagev1beta1 "k8s.io/api/storage/v1beta1"
 )
 
 var GloballyNamedKinds = []string{
@@ -164,8 +166,9 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &rbac.ClusterRoleBinding{}}, handler).
 		Watches(&source.Kind{Type: &rbac.Role{}}, handler).
 		Watches(&source.Kind{Type: &rbac.RoleBinding{}}, handler).
-		Watches(&source.Kind{Type: &storagev1.CSIDriver{}}, handler).
+		Watches(&source.Kind{Type: &storagev1beta1.CSIDriver{}}, handler).
 		Watches(&source.Kind{Type: &storagev1.StorageClass{}}, handler).
+		Watches(&source.Kind{Type: &apiext.CustomResourceDefinition{}}, handler).
 		Complete(r)
 }
 

@@ -3,7 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	ioutil "io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 
@@ -18,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/utils/pointer"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -165,16 +168,16 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 	return nil
 }
 
-func (r *NVMeshReconciler) CreateObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string) error {
-	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, false)
+func (r *NVMeshReconciler) CreateObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, recursive bool) error {
+	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, false, recursive)
 }
 
-func (r *NVMeshReconciler) RemoveObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string) error {
-	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, true)
+func (r *NVMeshReconciler) RemoveObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, recursive bool) error {
+	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, true, recursive)
 }
 
-func (r *NVMeshReconciler) ReconcileYamlObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, removeObjects bool) error {
-	files, err := ListFilesInSubDirs(dir)
+func (r *NVMeshReconciler) ReconcileYamlObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, removeObjects bool, recursive bool) error {
+	files, err := ListFilesInDir(dir, recursive)
 	if err != nil {
 		return err
 	}
@@ -203,6 +206,26 @@ func stringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func ListFilesInDir(dir string, recursive bool) ([]string, error) {
+	if recursive == true {
+		return ListFilesInSubDirs(dir)
+	} else {
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return nil, err
+		}
+
+		filenames := make([]string, 0)
+		for _, f := range files {
+			if !f.IsDir() {
+				filenames = append(filenames, path.Join(dir, f.Name()))
+			}
+		}
+
+		return filenames, nil
+	}
 }
 
 func ListFilesInSubDirs(root string) ([]string, error) {
@@ -282,6 +305,16 @@ func indexOwnerRef(ownerReferences []metav1.OwnerReference, ref metav1.OwnerRefe
 	return -1
 }
 
+func addUnstructuredWatch(res dynamic.ResourceInterface, obj *unstructured.Unstructured) error {
+	opt := metav1.ListOptions{FieldSelector: "metadata.name=" + obj.GetName()}
+	watcher, err := res.Watch(context.TODO(), opt)
+	if err != nil {
+		return err
+	}
+	fmt.Println(watcher)
+	return nil
+}
+
 func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, directoryPath string, shouldCreate bool) error {
 	var errList []error = make([]error, 0)
 
@@ -310,15 +343,13 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 			// Object Kind requires namespace
 			ns = cr.GetNamespace()
 		}
-
 		res := r.DynamicClient.Resource(gvrMapping.Resource).Namespace(ns)
-
-		metadata := obj.Object["metadata"].(map[string]interface{})
-		name := metadata["name"].(string)
-		_, err = res.Get(context.TODO(), name, metav1.GetOptions{})
+		objName := obj.GetName()
+		_, err = res.Get(context.TODO(), objName, metav1.GetOptions{})
 		if err != nil && k8serrors.IsNotFound(err) {
 			if shouldCreate == true {
 				SetControllerReferenceOnUnstructured(cr, obj, gvk)
+				addUnstructuredWatch(res, obj)
 				_, err = res.Create(context.TODO(), obj, metav1.CreateOptions{})
 				if err != nil {
 					objJson := UnstructuredToString(*obj)
@@ -326,10 +357,10 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 					errList = append(errList, wrappedErr)
 					fmt.Println(wrappedErr)
 				} else {
-					fmt.Printf("%s %s Object Created\n", gvk.Kind, name)
+					fmt.Printf("%s %s Object Created\n", gvk.Kind, objName)
 				}
 			} else {
-				fmt.Printf("%s %s Nothing to do\n", gvk.Kind, name)
+				fmt.Printf("%s %s Nothing to do\n", gvk.Kind, objName)
 			}
 
 		} else if err != nil {
@@ -338,15 +369,15 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 		} else {
 			//TODO: Object found - check if we need to update ?
 			if shouldCreate == true {
-				fmt.Printf("%s %s already exists\n", gvk.Kind, name)
+				fmt.Printf("%s %s already exists\n", gvk.Kind, objName)
 			} else {
-				err = res.Delete(context.TODO(), name, metav1.DeleteOptions{})
+				err = res.Delete(context.TODO(), objName, metav1.DeleteOptions{})
 				if err != nil {
 					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to delete object using dynamic client %s", gvrMapping.Resource))
 					errList = append(errList, wrappedErr)
 					fmt.Println(wrappedErr)
 				} else {
-					fmt.Printf("%s %s Object Deleted\n", gvk.Kind, name)
+					fmt.Printf("%s %s Object Deleted\n", gvk.Kind, objName)
 				}
 			}
 		}

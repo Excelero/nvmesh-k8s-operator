@@ -32,11 +32,11 @@ type NVMeshCoreReconciler struct {
 
 func (r *NVMeshCoreReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	var err error
-
+	recursive := true
 	if cr.Spec.Core.Deploy {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, NVMeshCoreAssestLocation)
+		err = nvmeshr.CreateObjectsFromDir(cr, r, NVMeshCoreAssestLocation, recursive)
 	} else {
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, NVMeshCoreAssestLocation)
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, NVMeshCoreAssestLocation, recursive)
 	}
 
 	return err

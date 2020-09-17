@@ -18,10 +18,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
-	"os/user"
-	"path/filepath"
 
 	"github.com/prometheus/common/log"
 
@@ -40,6 +37,7 @@ import (
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 
 	"excelero.com/nvmesh-k8s-operator/controllers"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -59,6 +57,12 @@ func addToScheme(scheme *runtime.Scheme) {
 	// This function adds custom objects to the scheme
 	// this scheme will be used by the api client (watch / get /delete etc. ) and by the yaml decoder
 
+	// Add CRDs type
+	if err := apiext.AddToScheme(scheme); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
 	//Add OpenShift security to scheme
 	// This is to allow us to handle OpenShift SecurityContextConstraints objects
 	if err := securityv1.AddToScheme(scheme); err != nil {
@@ -67,21 +71,7 @@ func addToScheme(scheme *runtime.Scheme) {
 	}
 }
 
-func getUserKubeConfigPath() string {
-	usr, err := user.Current()
-
-	if err != nil {
-		fmt.Println("Failed to get current user")
-		panic(err)
-	}
-
-	return filepath.Join(usr.HomeDir, ".kube", "config")
-}
-
 func GetDynamicClientOrDie(config *rest.Config) dynamic.Interface {
-	// userKubeConfigPath := getUserKubeConfigPath()
-	// restConfig, err := clientcmd.BuildConfigFromFlags("", userKubeConfigPath)
-
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		setupLog.Error(err, "Unable to initialize dynamic client")
