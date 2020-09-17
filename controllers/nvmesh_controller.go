@@ -88,6 +88,10 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	r.stopAllUnstructuredWatchers()
+	err = r.AddFinalizer(cr)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
