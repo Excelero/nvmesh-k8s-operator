@@ -25,13 +25,10 @@ import (
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
@@ -57,6 +54,7 @@ type NVMeshReconciler struct {
 	Scheme        *runtime.Scheme
 	DynamicClient dynamic.Interface
 	Manager       ctrl.Manager
+	EventManager  *EventManager
 }
 
 type NVMeshComponent interface {
@@ -81,16 +79,23 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			return reconcile.Result{}, nil
+			return r.DoNotRequeue(nil)
 		}
 		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
+		return r.RequeueWithError(cr, err)
+	}
+
+	r.EventManager.Normal(cr, "debug", "Reconcile Cycle")
+	//Validate CustomResource
+	err = r.IsValid(cr)
+	if err != nil {
+		r.RequeueWithError(cr, err)
 	}
 
 	r.stopAllUnstructuredWatchers()
 	err = r.AddFinalizer(cr)
 	if err != nil {
-		return ctrl.Result{}, err
+		return r.RequeueWithError(cr, err)
 	}
 
 	mgmt := NVMeshMgmtReconciler(*r)
@@ -110,7 +115,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		for _, e := range errorList {
 			r.Log.Error(e, "Error from ReconcileComponent")
 		}
-		return reconcile.Result{}, errorList[0]
+		return r.RequeueWithError(cr, errorList[0])
 	}
 
 	err = r.updateStatus(cr)
@@ -118,7 +123,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.Log.Error(err, "Failed to update CustomResource Status")
 	}
 
-	return ctrl.Result{}, nil
+	return r.DoNotRequeue(cr)
 }
 
 func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {
@@ -144,9 +149,6 @@ func (r *NVMeshReconciler) setStatusOnCustomResource(cr *nvmeshv1.NVMesh) {
 
 func (r *NVMeshReconciler) updateStatus(cr *nvmeshv1.NVMesh) error {
 	r.setStatusOnCustomResource(cr)
-
-	// FIXME: The next line causes another reconcile cycle
-	// we should fix this, solutions can be found in this article: https://www.openshift.com/blog/kubernetes-operators-best-practices (but links are broken)
 	return r.Status().Update(context.Background(), cr)
 }
 
@@ -177,12 +179,3 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &apiext.CustomResourceDefinition{}}, handler).
 		Complete(r)
 }
-
-// Add MongoDB Community Operator Schema's Group and version
-var (
-	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: "mongodb.com", Version: "v1"}
-
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
-)

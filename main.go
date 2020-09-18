@@ -106,12 +106,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	eventManager, err := controllers.NewEventManager(mgr.GetConfig())
+	if err != nil {
+		setupLog.Error(err, "problem getting a client to update events on the CustomResource")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.NVMeshReconciler{
 		Client:        mgr.GetClient(),
 		Log:           ctrl.Log.WithName("controllers").WithName("NVMesh"),
 		Scheme:        mgr.GetScheme(),
 		DynamicClient: GetDynamicClientOrDie(mgr.GetConfig()),
 		Manager:       mgr,
+		EventManager:  eventManager,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NVMesh")
 		os.Exit(1)

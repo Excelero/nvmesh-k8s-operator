@@ -96,9 +96,6 @@ func (r *NVMeshReconciler) verifyNoVolumeAttachments(cr *nvmeshv1.NVMesh) error 
 		return errors.Wrap(err, fmt.Sprintf("Failed to list VolumeAttachments"))
 	}
 
-	// the list returns Thousands of old attachment items that have attached: false
-	fmt.Printf("%d", len(attachmentsList.Items))
-
 	nvmeshAttachments := make([]storagev1.VolumeAttachment, 0)
 	if len(attachmentsList.Items) > 0 {
 		for _, attachment := range attachmentsList.Items {
@@ -130,9 +127,6 @@ func (r *NVMeshReconciler) verifyNoPersistentVolumes(cr *nvmeshv1.NVMesh) error 
 		return errors.Wrap(err, fmt.Sprintf("Failed to list PersistentVolumes"))
 
 	}
-
-	// the list returns Thousands of old attachment items that have attached: false
-	fmt.Printf("%d", len(pvList.Items))
 
 	nvmeshPVs := make([]string, 0)
 	if len(pvList.Items) > 0 {

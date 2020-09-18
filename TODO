@@ -1,6 +1,4 @@
 
-TODO: should core ConfigMap changes initiate restart of components (mcs , target, client ) ? - not currently
-
 TODO: Add relevant status fields
 	- We need to decide what info we want to expose in the NVMesh CustomResource Status field
 

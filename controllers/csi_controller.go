@@ -29,6 +29,7 @@ type NVMeshCSIReconciler struct {
 	Scheme        *runtime.Scheme
 	DynamicClient dynamic.Interface
 	Manager       ctrl.Manager
+	EventManager  *EventManager
 }
 
 func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
