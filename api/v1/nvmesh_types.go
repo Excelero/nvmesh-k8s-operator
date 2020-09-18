@@ -60,7 +60,6 @@ type NVMeshManagement struct {
 	MongoDB MongoDBCluster `json:"mongoDB,omitempty"`
 
 	//The ExternalIP that will be used for the management GUI service LoadBalancer
-	// +kubebuilder:validation:UniqueItems=true
 	ExternalIPs []string `json:"externalIPs,omitempty"`
 
 	// Wether the management should a secure TLS/SSL connection on websocket and HTTP connections
@@ -115,6 +114,8 @@ type NVMeshStatus struct {
 
 	// The URL of NVMesh Web GUI
 	WebUIURL string `json:"WebUIURL,omitempty"`
+
+	ReconcileStatus ReconcileStatus `json:"reconcileStatus,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -136,6 +137,12 @@ type NVMeshList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []NVMesh `json:"items"`
+}
+
+type ReconcileStatus struct {
+	LastUpdate metav1.Time `json:"lastUpdate,omitempty"`
+	Reason     string      `json:"reason,omitempty"`
+	Status     string      `json:"status,omitempty"`
 }
 
 func init() {

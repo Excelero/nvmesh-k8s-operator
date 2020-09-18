@@ -90,7 +90,6 @@ spec:
                   items:
                     type: string
                   type: array
-                  uniqueItems: true
                 imageRegistry:
                   description: The address of the image registry where the nvmesh
                     management image is stored
@@ -123,6 +122,23 @@ spec:
                   type: string
               required:
               - imageRegistry
+              type: object
+            operator:
+              description: Control the behavior of the NVMesh operator for this NVMesh
+                Cluster
+              properties:
+                ignorePersistentVolumesOnDelete:
+                  description: If IgnorePersistentVolumesOnDelete is true, The operator
+                    will allow deleting this cluster when there are NVMesh PersistentVolumes
+                    on the cluster. This can lead to an unclean state left on the
+                    k8s cluster
+                  type: boolean
+                ignoreVolumeAttachmentOnDelete:
+                  description: If IgnoreVolumeAttachmentOnDelete is true, The operator
+                    will allow deleting this cluster when there are active attachments
+                    of NVMesh volumes. This can lead to an unclean state left on the
+                    k8s cluster
+                  type: boolean
               type: object
           type: object
         status:
