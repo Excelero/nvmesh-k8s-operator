@@ -82,6 +82,14 @@ type NVMeshCSI struct {
 	ImageName string `json:"imageName,omitempty"`
 }
 
+type NVMeshOperatorSpec struct {
+	// If IgnoreVolumeAttachmentOnDelete is true, The operator will allow deleting this cluster when there are active attachments of NVMesh volumes. This can lead to an unclean state left on the k8s cluster
+	IgnoreVolumeAttachmentOnDelete bool `json:"ignoreVolumeAttachmentOnDelete,omitempty"`
+
+	// If IgnorePersistentVolumesOnDelete is true, The operator will allow deleting this cluster when there are NVMesh PersistentVolumes on the cluster. This can lead to an unclean state left on the k8s cluster
+	IgnorePersistentVolumesOnDelete bool `json:"ignorePersistentVolumesOnDelete,omitempty"`
+}
+
 // NVMeshSpec defines the desired state of NVMesh
 type NVMeshSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -95,6 +103,9 @@ type NVMeshSpec struct {
 
 	// CSI is an object describing the nvmesh-csi-driver deployment
 	CSI NVMeshCSI `json:"csi,omitempty"`
+
+	// Control the behavior of the NVMesh operator for this NVMesh Cluster
+	Operator NVMeshOperatorSpec `json:"operator,omitempty"`
 }
 
 // NVMeshStatus defines the observed state of NVMesh
