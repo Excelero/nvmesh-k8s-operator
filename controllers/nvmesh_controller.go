@@ -132,6 +132,11 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {
 	// Get Management GUI External URL
+
+	if cr.Spec.Management.ExternalIPs == nil || len(cr.Spec.Management.ExternalIPs) == 0 {
+		return ""
+	}
+
 	var protocol string
 
 	if cr.Spec.Management.UseSSL {

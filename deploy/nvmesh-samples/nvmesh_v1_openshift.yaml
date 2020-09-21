@@ -14,7 +14,10 @@ spec:
   management:
     deploy: true
     imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
+    mongoDB:
+      deploy: true
     mongoAddress: 'mongo-svc.default.svc.cluster.local:27017'
+
     useSSL: true
     replicas: 1
     version: 2.0.3-4

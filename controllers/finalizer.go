@@ -146,7 +146,7 @@ func (r *NVMeshReconciler) verifyNoPersistentVolumes(cr *nvmeshv1.NVMesh) error 
 	nvmeshPVs := make([]string, 0)
 	if len(pvList.Items) > 0 {
 		for _, pv := range pvList.Items {
-			if pv.Spec.CSI.Driver == nvmeshCsiDriverName {
+			if pv.Spec.CSI != nil && pv.Spec.CSI.Driver == nvmeshCsiDriverName {
 				nvmeshPVs = append(nvmeshPVs, pv.GetName())
 			}
 		}
