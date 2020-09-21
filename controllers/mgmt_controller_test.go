@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var mgmtDefaultImageName string
@@ -40,9 +40,11 @@ func TestManagementReconciler(t *testing.T) {
 	Expect(err).To(BeNil())
 
 	r := NVMeshReconciler{
-		Scheme: e.Scheme,
-		Log:    log.Log,
-		Client: e.Client,
+		NVMeshBaseReconciler: NVMeshBaseReconciler{
+			Scheme: e.Scheme,
+			Log:    logf.Log.Logger,
+			Client: e.Client,
+		},
 	}
 
 	mgmtr := NVMeshMgmtReconciler(r)

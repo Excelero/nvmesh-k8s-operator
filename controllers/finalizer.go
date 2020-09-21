@@ -20,39 +20,54 @@ const (
 	nvmeshCsiDriverName  = "nvmesh-csi.excelero.com"
 )
 
-func (r *NVMeshReconciler) AddFinalizer(nvmeshCluster *nvmeshv1.NVMesh) error {
+func isBeingDeleted(nvmeshCluster *nvmeshv1.NVMesh) bool {
+	// examine DeletionTimestamp to determine if object is under deletion
+	return !nvmeshCluster.ObjectMeta.DeletionTimestamp.IsZero()
+}
+
+func hasFinalizer(nvmeshCluster *nvmeshv1.NVMesh, finName string) bool {
+	return containsString(nvmeshCluster.ObjectMeta.Finalizers, finName)
+}
+
+func (r *NVMeshReconciler) addFinalizerAndUpdate(nvmeshCluster *nvmeshv1.NVMesh, finName string) error {
+	nvmeshCluster.ObjectMeta.Finalizers = append(nvmeshCluster.ObjectMeta.Finalizers, finName)
+	return r.Update(context.TODO(), nvmeshCluster)
+}
+
+func (r *NVMeshReconciler) removeFinalizerAndUpdate(nvmeshCluster *nvmeshv1.NVMesh, finName string) error {
+	// remove our finalizer from the list and update it.
+	nvmeshCluster.ObjectMeta.Finalizers = removeString(nvmeshCluster.ObjectMeta.Finalizers, clusterFinalizerName)
+	return r.Update(context.TODO(), nvmeshCluster)
+}
+
+func (r *NVMeshReconciler) HandleFinalizer(nvmeshCluster *nvmeshv1.NVMesh) error {
 	//log := r.Log.WithValues("NVMesh Cluster Finalizer", nvmeshCluster.GetNamespace())
 
-	// examine DeletionTimestamp to determine if object is under deletion
-	if nvmeshCluster.ObjectMeta.DeletionTimestamp.IsZero() {
-		// The object is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object. This is equivalent
-		// registering our finalizer.
-		if !containsString(nvmeshCluster.ObjectMeta.Finalizers, clusterFinalizerName) {
-			nvmeshCluster.ObjectMeta.Finalizers = append(nvmeshCluster.ObjectMeta.Finalizers, clusterFinalizerName)
-			err := r.Update(context.Background(), nvmeshCluster)
-			return err
-		}
-
-		return nil
-	} else {
+	if isBeingDeleted(nvmeshCluster) {
 		// The object is being deleted
-		if containsString(nvmeshCluster.ObjectMeta.Finalizers, clusterFinalizerName) {
-			// our finalizer is present, so lets handle any external dependency
+		if hasFinalizer(nvmeshCluster, clusterFinalizerName) {
 			if err := r.verifyNoExternalDependenciesExist(nvmeshCluster); err != nil {
 				// if fail to delete the external dependency here, return with error
 				// so that it can be retried
 				return err
 			}
-
-			// remove our finalizer from the list and update it.
-			nvmeshCluster.ObjectMeta.Finalizers = removeString(nvmeshCluster.ObjectMeta.Finalizers, clusterFinalizerName)
-			if err := r.Update(context.Background(), nvmeshCluster); err != nil {
+			if err := r.removeFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
 				return err
 			}
 		}
 
 		// Stop reconciliation as the item is being deleted
+		return nil
+	} else {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+		if !hasFinalizer(nvmeshCluster, clusterFinalizerName) {
+			if err := r.addFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 }

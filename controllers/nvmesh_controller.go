@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
@@ -39,22 +40,29 @@ import (
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
 )
 
-var GloballyNamedKinds = []string{
-	"CSIDriver",
-	"ClusterRole",
-	"ClusterRoleBinding",
-	"StorageClass",
-	"CustomResourceDefinition",
-}
+var (
+	GloballyNamedKinds = []string{
+		"CSIDriver",
+		"ClusterRole",
+		"ClusterRoleBinding",
+		"StorageClass",
+		"CustomResourceDefinition",
+	}
+
+	reconcileCycles = 0
+)
 
 // NVMeshReconciler reconciles a NVMesh object
-type NVMeshReconciler struct {
+type NVMeshBaseReconciler struct {
 	client.Client
 	Log           logr.Logger
 	Scheme        *runtime.Scheme
 	DynamicClient dynamic.Interface
 	Manager       ctrl.Manager
 	EventManager  *EventManager
+}
+type NVMeshReconciler struct {
+	NVMeshBaseReconciler
 }
 
 type NVMeshComponent interface {
@@ -71,6 +79,8 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("nvmesh", req.NamespacedName)
 
+	reconcileCycles = reconcileCycles + 1
+
 	// Fetch the NVMesh instance
 	cr := &nvmeshv1.NVMesh{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, cr)
@@ -85,7 +95,6 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return r.RequeueWithError(cr, err)
 	}
 
-	r.EventManager.Normal(cr, "debug", "Reconcile Cycle")
 	//Validate CustomResource
 	err = r.IsValid(cr)
 	if err != nil {
@@ -93,7 +102,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	r.stopAllUnstructuredWatchers()
-	err = r.AddFinalizer(cr)
+	err = r.HandleFinalizer(cr)
 	if err != nil {
 		return r.RequeueWithError(cr, err)
 	}
@@ -116,11 +125,6 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			r.Log.Error(e, "Error from ReconcileComponent")
 		}
 		return r.RequeueWithError(cr, errorList[0])
-	}
-
-	err = r.updateStatus(cr)
-	if err != nil {
-		r.Log.Error(err, "Failed to update CustomResource Status")
 	}
 
 	return r.DoNotRequeue(cr)
@@ -147,11 +151,6 @@ func (r *NVMeshReconciler) setStatusOnCustomResource(cr *nvmeshv1.NVMesh) {
 	cr.Status.WebUIURL = r.getManagementGUIURL(cr)
 }
 
-func (r *NVMeshReconciler) updateStatus(cr *nvmeshv1.NVMesh) error {
-	r.setStatusOnCustomResource(cr)
-	return r.Status().Update(context.Background(), cr)
-}
-
 func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// this handler will initiate Reconcile cycle whenever an object is Created, Deleted or Updated
@@ -160,8 +159,12 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		OwnerType:    &v1.NVMesh{},
 	}
 
+	// Reconcile only if generation field changed - this is to prevent cycle loop after status updates
+	generationChangePredicate := predicate.GenerationChangedPredicate{}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nvmeshv1.NVMesh{}).
+		WithEventFilter(generationChangePredicate).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}}, handler).
 		Watches(&source.Kind{Type: &appsv1.Deployment{}}, handler).
 		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, handler).

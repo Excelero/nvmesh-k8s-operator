@@ -40,9 +40,11 @@ func TestCsiReconciler(t *testing.T) {
 	Expect(err).To(BeNil())
 
 	nvmeshr := NVMeshReconciler{
-		Scheme: e.Scheme,
-		Log:    logf.Log.Logger,
-		Client: e.Client,
+		NVMeshBaseReconciler: NVMeshBaseReconciler{
+			Scheme: e.Scheme,
+			Log:    logf.Log.Logger,
+			Client: e.Client,
+		},
 	}
 
 	csir := NVMeshCSIReconciler(nvmeshr)
@@ -107,9 +109,11 @@ func TestCsiReconcileGenericObject(t *testing.T) {
 	Expect(err).To(BeNil())
 
 	r := NVMeshReconciler{
-		Scheme: e.Scheme,
-		Log:    logf.Log.Logger,
-		Client: e.Client,
+		NVMeshBaseReconciler: NVMeshBaseReconciler{
+			Scheme: e.Scheme,
+			Log:    logf.Log.Logger,
+			Client: e.Client,
+		},
 	}
 
 	csir := NVMeshCSIReconciler(r)

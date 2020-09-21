@@ -113,12 +113,14 @@ func main() {
 	}
 
 	if err = (&controllers.NVMeshReconciler{
-		Client:        mgr.GetClient(),
-		Log:           ctrl.Log.WithName("controllers").WithName("NVMesh"),
-		Scheme:        mgr.GetScheme(),
-		DynamicClient: GetDynamicClientOrDie(mgr.GetConfig()),
-		Manager:       mgr,
-		EventManager:  eventManager,
+		NVMeshBaseReconciler: controllers.NVMeshBaseReconciler{
+			Client:        mgr.GetClient(),
+			Log:           ctrl.Log.WithName("controllers").WithName("NVMesh"),
+			Scheme:        mgr.GetScheme(),
+			DynamicClient: GetDynamicClientOrDie(mgr.GetConfig()),
+			Manager:       mgr,
+			EventManager:  eventManager,
+		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NVMesh")
 		os.Exit(1)

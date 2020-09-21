@@ -2,31 +2,45 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"time"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	"github.com/prometheus/common/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func (r *NVMeshReconciler) DoNotRequeue(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
-	log := r.Log.WithValues("method", "DoNotRequeue")
+	//log := r.Log.WithValues("method", "DoNotRequeue")
+	var generation int64 = -1
 
 	if cr != nil {
+		generation = cr.ObjectMeta.GetGeneration()
+
 		cr.Status.ReconcileStatus = nvmeshv1.ReconcileStatus{
 			LastUpdate: metav1.Now(),
 			Status:     "Success",
 		}
 
-		err := r.Client.Status().Update(context.Background(), cr)
+		r.setStatusOnCustomResource(cr)
+		err := r.Client.Status().Update(context.TODO(), cr)
 
 		if err != nil {
-			log.Error(err, "unable to update status")
+			log.Info(fmt.Sprintf("unable to update status. %s", err))
+
+			// If we failed to update the status let's requeue and have the next cycle update the status
+			return reconcile.Result{
+				RequeueAfter: time.Second,
+				Requeue:      true,
+			}, nil
 		}
+
 	}
 
+	fmt.Printf("Reconcile Success. Cycle #: %d, Generation: %d\n", reconcileCycles, generation)
 	return reconcile.Result{}, nil
 }
 
@@ -45,8 +59,9 @@ func (r *NVMeshReconciler) RequeueWithError(cr *nvmeshv1.NVMesh, issue error) (r
 		Status:     "Failure",
 	}
 
+	r.setStatusOnCustomResource(cr)
 	cr.Status.ReconcileStatus = newStatus
-	err := r.Client.Status().Update(context.Background(), cr)
+	err := r.Client.Status().Update(context.TODO(), cr)
 
 	if err != nil {
 		log.Error(err, "unable to update status")

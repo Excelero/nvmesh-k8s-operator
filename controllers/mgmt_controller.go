@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
-	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -17,11 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -35,12 +31,7 @@ const (
 )
 
 type NVMeshMgmtReconciler struct {
-	client.Client
-	Log           logr.Logger
-	Scheme        *runtime.Scheme
-	DynamicClient dynamic.Interface
-	Manager       ctrl.Manager
-	EventManager  *EventManager
+	NVMeshBaseReconciler
 }
 
 func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
