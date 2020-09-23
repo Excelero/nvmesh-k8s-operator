@@ -48,7 +48,7 @@ type MongoDBCluster struct {
 
 	//The number of MongoDB replicas in the MongoDB Cluster - This field is ignored if management.mongoDB.external=true
 	// +optional
-	Replicas string `json:"replicas,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
 }
 
 type NVMeshManagement struct {
@@ -66,7 +66,6 @@ type NVMeshManagement struct {
 	Replicas int32 `json:"replicas,omitempty"`
 
 	//Configuration for deploying a MongoDB cluster"
-	// +optional
 	MongoDB MongoDBCluster `json:"mongoDB,omitempty"`
 
 	//The ExternalIP that will be used for the management GUI service LoadBalancer

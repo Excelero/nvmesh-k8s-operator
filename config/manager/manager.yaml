@@ -1,33 +1,25 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    control-plane: controller-manager
-  name: system
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: operator-name
-  namespace: system
+  name: nvmesh-operator
   labels:
-    control-plane: operator-name
+    app: nvmesh-operator
 spec:
   selector:
     matchLabels:
-      control-plane: operator-name
+      app: nvmesh-operator
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: operator-name
+        app: nvmesh-operator
     spec:
       containers:
       - command:
         - /manager
         args:
         - --enable-leader-election
-        image: operator-name:latest
+        image: excelero/nvmesh-operator:latest
         name: manager
         resources:
           limits:

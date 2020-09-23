@@ -19,14 +19,10 @@ spec:
       description: NVMesh is the Schema for the nvmeshes API
       properties:
         apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
           type: string
         kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -36,105 +32,84 @@ spec:
             core:
               description: Core is an object describing the nvmesh-core deployment
               properties:
-                deploy:
-                  description: Deploy controls wether to deploy NVMesh Core
+                disabled:
+                  description: Disabled - if true NVMesh Core will not be deployed
                   type: boolean
                 imageRegistry:
-                  description: The address of the image registry where the nvmesh
-                    core images are stored
+                  description: The address of the image registry where the nvmesh core images are stored
                   type: string
                 version:
-                  description: The version of NVMesh Core to be deployed. to perform
-                    an upgrade simply update this value to the required version.
+                  description: The version of NVMesh Core to be deployed. to perform an upgrade simply update this value to the required version.
                   type: string
               required:
-              - imageRegistry
               - version
               type: object
             csi:
               description: CSI is an object describing the nvmesh-csi-driver deployment
               properties:
                 controllerReplicas:
-                  description: ControllerReplicas describes the number of replicas
-                    for the NVMesh CSI Controller Statefulset
+                  description: ControllerReplicas describes the number of replicas for the NVMesh CSI Controller Statefulset
                   format: int32
                   minimum: 1
                   type: integer
-                deploy:
-                  description: Deploy controls wether the NVMesh CSI Driver should
-                    be deployed or not
+                disabled:
+                  description: Disabled - if true NVMesh CSI Driver will not be deployed
                   type: boolean
                 imageName:
-                  description: ImageName - Optional, if given will override the default
-                    repositroy/image-name
+                  description: ImageName - Optional, if given will override the default repositroy/image-name
                   type: string
                 version:
-                  description: Version controls which version of the NVMesh CSI Controller
-                    will be deployed. to perform an upgrade simply update this value
-                    to the required version.
+                  description: Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
                   type: string
               type: object
             management:
-              description: Management is an object describing the nvmesh-management
-                deployment
+              description: Management is an object describing the nvmesh-management deployment
               properties:
-                deploy:
-                  description: Deploy controls wether to deploy NVMesh Management
+                disabled:
+                  description: Disabled - if true NVMesh Management will not be deployed
                   type: boolean
                 externalIPs:
-                  description: The ExternalIP that will be used for the management
-                    GUI service LoadBalancer
+                  description: The ExternalIP that will be used for the management GUI service LoadBalancer
                   items:
                     type: string
                   type: array
                 imageRegistry:
-                  description: The address of the image registry where the nvmesh
-                    management image is stored
-                  type: string
-                mongoAddress:
-                  description: The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
+                  description: The address of the image registry where the nvmesh management image is stored
                   type: string
                 mongoDB:
                   description: Configuration for deploying a MongoDB cluster"
                   properties:
-                    deploy:
-                      description: Deploy MongoDB for NVMesh Management, if this is
-                        true a MongoDB cluster will automatically be deployed. If
-                        this is false the Management server will try to connect to
-                        an external MongoDB cluster using the address defined NVMesh.Spec.Management.MongoAddress
+                    address:
+                      description: The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
+                      type: string
+                    external:
+                      description: External - if true MongoDB is expected to be already deployed, and MongoAddress should be given, if false - MongoDB will be automatically deployed
                       type: boolean
+                    replicas:
+                      description: The number of MongoDB replicas in the MongoDB Cluster - This field is ignored if management.mongoDB.external=true
+                      format: int32
+                      type: integer
                   type: object
+                noSSL:
+                  description: Disable TLS/SSL on NVMesh-Management websocket and HTTP connections
+                  type: boolean
                 replicas:
                   description: The number of replicas of the NVMesh Managemnet
                   format: int32
                   minimum: 1
                   type: integer
-                useSSL:
-                  description: Wether the management should a secure TLS/SSL connection
-                    on websocket and HTTP connections
-                  type: boolean
                 version:
-                  description: The version of NVMesh Management to be deployed. to
-                    perform an upgrade simply update this value to the required version.
+                  description: The version of NVMesh Management to be deployed. to perform an upgrade simply update this value to the required version.
                   type: string
-              required:
-              - imageRegistry
               type: object
             operator:
-              description: Control the behavior of the NVMesh operator for this NVMesh
-                Cluster
+              description: Control the behavior of the NVMesh operator for this NVMesh Cluster
               properties:
                 ignorePersistentVolumesOnDelete:
-                  description: If IgnorePersistentVolumesOnDelete is true, The operator
-                    will allow deleting this cluster when there are NVMesh PersistentVolumes
-                    on the cluster. This can lead to an unclean state left on the
-                    k8s cluster
+                  description: If IgnorePersistentVolumesOnDelete is true, The operator will allow deleting this cluster when there are NVMesh PersistentVolumes on the cluster. This can lead to an unclean state left on the k8s cluster
                   type: boolean
                 ignoreVolumeAttachmentOnDelete:
-                  description: If IgnoreVolumeAttachmentOnDelete is true, The operator
-                    will allow deleting this cluster when there are active attachments
-                    of NVMesh volumes. This can lead to an unclean state left on the
-                    k8s cluster
+                  description: If IgnoreVolumeAttachmentOnDelete is true, The operator will allow deleting this cluster when there are active attachments of NVMesh volumes. This can lead to an unclean state left on the k8s cluster
                   type: boolean
               type: object
           type: object
@@ -144,6 +119,16 @@ spec:
             WebUIURL:
               description: The URL of NVMesh Web GUI
               type: string
+            reconcileStatus:
+              properties:
+                lastUpdate:
+                  format: date-time
+                  type: string
+                reason:
+                  type: string
+                status:
+                  type: string
+              type: object
           type: object
       type: object
   version: v1

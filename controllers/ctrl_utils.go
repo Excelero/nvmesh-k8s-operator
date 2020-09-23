@@ -339,7 +339,9 @@ func (r *NVMeshReconciler) addUnstructuredWatch(res dynamic.ResourceInterface, o
 	return nil
 }
 
-func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, directoryPath string, shouldCreate bool) error {
+type unstructuredUpdater func(*nvmeshv1.NVMesh, *unstructured.Unstructured, *schema.GroupVersionKind)
+
+func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, directoryPath string, shouldCreate bool, processFunc unstructuredUpdater) error {
 	log := r.Log.WithValues("method", "ReconcileUnstructuredObjects")
 
 	var errList []error = make([]error, 0)
@@ -354,6 +356,8 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Error while trying to read Unstructured Object from YAML file %s", file))
 		}
+
+		processFunc(cr, obj, gvk)
 
 		gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
 		if err != nil {
@@ -372,9 +376,11 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 		res := r.DynamicClient.Resource(gvrMapping.Resource).Namespace(ns)
 		objName := obj.GetName()
 
-		err = r.addUnstructuredWatch(res, obj)
-		if err != nil {
-			return err
+		if shouldCreate == true {
+			err = r.addUnstructuredWatch(res, obj)
+			if err != nil {
+				return err
+			}
 		}
 
 		_, err = res.Get(context.TODO(), objName, metav1.GetOptions{})

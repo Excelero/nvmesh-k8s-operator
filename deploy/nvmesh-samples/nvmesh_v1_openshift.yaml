@@ -12,7 +12,6 @@ spec:
   management:
     imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
     mongoDB:
-      external: false
       replicas: 1
     replicas: 1
     version: 2.0.3-4

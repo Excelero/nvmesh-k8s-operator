@@ -11,6 +11,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -54,7 +55,7 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 
 	// Reconcile MongoDB custom resource using the unstructured client
 	shouldDeployMongo := !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External
-	err = nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBCustomResourceLocation, shouldDeployMongo)
+	err = nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBCustomResourceLocation, shouldDeployMongo, updateMongoDBObjects)
 	if err != nil {
 		return err
 	}
@@ -66,6 +67,18 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	}
 
 	return err
+}
+
+func updateMongoDBObjects(cr *nvmeshv1.NVMesh, obj *unstructured.Unstructured, gvk *schema.GroupVersionKind) {
+	switch gvk.Kind {
+	case "MongoDB":
+		spec := obj.Object["spec"].(map[string]interface{})
+		spec["replicas"] = cr.Spec.Management.MongoDB.Replicas
+
+		// if cr.Spec.Management.MongoDB.Version != "" {
+		// 	spec["version"] = cr.Spec.Management.MongoDB.Version
+		// }
+	}
 }
 
 // find the corresponding GVR (available in *meta.RESTMapping) for gvk
