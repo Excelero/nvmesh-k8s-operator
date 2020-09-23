@@ -19,7 +19,6 @@ func TestCoreReconciler(t *testing.T) {
 	cr := &nvmeshv1.NVMesh{
 		Spec: nvmeshv1.NVMeshSpec{
 			Core: nvmeshv1.NVMeshCore{
-				Deploy:  true,
 				Version: "2.0.3-dev",
 			},
 		},

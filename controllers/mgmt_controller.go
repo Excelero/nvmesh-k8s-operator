@@ -40,7 +40,7 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	nonRecursive := false
 
 	// Reconcile MongoDB objects using typed client (except the MongoDB CustomResource)
-	if cr.Spec.Management.Deploy && cr.Spec.Management.MongoDB.Deploy {
+	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
 		err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBAssestLocation, nonRecursive)
 		if err != nil {
 			return err
@@ -53,16 +53,16 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	}
 
 	// Reconcile MongoDB custom resource using the unstructured client
-	shouldDeployMongo := cr.Spec.Management.Deploy && cr.Spec.Management.MongoDB.Deploy
+	shouldDeployMongo := !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External
 	err = nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBCustomResourceLocation, shouldDeployMongo)
 	if err != nil {
 		return err
 	}
 
-	if cr.Spec.Management.Deploy {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation, recursive)
-	} else {
+	if cr.Spec.Management.Disabled {
 		err = nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation, recursive)
+	} else {
+		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation, recursive)
 	}
 
 	return err
@@ -138,9 +138,15 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 	o.Data["configVersion"] = cr.Spec.Management.Version
 
 	loggingLevel := "DEBUG"
-	useSSL := strconv.FormatBool(cr.Spec.Management.UseSSL)
+	useSSL := strconv.FormatBool(!cr.Spec.Management.NoSSL)
 
-	mongoConnectionString := cr.Spec.Management.MongoAddress
+	var mongoConnectionString string
+	if cr.Spec.Management.MongoDB.External {
+		mongoConnectionString = cr.Spec.Management.MongoDB.Address
+	} else {
+		mongoConnectionString = "mongo-svc.default.svc.cluster.local:27017"
+	}
+
 	statisticsCores := 5
 
 	jsonTemplate := `{

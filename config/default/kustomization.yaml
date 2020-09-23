@@ -1,16 +1,16 @@
 # Adds namespace to all resources.
-namespace: nvmesh-operator
+#namespace: nvmesh-operator
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
 # "wordpress" becomes "alices-wordpress".
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
-namePrefix: nvmesh-operator-
+#namePrefix: nvmesh-operator-
 
 # Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+commonLabels:
+  app: nvmesh-operator
 
 bases:
 - ../crd

@@ -38,7 +38,7 @@ spec:
           terminationGracePeriodSeconds: 3600
         - name: toma
           image: nvmesh-toma
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh"]
           securityContext:
             privileged: true

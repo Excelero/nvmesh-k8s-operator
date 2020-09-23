@@ -1,0 +1,292 @@
+apiVersion: operators.coreos.com/v1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Full Lifecycle
+    operators.operatorframework.io/builder: operator-sdk-v1.0.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+  name: nvmesh-operator.0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - displayName: NVMesh
+      kind: NVMesh
+      name: nvmeshes.nvmesh.excelero.com
+      version: v1
+      description: NVMesh is the object describing the deployment of NVMesh Cluster
+      specDescriptors:
+        - description: NVMesh Core version to be installed.
+          displayName: Version
+          path: core.version
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - description: NVMesh Management version to be installed.
+          displayName: Management Version
+          path: management.version
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - description: NVMesh CSI Driver version to be installed.
+          displayName: CSI Version
+          path: csi.version
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - description: The number of replicas in the NVMesh-Management server cluster
+          displayName: Management Replica
+          path: management.replicas
+        - description: The number of replicas in the MongoDB cluster
+          displayName: Management Replica
+          path: management.mongodb.replicas
+      statusDescriptors:
+        - description: The URL to access the NVMesh-Management WebUI.
+          displayName: WebUI URL
+          path: webUIURL
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:label'
+    # required:
+    # - name: mongodb.mongodb.com
+    #   version: v1
+    #   kind: MongoDB
+    #   displayName: MongoDB
+    #   description: Represents a cluster of MongoDB.
+  description: Excelero NVMesh Kubernetes Operator
+  displayName: NVMesh Operator
+  icon:
+  - base64data: "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"
+    mediatype: image/png
+  install:
+    strategy: deployment
+    spec:
+      deployments:
+        - name: nvmesh-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: nvmesh-operator
+            template:
+              metadata:
+                labels:
+                  app: nvmesh-operator
+              spec:
+                serviceAccountName: nvmesh-operator
+                containers:
+                - name: controller
+                  image: excelero/nvmesh-operator:dev
+                  command:
+                  - /manager
+                  args:
+                  - --enable-leader-election
+                  resources:
+                    limits:
+                      cpu: 100m
+                      memory: 30Mi
+                    requests:
+                      cpu: 100m
+                      memory: 20Mi
+                terminationGracePeriodSeconds: 10
+      clusterPermissions:
+        - serviceAccountName: nvmesh-operator
+          rules:
+            - apiGroups:
+              - ""
+              resources:
+              - nodes
+              - pods
+              - services
+              - services/finalizers
+              - serviceaccounts
+              - endpoints
+              - persistentvolumeclaims
+              - persistentvolumes
+              - events
+              - configmaps
+              - secrets
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - ""
+              resources:
+              - persistentvolumeclaims/status
+              verbs:
+              - update
+              - patch
+            - apiGroups:
+              - apps
+              resources:
+              - deployments
+              - daemonsets
+              - replicasets
+              - statefulsets
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - rbac.authorization.k8s.io
+              resources:
+              - roles
+              - rolebindings
+              - clusterroles
+              - clusterrolebindings
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - storage.k8s.io
+              resources:
+              - csidrivers
+              - storageclasses
+              - csinodes
+              - volumeattachments
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - snapshot.storage.k8s.io
+              resources:
+              - volumesnapshotcontents
+              - volumesnapshots
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - security.openshift.io
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - use
+            - apiGroups:
+              - coordination.k8s.io
+              resources:
+                - leases
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - nvmesh.excelero.com
+              resources:
+              - nvmeshes
+              - nvmeshes/finalizers
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - nvmesh.excelero.com
+              resources:
+              - nvmeshes/status
+              verbs:
+              - get
+              - patch
+              - update
+            - apiGroups:
+              - apiextensions.k8s.io
+              resources:
+              - customresourcedefinitions
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            # From MongoDB
+            - apiGroups:
+              - monitoring.coreos.com
+              resources:
+              - servicemonitors
+              verbs:
+              - get
+              - create
+            - apiGroups:
+              - apps
+              resourceNames:
+              - mongodb-kubernetes-operator
+              resources:
+              - deployments/finalizers
+              verbs:
+              - update
+            - apiGroups:
+              - ""
+              resources:
+              - pods
+              verbs:
+              - get
+            - apiGroups:
+              - apps
+              resources:
+              - replicasets
+              - deployments
+              verbs:
+              - get
+            - apiGroups:
+              - mongodb.com
+              resources:
+              - '*'
+              - mongodbs
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - nvmesh
+  links:
+  - name: Excelero NVMesh
+    url: https://www.excelero.com/product/nvmesh/
+  - name: NVMesh User Guide
+    url: https://www.excelero.com/nvmesh-user-guide/
+  maturity: alpha
+  provider:
+    name: Excelero
+  version: 0.0.1

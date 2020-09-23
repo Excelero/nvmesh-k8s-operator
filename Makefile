@@ -12,7 +12,7 @@ endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Image URL to use all building/pushing image targets
-IMG ?= nvmesh-operator:dev
+IMG ?= excelero/nvmesh-operator:dev
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -70,6 +70,7 @@ deploy: manifests kustomize
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml deploy/010_nvmesh_crd.yaml
+	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml catalog_bundle/nvmesh.crd.yaml
 
 # Run go fmt against code
 fmt:

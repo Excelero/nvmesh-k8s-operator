@@ -84,7 +84,9 @@ func GetDynamicClientOrDie(config *rest.Config) dynamic.Interface {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+
+	// metrics-addr default is 0 - so it is disable, if we want to re-enable it, we should set the default to :8080
+	flag.StringVar(&metricsAddr, "metrics-addr", "0", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")

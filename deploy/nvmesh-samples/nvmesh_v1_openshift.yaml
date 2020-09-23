@@ -4,20 +4,15 @@ metadata:
   name: cluster1
 spec:
   core:
-    deploy: true
     imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
     version: '2.0.3-4'
   csi:
     controllerReplicas: 1
-    deploy: true
     version: v1.1.0
   management:
-    deploy: true
     imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
     mongoDB:
-      deploy: true
-    mongoAddress: 'mongo-svc.default.svc.cluster.local:27017'
-
-    useSSL: true
+      external: false
+      replicas: 1
     replicas: 1
     version: 2.0.3-4

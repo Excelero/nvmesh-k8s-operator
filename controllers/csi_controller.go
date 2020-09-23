@@ -27,7 +27,7 @@ func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReco
 	var err error
 	recursive := true
 
-	if cr.Spec.CSI.Deploy {
+	if !cr.Spec.CSI.Disabled {
 		err = nvmeshr.CreateObjectsFromDir(cr, r, CSIAssetsLocation, recursive)
 	} else {
 		err = nvmeshr.RemoveObjectsFromDir(cr, r, CSIAssetsLocation, recursive)

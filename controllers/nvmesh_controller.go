@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/prometheus/common/log"
 	appsv1 "k8s.io/api/apps/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -89,22 +90,31 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			return r.DoNotRequeue(nil)
+			return r.ManageSuccess(nil, false)
 		}
 		// Error reading the object - requeue the request.
-		return r.RequeueWithError(cr, err)
+		return r.ManageError(cr, err)
+	}
+
+	// Make sure Initialized
+	ok, err := r.MakeSureInitialized(cr)
+	if err != nil {
+		r.ManageError(cr, err)
+	} else if !ok {
+		// object was initialized and updated - brun another reconcile cycle
+		r.ManageSuccess(cr, true)
 	}
 
 	//Validate CustomResource
 	err = r.IsValid(cr)
 	if err != nil {
-		r.RequeueWithError(cr, err)
+		r.ManageError(cr, err)
 	}
 
 	r.stopAllUnstructuredWatchers()
 	err = r.HandleFinalizer(cr)
 	if err != nil {
-		return r.RequeueWithError(cr, err)
+		return r.ManageError(cr, err)
 	}
 
 	mgmt := NVMeshMgmtReconciler(*r)
@@ -124,10 +134,10 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		for _, e := range errorList {
 			r.Log.Error(e, "Error from ReconcileComponent")
 		}
-		return r.RequeueWithError(cr, errorList[0])
+		return r.ManageError(cr, errorList[0])
 	}
 
-	return r.DoNotRequeue(cr)
+	return r.ManageSuccess(cr, false)
 }
 
 func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {
@@ -139,10 +149,10 @@ func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {
 
 	var protocol string
 
-	if cr.Spec.Management.UseSSL {
-		protocol = "https"
-	} else {
+	if cr.Spec.Management.NoSSL {
 		protocol = "http"
+	} else {
+		protocol = "https"
 	}
 
 	address := cr.Spec.Management.ExternalIPs[0]
@@ -186,4 +196,23 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &storagev1.StorageClass{}}, handler).
 		Watches(&source.Kind{Type: &apiext.CustomResourceDefinition{}}, handler).
 		Complete(r)
+}
+
+func (r *NVMeshReconciler) IsInitialized(cr *nvmeshv1.NVMesh) bool {
+	var ok bool = true // was the object already initialized
+	return ok
+}
+
+func (r *NVMeshReconciler) MakeSureInitialized(cr *nvmeshv1.NVMesh) (bool, error) {
+	ok := r.IsInitialized(cr)
+	if !ok {
+		// object was not initialized - we'll update it and return ok = false so that we run another reconcile cycle
+		err := r.Client.Update(context.TODO(), cr)
+		if err != nil {
+			log.Error(err, "unable to update instance", "instance", cr)
+			return ok, err
+		}
+	}
+
+	return ok, nil
 }

@@ -113,6 +113,7 @@ rules:
   - nvmesh.excelero.com
   resources:
   - nvmeshes
+  - nvmeshes/finalizers
   verbs:
   - create
   - delete
@@ -163,6 +164,18 @@ rules:
   resources:
   - '*'
   - mongodbs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
   verbs:
   - create
   - delete

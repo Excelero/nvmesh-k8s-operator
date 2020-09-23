@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *NVMeshReconciler) DoNotRequeue(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, requeue bool) (ctrl.Result, error) {
 	//log := r.Log.WithValues("method", "DoNotRequeue")
 	var generation int64 = -1
 
@@ -41,11 +41,20 @@ func (r *NVMeshReconciler) DoNotRequeue(cr *nvmeshv1.NVMesh) (ctrl.Result, error
 	}
 
 	fmt.Printf("Reconcile Success. Cycle #: %d, Generation: %d\n", reconcileCycles, generation)
-	return reconcile.Result{}, nil
+	if requeue {
+		// trigger antoher reconcile cycle in one second
+		return reconcile.Result{
+			RequeueAfter: time.Second,
+			Requeue:      true,
+		}, nil
+	} else {
+		// Do not trigger another cycle
+		return reconcile.Result{}, nil
+	}
 }
 
-func (r *NVMeshReconciler) RequeueWithError(cr *nvmeshv1.NVMesh, issue error) (reconcile.Result, error) {
-	log := r.Log.WithValues("method", "RequeueWithError")
+func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconcile.Result, error) {
+	log := r.Log.WithValues("method", "ManageError")
 	var retryInterval time.Duration
 
 	r.EventManager.Warning(cr, "ProcessingError", issue.Error())

@@ -24,61 +24,81 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type NVMeshCore struct {
-	// Deploy controls wether to deploy NVMesh Core
-	Deploy bool `json:"deploy,omitempty"`
-
 	//The version of NVMesh Core to be deployed. to perform an upgrade simply update this value to the required version.
+	// +required
 	Version string `json:"version"`
 
 	//The address of the image registry where the nvmesh core images are stored
+	// +optional
 	ImageRegistry string `json:"imageRegistry"`
+
+	// Disabled - if true NVMesh Core will not be deployed
+	// +optional
+	Disabled bool `json:"disabled,omitempty"`
 }
 
 type MongoDBCluster struct {
-	// Deploy MongoDB for NVMesh Management, if this is true a MongoDB cluster will automatically be deployed. If this is false the Management server will try to connect to an external MongoDB cluster using the address defined NVMesh.Spec.Management.MongoAddress
-	Deploy bool `json:"deploy,omitempty"`
+	// External - if true MongoDB is expected to be already deployed, and MongoAddress should be given, if false - MongoDB will be automatically deployed
+	// +optional
+	External bool `json:"external,omitempty"`
+
+	//The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
+	// +optional
+	Address string `json:"address,omitempty"`
+
+	//The number of MongoDB replicas in the MongoDB Cluster - This field is ignored if management.mongoDB.external=true
+	// +optional
+	Replicas string `json:"replicas,omitempty"`
 }
 
 type NVMeshManagement struct {
-	// Deploy controls wether to deploy NVMesh Management
-	Deploy bool `json:"deploy,omitempty"`
-
 	//The version of NVMesh Management to be deployed. to perform an upgrade simply update this value to the required version.
+	// +required
 	Version string `json:"version,omitempty"`
 
 	//The address of the image registry where the nvmesh management image is stored
+	// +optional
 	ImageRegistry string `json:"imageRegistry"`
 
 	//The number of replicas of the NVMesh Managemnet
 	// +kubebuilder:validation:Minimum=1
+	// +required
 	Replicas int32 `json:"replicas,omitempty"`
 
-	//The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
-	MongoAddress string `json:"mongoAddress,omitempty"`
-
 	//Configuration for deploying a MongoDB cluster"
+	// +optional
 	MongoDB MongoDBCluster `json:"mongoDB,omitempty"`
 
 	//The ExternalIP that will be used for the management GUI service LoadBalancer
+	// +optional
 	ExternalIPs []string `json:"externalIPs,omitempty"`
 
-	// Wether the management should a secure TLS/SSL connection on websocket and HTTP connections
-	UseSSL bool `json:"useSSL,omitempty"`
+	// Disable TLS/SSL on NVMesh-Management websocket and HTTP connections
+	// +optional
+	NoSSL bool `json:"noSSL,omitempty"`
+
+	// Disabled - if true NVMesh Management will not be deployed
+	// +optional
+	Disabled bool `json:"disabled,omitempty"`
 }
 
 type NVMeshCSI struct {
-	// Deploy controls wether the NVMesh CSI Driver should be deployed or not
-	Deploy bool `json:"deploy,omitempty"`
-
 	//ControllerReplicas describes the number of replicas for the NVMesh CSI Controller Statefulset
 	// +kubebuilder:validation:Minimum=1
+	// +optional
 	ControllerReplicas int32 `json:"controllerReplicas,omitempty"`
 
 	//Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
+	// +optional
 	Version string `json:"version,omitempty"`
 
 	//ImageName - Optional, if given will override the default repositroy/image-name
+	// +optional
 	ImageName string `json:"imageName,omitempty"`
+
+	// Disabled - if true NVMesh CSI Driver will not be deployed
+	// +optional
+	Disabled bool `json:"disabled,omitempty"`
 }
 
 type NVMeshOperatorSpec struct {
@@ -104,6 +124,7 @@ type NVMeshSpec struct {
 	CSI NVMeshCSI `json:"csi,omitempty"`
 
 	// Control the behavior of the NVMesh operator for this NVMesh Cluster
+	// +optional
 	Operator NVMeshOperatorSpec `json:"operator,omitempty"`
 }
 

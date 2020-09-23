@@ -8,26 +8,26 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: operator-name
   namespace: system
   labels:
-    control-plane: controller-manager
+    control-plane: operator-name
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: operator-name
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        control-plane: operator-name
     spec:
       containers:
       - command:
         - /manager
         args:
         - --enable-leader-election
-        image: controller:latest
+        image: operator-name:latest
         name: manager
         resources:
           limits:
