@@ -1,0 +1,1 @@
+go build -o ../http_static_file_server
