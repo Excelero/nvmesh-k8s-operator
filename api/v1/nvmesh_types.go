@@ -106,6 +106,13 @@ type NVMeshOperatorSpec struct {
 
 	// If IgnorePersistentVolumesOnDelete is true, The operator will allow deleting this cluster when there are NVMesh PersistentVolumes on the cluster. This can lead to an unclean state left on the k8s cluster
 	IgnorePersistentVolumesOnDelete bool `json:"ignorePersistentVolumesOnDelete,omitempty"`
+
+	FileServer OperatorFileServerSpec `json:"fileServer,omitempty"`
+}
+
+type OperatorFileServerSpec struct {
+	Address              string `json:"address,omitempty"`
+	SkipCheckCertificate bool   `json:"skipCheckCertificate,omitempty"`
 }
 
 // NVMeshSpec defines the desired state of NVMesh

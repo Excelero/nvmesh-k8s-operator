@@ -4,13 +4,11 @@ metadata:
   name: cluster1
 spec:
   core:
-    imageRegistry: 'excelero/'
     version: '2.0.3-4'
   csi:
     controllerReplicas: 1
     version: v1.1.0
   management:
-    imageRegistry: 'docker.excelero.com/excelero/'
     mongoDB:
       external: false
       replicas: 1

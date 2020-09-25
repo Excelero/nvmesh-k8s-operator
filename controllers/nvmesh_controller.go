@@ -200,6 +200,16 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *NVMeshReconciler) IsInitialized(cr *nvmeshv1.NVMesh) bool {
 	var ok bool = true // was the object already initialized
+	if cr.Spec.Core.ImageRegistry == "" {
+		ok = false
+		cr.Spec.Core.ImageRegistry = "registry.excelero.com"
+	}
+
+	if cr.Spec.Management.ImageRegistry == "" {
+		ok = false
+		cr.Spec.Management.ImageRegistry = "registry.excelero.com"
+	}
+
 	return ok
 }
 

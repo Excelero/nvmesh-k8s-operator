@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
@@ -38,7 +39,7 @@ func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 	//name, kind := GetRunetimeObjectNameAndKind(obj)
 	switch o := (*obj).(type) {
 	case *appsv1.DaemonSet:
-		err := r.initUserspaceDaemonSets(cr, o)
+		err := r.initDaemonSets(cr, o)
 		return err
 	case *v1.ConfigMap:
 		err := r.initCoreConfigMap(cr, o)
@@ -84,7 +85,7 @@ func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expect
 	return false
 }
 
-func (r *NVMeshCoreReconciler) initUserspaceDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
+func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
 	var imageName string
 	for i, c := range ds.Spec.Template.Spec.Containers {
 		switch c.Name {
@@ -100,8 +101,7 @@ func (r *NVMeshCoreReconciler) initUserspaceDaemonSets(cr *nvmeshv1.NVMesh, ds *
 			imageName = "nvmesh-driver-container:dev"
 		}
 
-		// TODO: restore generic logic (and remove version tags from the switch above) when images in the testing registry are all in the same version
-		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + imageName // + ":" + cr.Spec.Core.Version
+		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName
 	}
 
 	return nil
@@ -146,6 +146,15 @@ func (r *NVMeshCoreReconciler) getMgmtServersConnectionString(cr *nvmeshv1.NVMes
 }
 
 func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.ConfigMap) error {
+	if cr.Spec.Operator.FileServer.Address != "" {
+		cm.Data["fileServer.address"] = cr.Spec.Operator.FileServer.Address
+	} else {
+		cm.Data["fileServer.address"] = "files.nvmesh-operator.excelero.com"
+	}
+
+	cm.Data["fileServer.skipCheckCertificate"] = strconv.FormatBool(cr.Spec.Operator.FileServer.SkipCheckCertificate)
+	cm.Data["nvmesh.version"] = cr.Spec.Core.Version
+
 	configDict := r.configStringToDict(cm.Data["nvmesh.conf"])
 
 	management_servers := r.getMgmtServersConnectionString(cr)
@@ -153,15 +162,5 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 	configDict["MANAGEMENT_SERVERS"] = fmt.Sprintf("\"%s\"", management_servers)
 
 	cm.Data["nvmesh.conf"] = r.configDictToString(configDict)
-	return nil
-}
-
-func (r *NVMeshCoreReconciler) initDriverContainerDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
-	for _, c := range ds.Spec.Template.Spec.Containers {
-		if c.Name == "driver-container" {
-			c.Image = cr.Spec.Core.ImageRegistry + DriverContainerImageName + ":" + cr.Spec.Core.Version
-		}
-	}
-
 	return nil
 }

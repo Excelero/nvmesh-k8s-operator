@@ -5,7 +5,6 @@ import (
 	goerrors "errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -200,11 +199,7 @@ func (r *NVMeshMgmtReconciler) initiateMgmtGuiService(cr *nvmeshv1.NVMesh, svc *
 
 func getMgmtImageFromResource(cr *nvmeshv1.NVMesh) string {
 	imageRegistry := cr.Spec.Management.ImageRegistry
-	if imageRegistry != "" && !strings.HasSuffix(imageRegistry, "/") {
-		imageRegistry = imageRegistry + "/"
-	}
-
-	return imageRegistry + MgmtImageName + ":" + cr.Spec.Management.Version
+	return imageRegistry + "/" + MgmtImageName + ":" + cr.Spec.Management.Version
 }
 
 func (r *NVMeshMgmtReconciler) shouldUpdateStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {

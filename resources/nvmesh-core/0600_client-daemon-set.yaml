@@ -17,13 +17,41 @@ spec:
     spec:
       nodeSelector:
         nvmesh.excelero.com/nvmesh-client: ""
+      imagePullSecrets:
+        - name: excelero-registry-cred
       containers:
         - name: driver-container
           image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:dev
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh --type client --insert --remove-on-terminate --wait"]
           securityContext:
             privileged: true
+          env:
+            - name: NVMESH_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: nvmesh.version
+            - name: KMOD_SERVER_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: fileServer.address
+            - name: NO_CHECK_CERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: fileServer.skipCheckCertificate
+            - name: KMOD_SERVER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: file-server-cred
+                  key: username
+            - name: KMOD_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: file-server-cred
+                  key: password
           volumeMounts:
             - name: device-dir
               mountPath: /dev
@@ -31,6 +59,8 @@ spec:
               mountPath: /host/lib/modules
             - name: var
               mountPath: /host/var/
+            - name: ofed-info
+              mountPath: /bin/ofed_info
             - name: opt-nvmesh
               mountPath: /opt/NVMesh/
           # terminationGracePeriodSeconds - one hour
@@ -48,3 +78,6 @@ spec:
         - name: opt-nvmesh
           hostPath:
             path: /opt/NVMesh
+        - name: ofed-info
+          hostPath:
+            path: /bin/ofed_info
