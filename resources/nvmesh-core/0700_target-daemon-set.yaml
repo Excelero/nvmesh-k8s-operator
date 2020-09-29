@@ -63,8 +63,12 @@ spec:
               mountPath: /host/var/
             - name: etc-infiniband
               mountPath: /etc/infiniband
-            - name: ofed-info
-              mountPath: /bin/ofed_info
+            - name: opt-nvmesh
+              mountPath: /opt/NVMesh
+            - name: host-bin
+              mountPath: /host/bin/
+            - name: host-sbin
+              mountPath: /host/sbin/
           terminationGracePeriodSeconds: 3600
         - name: toma
           image: nvmesh-toma
@@ -115,14 +119,44 @@ spec:
               mountPath: /sys/
             - name: dev
               mountPath: /dev/
-            - name: ofed-info
-              mountPath: /bin/ofed_info
+            - name: host-bin
+              mountPath: /host/bin/
+            - name: host-sbin
+              mountPath: /host/sbin/
+            - name: opt-nvmesh
+              mountPath: /opt/NVMesh
         - name: tracer
           image: nvmesh-tracer
           imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh"]
           securityContext:
             privileged: true
+          env:
+            - name: NVMESH_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: nvmesh.version
+            - name: KMOD_SERVER_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: fileServer.address
+            - name: NO_CHECK_CERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: fileServer.skipCheckCertificate
+            - name: KMOD_SERVER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: file-server-cred
+                  key: username
+            - name: KMOD_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: file-server-cred
+                  key: password
           volumeMounts:
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
@@ -130,6 +164,8 @@ spec:
               mountPath: /var/log/NVMesh/
             - name: ofed-info
               mountPath: /bin/ofed_info
+            - name: opt-nvmesh
+              mountPath: /opt/NVMesh
       volumes:
         - name: device-dir
           hostPath:
@@ -173,3 +209,12 @@ spec:
         - name: ofed-info
           hostPath:
             path: /bin/ofed_info
+        - name: opt-nvmesh
+          hostPath:
+            path: /opt/NVMesh
+        - name: host-bin
+          hostPath:
+            path: /bin
+        - name: host-sbin
+          hostPath:
+            path: /sbin

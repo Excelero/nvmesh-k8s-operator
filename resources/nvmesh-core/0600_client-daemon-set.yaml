@@ -59,10 +59,12 @@ spec:
               mountPath: /host/lib/modules
             - name: var
               mountPath: /host/var/
-            - name: ofed-info
-              mountPath: /bin/ofed_info
             - name: opt-nvmesh
               mountPath: /opt/NVMesh/
+            - name: host-bin
+              mountPath: /host/bin/
+            - name: host-sbin
+              mountPath: /host/sbin/
           # terminationGracePeriodSeconds - one hour
           terminationGracePeriodSeconds: 3600
       volumes:
@@ -78,6 +80,9 @@ spec:
         - name: opt-nvmesh
           hostPath:
             path: /opt/NVMesh
-        - name: ofed-info
+        - name: host-bin
           hostPath:
-            path: /bin/ofed_info
+            path: /bin
+        - name: host-sbin
+          hostPath:
+            path: /sbin

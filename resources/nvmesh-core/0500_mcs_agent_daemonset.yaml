@@ -32,6 +32,31 @@ spec:
               configMapKeyRef:
                 name: nvmesh-core-config
                 key: nvmesh.conf
+          - name: NVMESH_VERSION
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: nvmesh.version
+          - name: KMOD_SERVER_ADDRESS
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: fileServer.address
+          - name: NO_CHECK_CERTIFICATE
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: fileServer.skipCheckCertificate
+          - name: KMOD_SERVER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: file-server-cred
+                key: username
+          - name: KMOD_SERVER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: file-server-cred
+                key: password
           volumeMounts:
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
@@ -47,7 +72,7 @@ spec:
             privileged: true
         - name: agent
           image: nvmesh-mcs
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh agent"]
           env:
           - name: NVMESH_CONF
@@ -55,11 +80,38 @@ spec:
               configMapKeyRef:
                 name: nvmesh-core-config
                 key: nvmesh.conf
+          - name: NVMESH_VERSION
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: nvmesh.version
+          - name: KMOD_SERVER_ADDRESS
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: fileServer.address
+          - name: NO_CHECK_CERTIFICATE
+            valueFrom:
+              configMapKeyRef:
+                name: nvmesh-core-config
+                key: fileServer.skipCheckCertificate
+          - name: KMOD_SERVER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: file-server-cred
+                key: username
+          - name: KMOD_SERVER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: file-server-cred
+                key: password
           volumeMounts:
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
             - name: dev
               mountPath: /dev/
+            - name: opt-nvmesh
+              mountPath: /opt/NVMesh
       volumes:
         - name: var-run-nvmesh
           hostPath:
