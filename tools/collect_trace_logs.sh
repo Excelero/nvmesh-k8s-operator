@@ -6,6 +6,7 @@ namespace="default"
 since=""
 pod_logs="false"
 trace="false"
+hostname=""
 
 show_help() {
     echo "Usage: $__filename__ [--trace] [--logs] --pod <pod-name> --namespace <namespace>"
@@ -15,6 +16,7 @@ show_help() {
     echo "--pod                 the name of pod containing toma's container"
     echo "-n|--namespace        the namespace where the pod is deployed. deafult value is \"default\""
     echo "--since               set value for pager.py --since flag i.e: \"--since now-120s\""
+    echo "--host                the kubernetes name of the host on which the toma is running (try running kubectl get node -o name)"
 }
 
 parse_args() {
@@ -29,6 +31,11 @@ parse_args() {
         ;;
         --pod-logs)
             pod_logs="true"
+            shift
+        ;;
+        --host)
+            host="$2"
+            shift
             shift
         ;;
         --pod)
@@ -65,9 +72,17 @@ parse_args() {
 parse_args $@
 
 if [ -z "$pod_name" ]; then
-    echo "Error: Missing pod name"
-    show_help
-    exit 1
+    if [ -z "$host" ]; then
+        echo "Error: Missing pod name"
+        show_help
+        exit 1
+    else
+        # get pod anme from hostname provided
+        pod_name=$(kubectl get pods -o name --field-selector spec.nodeName=$host --selector=name=nvmesh-target-driver-container | head -1)
+        if [ -z "$pod_name" ]; then
+            echo "Error: could not find the pod nvmesh-target-driver-container that runs on host $host"
+        fi
+    fi
 fi
 
 since_with_flag=""
