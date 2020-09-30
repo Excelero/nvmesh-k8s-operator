@@ -20,8 +20,19 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+#FROM gcr.io/distroless/static:nonroot
+FROM registry.access.redhat.com/ubi8-minimal
 WORKDIR /
+
+### Labels required by RedHat OpenShift
+LABEL name="NVMesh Operator" \
+      maintainer="support@excelero.com" \
+      vendor="Excelero" \
+      version="$VERSION" \
+      release="$RELEASE" \
+      summary="NVMesh Operator for deployment of NVMesh storage solution" \
+      description="NVMesh Operator for Kubernetes and OpenShift"
+
 COPY --from=builder /workspace/manager .
 COPY resources/ resources/
 USER nonroot:nonroot

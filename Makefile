@@ -1,7 +1,9 @@
 # Current Operator version
 VERSION ?= 0.0.1
+RELEASE ?= 1
+
 # Default bundle image tag
-BUNDLE_IMG ?= controller-bundle:$(VERSION)
+BUNDLE_IMG ?= controller-bundle:$(VERSION)-$(RELEASE)
 # Options for 'bundle-build'
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
@@ -12,7 +14,7 @@ endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Image URL to use all building/pushing image targets
-IMG ?= excelero/nvmesh-operator:0.0.0-1
+IMG ?= excelero/nvmesh-operator:$(VERSION)-$(RELEASE)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -86,7 +88,7 @@ generate: controller-gen
 
 # Build the docker image
 docker-build: test
-	docker build . -t ${IMG}
+	docker build . -t ${IMG} --build-arg VERSION=$(VERSION) --build-arg RELEASE=$(RELEASE)
 
 # Push the docker image
 docker-push:
