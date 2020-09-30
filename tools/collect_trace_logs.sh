@@ -4,19 +4,24 @@ __filename__=$0
 pod_name=""
 namespace="default"
 since=""
-pod_logs="false"
-trace="false"
+log_type="trace"
 hostname=""
+print_to_stdout="false"
+redirect=""
+
+print_err() {
+    echo $1 >&2
+}
 
 show_help() {
-    echo "Usage: $__filename__ [--trace] [--logs] --pod <pod-name> --namespace <namespace>"
+    echo "Usage: $__filename__ [--log-type <trace|pod>] [--host <hostname>] [--pod <pod-name>] [--namespace <namespace>]"
     echo ""
-    echo "--logs                collect pod logs and output to <pod_name>.log"
-    echo "--trace               collect trace logs from within the pod and output to stdout"
-    echo "--pod                 the name of pod containing toma's container"
-    echo "-n|--namespace        the namespace where the pod is deployed. deafult value is \"default\""
-    echo "--since               set value for pager.py --since flag i.e: \"--since now-120s\""
-    echo "--host                the kubernetes name of the host on which the toma is running (try running kubectl get node -o name)"
+    echo "-t|--log-type     ( pod | trace ) \"pod\" for the pod logs, \"trace\" will collect trace logs from within the pod and output to stdout. default is \"trace\""
+    echo "--pod             the name of pod containing toma's container"
+    echo "-n|--namespace    the namespace where the pod is deployed. deafult value is \"default\""
+    echo "--since           set value for pager.py --since flag i.e: \"--since now-120s\""
+    echo "--host            the kubernetes name of the host on which the toma is running (try running kubectl get node -o name)"
+    echo "-o|--stdout          stream the output to stdouyt instead of writing to a file"
 }
 
 parse_args() {
@@ -25,12 +30,9 @@ parse_args() {
     key="$1"
 
     case $key in
-        --trace)
-            trace="true"
+        -t|--log-type)
+            log_type="$2"
             shift
-        ;;
-        --pod-logs)
-            pod_logs="true"
             shift
         ;;
         --host)
@@ -73,15 +75,18 @@ parse_args $@
 
 if [ -z "$pod_name" ]; then
     if [ -z "$host" ]; then
-        echo "Error: Missing pod name"
+        print_err "Error: Missing pod name"
         show_help
         exit 1
     else
         # get pod anme from hostname provided
         pod_name=$(kubectl get pods -o name --field-selector spec.nodeName=$host --selector=name=nvmesh-target-driver-container | head -1)
         if [ -z "$pod_name" ]; then
-            echo "Error: could not find the pod nvmesh-target-driver-container that runs on host $host"
+            print_err "Error: could not find the pod nvmesh-target-driver-container that runs on host $host"
+            exit 2
         fi
+
+        echo "Found pod name: $pod_name" >&2
     fi
 fi
 
@@ -90,12 +95,14 @@ if [ ! -z "$since" ]; then
     since_with_flag="--since $since"
 fi
 
-if [ "$pod_logs" == "true" ]; then
+if [ "$log_type" == "pod" ]; then
     echo "running: kubectl exec -n $namespace $pod_name -c toma > $pod_name.log"
-    kubectl logs -n $namespace $pod_name -c toma > $pod_name.log
-fi
-
-if [ "$trace" == "true" ]; then
+    kubectl logs -n $namespace $pod_name -c toma
+elif [ "$log_type" == "trace" ]; then
     echo "running: kubectl exec -n $namespace $pod_name -c toma -- /bin/bash -c \"cd /var/log/NVMesh/trace_daemon/ ; ./pager.py --toma $since_with_flag\""
     kubectl exec -n $namespace $pod_name -c toma -- /bin/bash -c "cd /var/log/NVMesh/trace_daemon/ ; ./pager.py --toma $since_with_flag"
+else
+    print_err "Unknown log type $log_type"
+    show_help
+    exit 1
 fi
