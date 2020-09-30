@@ -110,8 +110,8 @@ spec:
               properties:
                 fileServer:
                   properties:
-                    adress:
-                      type: boolean
+                    address:
+                      type: string
                     skipCheckCertificate:
                       type: boolean
                   type: object

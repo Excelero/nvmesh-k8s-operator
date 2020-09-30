@@ -105,6 +105,13 @@ spec:
             operator:
               description: Control the behavior of the NVMesh operator for this NVMesh Cluster
               properties:
+                fileServer:
+                  properties:
+                    address:
+                      type: string
+                    skipCheckCertificate:
+                      type: boolean
+                  type: object
                 ignorePersistentVolumesOnDelete:
                   description: If IgnorePersistentVolumesOnDelete is true, The operator will allow deleting this cluster when there are NVMesh PersistentVolumes on the cluster. This can lead to an unclean state left on the k8s cluster
                   type: boolean

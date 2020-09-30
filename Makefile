@@ -72,7 +72,7 @@ deploy: manifests kustomize
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml deploy/010_nvmesh_crd.yaml
-	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml catalog_bundle/manifests/nvmesh.crd.yaml
+	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml operator-hub/catalog_bundle/manifests/nvmesh.crd.yaml
 
 # Run go fmt against code
 fmt:
