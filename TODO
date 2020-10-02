@@ -2,17 +2,3 @@
 TODO: Test restarting each component in the solution   
 
 TODO: Management update config using SIGUSR instead of restarting the Pod - mount config as volume, have the init.sh listen to file changes and trigger a signal upon change
-
-TODO: Check Management handler (??)
-
-TODO: Cluster Shutdown will not work
-
-TODO: Add SCC to Scheme
-
-securityv1 "github.com/openshift/api/security/v1"
-//[...]
-//Add OpenShift security to scheme
-	if err := securityv1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
