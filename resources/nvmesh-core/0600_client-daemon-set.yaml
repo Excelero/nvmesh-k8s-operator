@@ -21,7 +21,7 @@ spec:
         - name: excelero-registry-cred
       containers:
         - name: driver-container
-          image: image-registry.openshift-image-registry.svc:5000/default/nvmesh-driver-container:dev
+          image: nvmesh-driver-container:placeholder
           imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh --type client --insert --remove-on-terminate --wait"]
           securityContext:

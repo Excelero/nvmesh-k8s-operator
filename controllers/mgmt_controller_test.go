@@ -12,12 +12,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var mgmtDefaultImageName string
-
-func init() {
-	mgmtDefaultImageName = "docker.excelero.com/nvmesh-management:2.0.3-4"
-}
-
 func TestManagementReconciler(t *testing.T) {
 	RegisterFailHandler(Fail)
 	defer GinkgoRecover()

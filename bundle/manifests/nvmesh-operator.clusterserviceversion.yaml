@@ -286,7 +286,7 @@ spec:
     url: https://www.excelero.com/product/nvmesh/
   - name: NVMesh User Guide
     url: https://www.excelero.com/nvmesh-user-guide/
-  maturity: alpha
+  maturity: beta
   provider:
     name: Excelero
   version: 0.0.1

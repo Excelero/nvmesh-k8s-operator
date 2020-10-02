@@ -1,0 +1,15 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: mongo-conf
+data:
+  mongod.conf: |-
+    systemLog:
+      logAppend: true
+    storage:
+      dbPath: /data/
+      journal:
+        enabled: true
+    net:
+      port: 27017
+      bindIpAll: true

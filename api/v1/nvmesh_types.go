@@ -42,6 +42,10 @@ type MongoDBCluster struct {
 	// +optional
 	External bool `json:"external,omitempty"`
 
+	//If true the NVMesh Operator will deploy a MongoDB Operator and a MongoDB Cluster using a CutomResource
+	// +optional
+	UseOperator bool `json:"useOperator,omitempty"`
+
 	//The MongoDB connection string i.e "mongo-0.mongo.nvmesh.svc.local:27017"
 	// +optional
 	Address string `json:"address,omitempty"`

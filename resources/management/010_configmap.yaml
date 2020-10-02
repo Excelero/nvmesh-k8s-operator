@@ -3,7 +3,7 @@ apiVersion: v1
 metadata:
   name: nvmesh-mgmt-config
 data:
-  configVersion: 2.0.3
+  configVersion: placeholder
   config: |-
     {
       "loggingLevel": "DEBUG",

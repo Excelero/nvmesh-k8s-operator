@@ -1,9 +1,9 @@
 # Current Operator version
 VERSION ?= 0.0.1
-RELEASE ?= 1
+RELEASE ?= 2
 
 # Default bundle image tag
-BUNDLE_IMG ?= controller-bundle:$(VERSION)-$(RELEASE)
+BUNDLE_IMG ?= nvmesh-operator-bundle:$(VERSION)-$(RELEASE)
 # Options for 'bundle-build'
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
@@ -137,7 +137,7 @@ bundle: manifests
 # Build the bundle image.
 .PHONY: bundle-build
 bundle-build:
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	podman build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: list
 list:

@@ -5,10 +5,11 @@ OPERATOR_REGISTRY_REPO=~/go/src/github.com/operator-registry
 # MANIFESTS_DIR the location of the nvmesh_bundle dir relative to the operator-registry repo root
 MANIFESTS_DIR=./nvmesh_bundle/manifests
 
-VERSION=0.0.0-18
+VERSION=0.0.1-3
 BUNDLE_IMAGE_NAME=docker.io/excelero/dev-os-bundle:$VERSION
 INDEX_IMAGE_NAME=docker.io/excelero/dev-os-catalog-source-index:$VERSION
 PACKAGE_NAME=nvmesh-operator
+CHANNEL=beta
 
 echo "BUNDLE_IMAGE_NAME=$BUNDLE_IMAGE_NAME"
 echo "INDEX_IMAGE_NAME=$INDEX_IMAGE_NAME"
@@ -41,12 +42,12 @@ echo "changing dir to  $OPERATOR_REGISTRY_REPO"
 cd $OPERATOR_REGISTRY_REPO
 
 echo "Generation Dokcerfile for bundle image"
-$OPM alpha bundle generate --directory $MANIFESTS_DIR --package $PACKAGE_NAME --channels alpha --default alpha
+$OPM alpha bundle generate --directory $MANIFESTS_DIR --package $PACKAGE_NAME --channels $CHANNEL --default $CHANNEL
 exit_if_err $? "Failed to generate dockerfile for bundle image"
 
 echo "Building Bundle Image"
-$OPM alpha bundle build --directory $MANIFESTS_DIR --tag $BUNDLE_IMAGE_NAME --package $PACKAGE_NAME --channels alpha --default alpha
-exit_if_err $? "Failed to build bundle image. cmd=$OPM alpha bundle build --directory $MANIFESTS_DIR --tag $BUNDLE_IMAGE_NAME --package $PACKAGE_NAME --channels alpha --default alpha"
+$OPM alpha bundle build --directory $MANIFESTS_DIR --tag $BUNDLE_IMAGE_NAME --package $PACKAGE_NAME --channels $CHANNEL --default $CHANNEL
+exit_if_err $? "Failed to build bundle image. cmd=$OPM alpha bundle build --directory $MANIFESTS_DIR --tag $BUNDLE_IMAGE_NAME --package $PACKAGE_NAME --channels $CHANNEL --default $CHANNEL"
 
 echo "Upload bundle image to image registry..."
 docker push $BUNDLE_IMAGE_NAME

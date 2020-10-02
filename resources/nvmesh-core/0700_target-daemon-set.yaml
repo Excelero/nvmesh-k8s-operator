@@ -23,7 +23,7 @@ spec:
         - name: excelero-registry-cred
       containers:
         - name: driver-container
-          image: nvmesh-driver-container:dev
+          image: nvmesh-driver-container:placeholder
           imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh --type target --insert --remove-on-terminate --wait"]
           securityContext:
@@ -71,7 +71,7 @@ spec:
               mountPath: /host/sbin/
           terminationGracePeriodSeconds: 3600
         - name: toma
-          image: nvmesh-toma
+          image: nvmesh-toma:placeholder
           imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh"]
           env:
@@ -126,7 +126,7 @@ spec:
             - name: opt-nvmesh
               mountPath: /opt/NVMesh
         - name: tracer
-          image: nvmesh-tracer
+          image: nvmesh-tracer:placeholder
           imagePullPolicy: Always
           command: ["/bin/bash", "-c", "/init.sh"]
           securityContext:
@@ -162,8 +162,10 @@ spec:
               mountPath: /var/run/NVMesh/
             - name: tracer-logs
               mountPath: /var/log/NVMesh/
-            - name: ofed-info
-              mountPath: /bin/ofed_info
+            - name: host-bin
+              mountPath: /host/bin/
+            - name: host-sbin
+              mountPath: /host/sbin/
             - name: opt-nvmesh
               mountPath: /opt/NVMesh
       volumes:
@@ -206,9 +208,6 @@ spec:
         - name: etc-infiniband
           hostPath:
             path: /etc/infiniband
-        - name: ofed-info
-          hostPath:
-            path: /bin/ofed_info
         - name: opt-nvmesh
           hostPath:
             path: /opt/NVMesh

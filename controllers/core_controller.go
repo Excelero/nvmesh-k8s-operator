@@ -92,16 +92,17 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 		case "mcs":
 			fallthrough
 		case "agent":
-			imageName = "nvmesh-mcs:dev"
+			imageName = "nvmesh-mcs"
 		case "toma":
-			imageName = "nvmesh-toma:dev"
+			imageName = "nvmesh-toma"
 		case "tracer":
-			imageName = "nvmesh-tracer:dev"
+			imageName = "nvmesh-tracer"
 		case "driver-container":
-			imageName = "nvmesh-driver-container:dev"
+			imageName = "nvmesh-driver-container"
 		}
 
-		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName
+		imageVersionTag := "0.0.1-beta"
+		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + imageVersionTag
 	}
 
 	return nil

@@ -1,0 +1,61 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: mongo
+  labels:
+    app: mongo-svc
+spec:
+  serviceName: mongo-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-svc
+  template:
+    metadata:
+      labels:
+        app: mongo-svc
+    spec:
+      imagePullSecrets:
+        - name: excelero-registry-cred
+      terminationGracePeriodSeconds: 30
+      containers:
+        - resources:
+            limits:
+              cpu: '1'
+              memory: 500M
+            requests:
+              cpu: 500m
+              memory: 400M
+          terminationMessagePath: /dev/termination-log
+          name: mongod
+          command:
+            - "mongod"
+            - "-f"
+            - "/conf/mongod.conf"
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+            - name: mongod-conf
+              mountPath: /conf
+          image: 'registry.excelero.com/nvmesh-mongo-instance:0.0.1-beta'
+          ports:
+            - name: client
+              containerPort: 27017
+      dnsPolicy: ClusterFirst
+      volumes:
+      - name: mongod-conf
+        configMap:
+          name: mongo-conf
+  volumeClaimTemplates:
+    - kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: data-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10G
+        volumeMode: Filesystem

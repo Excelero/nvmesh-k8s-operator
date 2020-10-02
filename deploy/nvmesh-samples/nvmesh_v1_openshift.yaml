@@ -4,14 +4,16 @@ metadata:
   name: cluster1
 spec:
   core:
-    imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
     version: '2.0.3-4'
   csi:
     controllerReplicas: 1
     version: v1.1.0
   management:
-    imageRegistry: 'image-registry.openshift-image-registry.svc:5000/default/'
     mongoDB:
       replicas: 1
     replicas: 1
     version: 2.0.3-4
+  operator:
+    fileServer:
+      address: https://10.0.1.57:3000
+      skipCheckCertificate: true

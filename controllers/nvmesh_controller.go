@@ -53,6 +53,10 @@ var (
 	reconcileCycles = 0
 )
 
+const (
+	defaultRegistry string = "registry.excelero.com"
+)
+
 // NVMeshReconciler reconciles a NVMesh object
 type NVMeshBaseReconciler struct {
 	client.Client
@@ -202,12 +206,12 @@ func (r *NVMeshReconciler) IsInitialized(cr *nvmeshv1.NVMesh) bool {
 	var ok bool = true // was the object already initialized
 	if cr.Spec.Core.ImageRegistry == "" {
 		ok = false
-		cr.Spec.Core.ImageRegistry = "registry.excelero.com"
+		cr.Spec.Core.ImageRegistry = defaultRegistry
 	}
 
 	if cr.Spec.Management.ImageRegistry == "" {
 		ok = false
-		cr.Spec.Management.ImageRegistry = "registry.excelero.com"
+		cr.Spec.Management.ImageRegistry = defaultRegistry
 	}
 
 	return ok

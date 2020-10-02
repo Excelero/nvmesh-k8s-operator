@@ -74,7 +74,7 @@ spec:
                 serviceAccountName: nvmesh-operator
                 containers:
                 - name: controller
-                  image: excelero/nvmesh-operator:0.0.0-1
+                  image: excelero/nvmesh-operator:0.0.1-2
                   command:
                   - /manager
                   args:
@@ -286,7 +286,7 @@ spec:
     url: https://www.excelero.com/product/nvmesh/
   - name: NVMesh User Guide
     url: https://www.excelero.com/nvmesh-user-guide/
-  maturity: alpha
+  maturity: beta
   provider:
     name: Excelero
   version: 0.0.1

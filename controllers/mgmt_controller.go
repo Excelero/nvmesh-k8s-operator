@@ -21,13 +21,14 @@ import (
 )
 
 const (
-	MgmtAssetsLocation            = "resources/management/"
-	MongoDBAssestLocation         = "resources/mongodb"
-	MongoDBCustomResourceLocation = "resources/mongodb/custom-resource"
-	MgmtStatefulSetName           = "nvmesh-management"
-	MgmtImageName                 = "nvmesh-management"
-	MgmtGuiServiceName            = "nvmesh-management-gui"
-	MgmtProtocol                  = "https"
+	MgmtAssetsLocation             = "resources/management/"
+	MongoDBOperatorAssetsLocation  = "resources/mongodb-operator"
+	MongoDBCustomResourceLocation  = "resources/mongodb-operator/custom-resource"
+	MongoDBUnManagedAssetsLocation = "resources/mongodb-unmanaged"
+	MgmtStatefulSetName            = "nvmesh-management"
+	MgmtImageName                  = "nvmesh-management"
+	MgmtGuiServiceName             = "nvmesh-management-gui"
+	MgmtProtocol                   = "https"
 )
 
 type NVMeshMgmtReconciler struct {
@@ -39,14 +40,29 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	recursive := true
 	nonRecursive := false
 
-	// Reconcile MongoDB objects using typed client (except the MongoDB CustomResource)
-	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBAssestLocation, nonRecursive)
+	if !cr.Spec.Management.Disabled && cr.Spec.Management.MongoDB.UseOperator {
+		// Deploy MongoDB Operator
+		err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBOperatorAssetsLocation, nonRecursive)
 		if err != nil {
 			return err
 		}
 	} else {
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBAssestLocation, nonRecursive)
+		// Remove MongoDB Operator
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBOperatorAssetsLocation, nonRecursive)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
+		// Deploy MongoDB Without Operator
+		err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBUnManagedAssetsLocation, nonRecursive)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Remove MongoDB Without Operator
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBUnManagedAssetsLocation, nonRecursive)
 		if err != nil {
 			return err
 		}
@@ -102,7 +118,10 @@ func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 			return r.initiateMgmtStatefulSet(cr, o)
 		}
 	case *v1.ConfigMap:
-		return r.initiateConfigMap(cr, o)
+		switch name {
+		case "nvmesh-mgmt-config":
+			return r.initiateConfigMap(cr, o)
+		}
 	case *v1.Service:
 		switch name {
 		case "nvmesh-management-gui":
@@ -126,11 +145,14 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 			return r.shouldUpdateStatefulSet(cr, expectedStatefulSet, o)
 		}
 	case *v1.ConfigMap:
-		var expectedConf *v1.ConfigMap = (*exp).(*v1.ConfigMap)
-		shouldUpdateConf := r.shouldUpdateConfigMap(cr, expectedConf, o)
-		if shouldUpdateConf == true {
-			r.updateConfAndRestartMgmt(cr, expectedConf, o)
-			return false
+		switch name {
+		case "nvmesh-mgmt-config":
+			var expectedConf *v1.ConfigMap = (*exp).(*v1.ConfigMap)
+			shouldUpdateConf := r.shouldUpdateConfigMap(cr, expectedConf, o)
+			if shouldUpdateConf == true {
+				r.updateConfAndRestartMgmt(cr, expectedConf, o)
+				return false
+			}
 		}
 	case *v1.Service:
 		switch name {
