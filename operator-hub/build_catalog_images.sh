@@ -5,7 +5,7 @@ OPERATOR_REGISTRY_REPO=~/go/src/github.com/operator-registry
 # MANIFESTS_DIR the location of the nvmesh_bundle dir relative to the operator-registry repo root
 MANIFESTS_DIR=./nvmesh_bundle/manifests
 
-VERSION=0.0.1-3
+VERSION=0.0.1-5
 BUNDLE_IMAGE_NAME=docker.io/excelero/dev-os-bundle:$VERSION
 INDEX_IMAGE_NAME=docker.io/excelero/dev-os-catalog-source-index:$VERSION
 PACKAGE_NAME=nvmesh-operator
@@ -61,7 +61,7 @@ $OPM index add --bundles $BUNDLE_IMAGE_NAME --tag $INDEX_IMAGE_NAME #--skip-tls
 exit_if_err $? "Failed to run $OPM index add --bundles $BUNDLE_IMAGE_NAME --tag $INDEX_IMAGE_NAME"
 
 podman push $INDEX_IMAGE_NAME #--tls-verify=false
-exit_if_err $? "Failed to push index image. command: podman push $INDEX_IMAGE_NAME --tls-verify=false"
+exit_if_err $? "Failed to push index image. command: podman push $INDEX_IMAGE_NAME"
 
 
 echo "Done."
