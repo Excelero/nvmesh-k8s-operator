@@ -17,6 +17,7 @@ const (
 	TargetDriverDaemonSetName  = "nvmesh-target-driver-container"
 	ClientDriverDaemonSetName  = "nvmesh-client-driver-container"
 	DriverContainerImageName   = "nvmesh-driver-container"
+	FileServerAddress          = "repo.excelero.com"
 )
 
 type NVMeshCoreReconciler struct {
@@ -150,7 +151,7 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 	if cr.Spec.Operator.FileServer.Address != "" {
 		cm.Data["fileServer.address"] = cr.Spec.Operator.FileServer.Address
 	} else {
-		cm.Data["fileServer.address"] = "files.nvmesh-operator.excelero.com"
+		cm.Data["fileServer.address"] = FileServerAddress
 	}
 
 	cm.Data["fileServer.skipCheckCertificate"] = strconv.FormatBool(cr.Spec.Operator.FileServer.SkipCheckCertificate)

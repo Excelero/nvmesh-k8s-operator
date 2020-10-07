@@ -1,4 +1,3 @@
-# TODO: Before moving this into the nvmesh-core dir this we need to add SCC to the client scheme
 apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
 metadata:
