@@ -17,7 +17,7 @@ spec:
       serviceAccountName: nvmesh-operator
       containers:
       - name: controller
-        image: excelero/nvmesh-operator:dev
+        image: excelero/nvmesh-operator:placeholder
         command:
         - /manager
         args:

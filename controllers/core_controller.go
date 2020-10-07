@@ -17,7 +17,7 @@ const (
 	TargetDriverDaemonSetName  = "nvmesh-target-driver-container"
 	ClientDriverDaemonSetName  = "nvmesh-client-driver-container"
 	DriverContainerImageName   = "nvmesh-driver-container"
-	FileServerAddress          = "repo.excelero.com"
+	FileServerAddress          = "https://repo.excelero.com/nvmesh/operator_binaries"
 )
 
 type NVMeshCoreReconciler struct {
