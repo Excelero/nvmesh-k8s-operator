@@ -1,4 +1,0 @@
-
-TODO: Test restarting each component in the solution   
-
-TODO: Management update config using SIGUSR instead of restarting the Pod - mount config as volume, have the init.sh listen to file changes and trigger a signal upon change
