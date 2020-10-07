@@ -57,6 +57,8 @@ func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconc
 	log := r.Log.WithValues("method", "ManageError")
 	var retryInterval time.Duration
 
+	log.Info(fmt.Sprintf("Reconcile cycle failed. %s", issue))
+
 	r.EventManager.Warning(cr, "ProcessingError", issue.Error())
 
 	lastUpdate := cr.Status.ReconcileStatus.LastUpdate.Time

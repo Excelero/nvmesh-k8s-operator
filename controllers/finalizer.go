@@ -124,7 +124,7 @@ func (r *NVMeshReconciler) verifyNoVolumeAttachments(cr *nvmeshv1.NVMesh) error 
 	}
 
 	if len(nvmeshAttachments) > 0 {
-		errMsg := "Found the following attachments"
+		errMsg := fmt.Sprintf("Found %d attachments: ", len(nvmeshAttachments))
 		for _, a := range nvmeshAttachments {
 			errMsg = fmt.Sprintf("%s pvc: %s on node: %s ", errMsg, *a.Spec.Source.PersistentVolumeName, a.Spec.NodeName)
 		}
@@ -153,7 +153,7 @@ func (r *NVMeshReconciler) verifyNoPersistentVolumes(cr *nvmeshv1.NVMesh) error 
 	}
 
 	if len(nvmeshPVs) > 0 {
-		errMsg := fmt.Sprintf("Found the following NVMesh volumes: %s", strings.Join(nvmeshPVs, ", "))
+		errMsg := fmt.Sprintf("Found %d NVMesh PersistentVolumes: %s", len(nvmeshPVs), strings.Join(nvmeshPVs, ", "))
 		return goerrors.New(errMsg)
 	}
 

@@ -75,6 +75,10 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	if err != nil && k8serrors.IsNotFound(err) {
 		log.Info("Creating new object")
 		err = r.Client.Create(context.TODO(), *newObj)
+		if k8serrors.IsAlreadyExists(err) {
+			log.Info(fmt.Sprintf("WARNING: Object Already exists. while trying to create %s %s", kind, name))
+			return nil
+		}
 		return err
 	} else if err != nil {
 		log.Error(err, "Error while getting object")

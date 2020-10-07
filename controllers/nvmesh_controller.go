@@ -48,6 +48,7 @@ var (
 		"ClusterRoleBinding",
 		"StorageClass",
 		"CustomResourceDefinition",
+		"SecurityContextConstraints",
 	}
 
 	reconcileCycles = 0
