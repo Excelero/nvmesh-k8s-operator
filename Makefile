@@ -140,7 +140,7 @@ bundle-build:
 	podman build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 bundle-registry-build:
-	cd operator-hub && ./build_catalog_images.sh
+	cd operator-hub && ./build_dev_catalog_images.sh
 
 .PHONY: list
 list:
