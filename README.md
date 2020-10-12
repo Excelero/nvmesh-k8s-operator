@@ -1,0 +1,4 @@
+NVMesh Operator enables users to install Excelero NVMesh on Kubernetes and OpenShift clusters.
+
+NVMesh is a low-latency (5μs) distributed block storage for web-scale applications. The solution enables shared NVMe across any network and supports any local or distributed file system. NVMesh features an intelligent management layer that abstracts underlying hardware with CPU offload, creates logical volumes with redundancy, and provides centralized management and monitoring. Customers benefit from the performance of local flash with the convenience of centralized storage while avoiding proprietary hardware lock-in and reducing the overall storage TCO. NVMesh is deployed by major web-scale customers, for data analytics and machine learning applications and in Media & Entertainment post-production and HPC environments.
+For details, go to: [www.excelero.com](https://www.excelero.com).
