@@ -35,7 +35,7 @@ LABEL name="NVMesh Operator" \
 
 COPY --from=builder /workspace/manager .
 COPY resources/ resources/
-COPY LICENSE/ /licenses/LICENSE
+COPY licenses/ licenses/
 
 WORKDIR /
 

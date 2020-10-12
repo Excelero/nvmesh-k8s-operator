@@ -10,13 +10,8 @@ spec:
     version: v1.1.0
   management:
     mongoDB:
-      external: false
       replicas: 1
     externalIPs:
      - 10.0.1.117
     replicas: 1
     version: 2.0.3-4
-  operator:
-    fileServer:
-      address: https://10.0.1.57:3000
-      skipCheckCertificate: true

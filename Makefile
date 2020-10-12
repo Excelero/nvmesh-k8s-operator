@@ -1,6 +1,6 @@
 # Current Operator version
-VERSION ?= 0.0.1
-RELEASE ?= 3
+VERSION ?= 0.7.0
+RELEASE ?= 1
 
 # Default bundle image tag
 BUNDLE_IMG ?= nvmesh-operator-bundle:$(VERSION)-$(RELEASE)

@@ -5,7 +5,7 @@ OPERATOR_REGISTRY_REPO=~/go/src/github.com/operator-registry
 # MANIFESTS_DIR the location of the nvmesh_bundle dir relative to the operator-registry repo root
 MANIFESTS_DIR=./nvmesh_bundle/manifests
 
-VERSION=0.0.1-9
+VERSION=0.7.0-1
 BUNDLE_IMAGE_NAME=docker.io/excelero/dev-os-bundle:$VERSION
 INDEX_IMAGE_NAME=docker.io/excelero/dev-os-catalog-source-index:$VERSION
 PACKAGE_NAME=nvmesh-operator

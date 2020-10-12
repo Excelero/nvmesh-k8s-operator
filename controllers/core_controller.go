@@ -102,7 +102,7 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 			imageName = "nvmesh-driver-container"
 		}
 
-		imageVersionTag := "0.0.1-beta"
+		imageVersionTag := "0.7.0-1"
 		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + imageVersionTag
 	}
 
