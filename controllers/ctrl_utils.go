@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"time"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 
@@ -26,7 +27,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+const (
+	nvmeshClientLabelKey      = "nvmesh.excelero.com/nvmesh-client"
+	nvmeshTargetLabelKey      = "nvmesh.excelero.com/nvmesh-target"
+	nvmeshClusterNameLabelKey = "nvmesh.excelero.com/cluster-name"
 )
 
 var (
@@ -53,6 +61,7 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 		labels = make(map[string]string)
 	}
 	labels["app.kubernetes.io/managed-by"] = "nvmesh-operator"
+	labels[nvmeshClusterNameLabelKey] = cr.GetName()
 	v1obj.SetLabels(labels)
 
 	name, kind := GetRunetimeObjectNameAndKind(newObj)
@@ -326,9 +335,9 @@ func (r *NVMeshReconciler) listenOnChanAndReconcile(ch <-chan watch.Event) {
 
 	for e := range ch {
 		log.Info(fmt.Sprintf("received Event %s %s", e.Object.GetObjectKind().GroupVersionKind().Kind, e.Type))
-		//fmt.Printf("received Event %+v", e)
-		// TODO: Enqueue Reconcile
 		// NOTE: this runs in a separate goroutine so we should not reconcile here but enqueue the reconcile request
+		// TODO: Enqueue Reconcile
+		// This flow is relevant only for the mongodb custom-resource object when deploying a mongodb operator
 	}
 }
 
@@ -365,7 +374,8 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 
 		gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
 		if err != nil {
-			log.Info(fmt.Sprintf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk))
+			// Ingore this error, it will occure when we are looking for a Custom Resource but it's CRD is not deployed.
+			//log.Info(fmt.Sprintf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk))
 			continue
 		}
 
@@ -408,7 +418,7 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 			wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to get object using dynamic client %s", gvrMapping.Resource))
 			errList = append(errList, wrappedErr)
 		} else {
-			//TODO: Object found - check if we need to update ?
+			//TODO: Object found - check if we need to update
 			if shouldCreate == true {
 				log.Info(fmt.Sprintf("%s %s already exists\n", gvk.Kind, objName))
 			} else {
@@ -429,4 +439,15 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 	} else {
 		return nil
 	}
+}
+
+func Requeue(duration time.Duration) ctrl.Result {
+	return ctrl.Result{
+		Requeue:      true,
+		RequeueAfter: duration,
+	}
+}
+
+func DoNotRequeue() ctrl.Result {
+	return ctrl.Result{}
 }

@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    job-name: nvmesh-uninstall-job
+  name: nvmesh-uninstall-job
+  namespace: default
+spec:
+  backoffLimit: 3
+  completions: 1
+  parallelism: 1
+  selector:
+    matchLabels:
+      job-name: nvmesh-uninstall-job
+  template:
+    metadata:
+      labels:
+        job-name: nvmesh-uninstall-job
+    spec:
+      restartPolicy: OnFailure
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: job-name
+                operator: In
+                values:
+                - nvmesh-uninstall-job
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: registry.excelero.com/nvmesh-uninstall-job:0.7.0-2
+        imagePullPolicy: Always
+        name: nvmesh-uninstall-job
+        securityContext:
+          privileged: true
+        env:
+          - name: KEEP_DOWNLOAD_CACHE
+            value: "false"
+        volumeMounts:
+        - mountPath: /opt
+          name: opt
+        - mountPath: /etc/opt
+          name: etc-opt
+        - mountPath: /var/log
+          name: var-log
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: excelero-registry-cred
+      nodeSelector:
+        nvmesh.excelero.com/cluster-name: ""
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: opt
+        hostPath:
+          path: /opt
+      - name: etc-opt
+        hostPath:
+          path: /etc/opt
+      - name: var-log
+        hostPath:
+          path: /var/log

@@ -17,6 +17,7 @@ spec:
     spec:
       nodeSelector:
         nvmesh.excelero.com/nvmesh-target: ""
+        nvmesh.excelero.com/nvmesh-client: ""
       hostPID: true
       hostNetwork: true
       imagePullSecrets:

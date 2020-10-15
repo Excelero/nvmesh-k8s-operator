@@ -29,6 +29,8 @@ const (
 	MgmtImageName                  = "nvmesh-management"
 	MgmtGuiServiceName             = "nvmesh-management-gui"
 	MgmtProtocol                   = "https"
+	Recursive                      = true
+	NonRecursive                   = false
 )
 
 type NVMeshMgmtReconciler struct {
@@ -37,51 +39,77 @@ type NVMeshMgmtReconciler struct {
 
 func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	var err error
-	recursive := true
-	nonRecursive := false
 
 	if !cr.Spec.Management.Disabled && cr.Spec.Management.MongoDB.UseOperator {
-		// Deploy MongoDB Operator
-		err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBOperatorAssetsLocation, nonRecursive)
-		if err != nil {
-			return err
-		}
+		err = r.DeployMongoDBOperator(cr, nvmeshr)
 	} else {
-		// Remove MongoDB Operator
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBOperatorAssetsLocation, nonRecursive)
-		if err != nil {
-			return err
-		}
+		err = r.RemoveMongoDBOperator(cr, nvmeshr)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
-		// Deploy MongoDB Without Operator
-		err = nvmeshr.CreateObjectsFromDir(cr, r, MongoDBUnManagedAssetsLocation, nonRecursive)
-		if err != nil {
-			return err
-		}
+		err = r.DeployMongoDBWithoutOperator(cr, nvmeshr)
 	} else {
-		// Remove MongoDB Without Operator
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBUnManagedAssetsLocation, nonRecursive)
-		if err != nil {
-			return err
-		}
+		err = r.RemoveMongoDBWithoutOperator(cr, nvmeshr)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	// Reconcile MongoDB custom resource using the unstructured client
-	shouldDeployMongo := !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External
-	err = nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBCustomResourceLocation, shouldDeployMongo, updateMongoDBObjects)
+	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
+		err = r.DeployMongoCustomResource(cr, nvmeshr)
+	} else {
+		err = r.RemoveMongoCustomResource(cr, nvmeshr)
+	}
+
 	if err != nil {
 		return err
 	}
 
 	if cr.Spec.Management.Disabled {
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation, recursive)
+		err = nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation, Recursive)
 	} else {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation, recursive)
+		err = nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation, Recursive)
 	}
 
 	return err
+}
+
+func (r *NVMeshMgmtReconciler) RemoveMongoCustomResource(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBCustomResourceLocation, false, updateMongoDBObjects)
+}
+
+func (r *NVMeshMgmtReconciler) DeployMongoCustomResource(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.ReconcileUnstructuredObjects(cr, MongoDBCustomResourceLocation, true, updateMongoDBObjects)
+}
+
+func (r *NVMeshMgmtReconciler) DeployMongoDBWithoutOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.CreateObjectsFromDir(cr, r, MongoDBUnManagedAssetsLocation, NonRecursive)
+}
+
+func (r *NVMeshMgmtReconciler) RemoveMongoDBWithoutOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBUnManagedAssetsLocation, NonRecursive)
+}
+
+func (r *NVMeshMgmtReconciler) DeployMongoDBOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.CreateObjectsFromDir(cr, r, MongoDBOperatorAssetsLocation, NonRecursive)
+}
+
+func (r *NVMeshMgmtReconciler) RemoveMongoDBOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.RemoveObjectsFromDir(cr, r, MongoDBOperatorAssetsLocation, NonRecursive)
+}
+
+func (r *NVMeshMgmtReconciler) DeployManagement(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.CreateObjectsFromDir(cr, r, MgmtAssetsLocation, Recursive)
+}
+
+func (r *NVMeshMgmtReconciler) RemoveManagement(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.RemoveObjectsFromDir(cr, r, MgmtAssetsLocation, Recursive)
 }
 
 func updateMongoDBObjects(cr *nvmeshv1.NVMesh, obj *unstructured.Unstructured, gvk *schema.GroupVersionKind) {
@@ -116,6 +144,8 @@ func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 		switch name {
 		case "nvmesh-management":
 			return r.initiateMgmtStatefulSet(cr, o)
+		case "mongo":
+			return r.initiateMongoStatefulSet(cr, o)
 		}
 	case *v1.ConfigMap:
 		switch name {
@@ -168,6 +198,10 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 	return false
 }
 
+func GetMongoConnectionString(cr *nvmeshv1.NVMesh) string {
+	return fmt.Sprintf("mongo-svc.%s.svc.cluster.local:27017", cr.GetNamespace())
+}
+
 func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.ConfigMap) error {
 	o.Data["configVersion"] = cr.Spec.Management.Version
 
@@ -178,7 +212,7 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 	if cr.Spec.Management.MongoDB.External {
 		mongoConnectionString = cr.Spec.Management.MongoDB.Address
 	} else {
-		mongoConnectionString = "mongo-svc.default.svc.cluster.local:27017"
+		mongoConnectionString = GetMongoConnectionString(cr)
 	}
 
 	statisticsCores := 5
@@ -208,6 +242,15 @@ func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *a
 	o.Spec.Template.Spec.Containers[0].Image = getMgmtImageFromResource(cr)
 	o.Spec.Replicas = &cr.Spec.Management.Replicas
 
+	return nil
+}
+
+func GetMongoForNVMeshImageName() string {
+	return "registry.excelero.com/nvmesh-mongo-instance:" + CoreImageVersionTag
+}
+
+func (r *NVMeshMgmtReconciler) initiateMongoStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
+	o.Spec.Template.Spec.Containers[0].Image = GetMongoForNVMeshImageName()
 	return nil
 }
 

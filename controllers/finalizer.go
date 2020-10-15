@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -40,40 +41,60 @@ func (r *NVMeshReconciler) removeFinalizerAndUpdate(nvmeshCluster *nvmeshv1.NVMe
 	return r.Update(context.TODO(), nvmeshCluster)
 }
 
-func (r *NVMeshReconciler) HandleFinalizer(nvmeshCluster *nvmeshv1.NVMesh) error {
-	//log := r.Log.WithValues("NVMesh Cluster Finalizer", nvmeshCluster.GetNamespace())
-
+func (r *NVMeshReconciler) HandleFinalizer(nvmeshCluster *nvmeshv1.NVMesh) (*ctrl.Result, error) {
 	if isBeingDeleted(nvmeshCluster) {
-		// The object is being deleted
 		if hasFinalizer(nvmeshCluster, clusterFinalizerName) {
-			if err := r.verifyNoExternalDependenciesExist(nvmeshCluster); err != nil {
-				// if fail to delete the external dependency here, return with error
-				// so that it can be retried
-				return err
-			}
-			if err := r.removeFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
-				return err
-			}
+			return r.DoBeforeDeletingNVMesh(nvmeshCluster)
 		}
 
 		// Stop reconciliation as the item is being deleted
-		return nil
+		return nil, nil
 	} else {
 		// The object is not being deleted, so if it does not have our finalizer,
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
 		if !hasFinalizer(nvmeshCluster, clusterFinalizerName) {
 			if err := r.addFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
-				return err
+				return nil, err
 			}
 		}
 
-		return nil
+		return nil, nil
 	}
 }
 
-func (r *NVMeshReconciler) verifyNoExternalDependenciesExist(cr *nvmeshv1.NVMesh) error {
-	log := r.Log.WithValues("method", "verifyNoExternalDependenciesExist", "component", "Finalizer")
+func (r *NVMeshReconciler) DoBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh) (*ctrl.Result, error) {
+
+	// Check if any volume or volumeattachment exists
+	if err := r.isAllowedToDeleteCluster(nvmeshCluster); err != nil {
+		return nil, err
+	}
+
+	result, err := r.UninstallCluster(nvmeshCluster)
+	if err != nil {
+		return result, err
+	}
+
+	if result != nil && result.Requeue {
+		// Update the uninstall status
+		err := r.Client.Status().Update(context.TODO(), nvmeshCluster)
+		if err != nil {
+			log := r.Log.WithValues("method", "DoBeforeDeletingNVMesh", "component", "Finalizer")
+			log.Info(fmt.Sprintf("Failed to update uninstall status with %+v", nvmeshCluster.Status.UninstallStatus))
+		}
+
+		return result, nil
+	}
+
+	if err := r.removeFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (r *NVMeshReconciler) isAllowedToDeleteCluster(cr *nvmeshv1.NVMesh) error {
+	log := r.Log.WithValues("method", "isAllowedToDeleteCluster", "component", "Finalizer")
 
 	// delete any external resources associated with the Cluster
 	// Ensure that delete implementation is idempotent and safe to invoke
@@ -98,8 +119,7 @@ func (r *NVMeshReconciler) verifyNoExternalDependenciesExist(cr *nvmeshv1.NVMesh
 		}
 	}
 
-	// TODO: Should we check the Management api for attachments ?
-	// TODO: Should we perform any procedure as an uninstall here? (remove cache dirs from all nodes..)
+	// TODO: Should we check the Management api for attachments AND / OR volumes?
 	return nil
 }
 
@@ -114,7 +134,6 @@ func (r *NVMeshReconciler) verifyNoVolumeAttachments(cr *nvmeshv1.NVMesh) error 
 	nvmeshAttachments := make([]storagev1.VolumeAttachment, 0)
 	if len(attachmentsList.Items) > 0 {
 		for _, attachment := range attachmentsList.Items {
-			// TODO: find if it's an attachment of an NVMesh Volume
 			if attachment.Status.Attached == true && attachment.Spec.Attacher == nvmeshCsiDriverName {
 				nvmeshAttachments = append(nvmeshAttachments, attachment)
 			}

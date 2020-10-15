@@ -117,11 +117,24 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	r.stopAllUnstructuredWatchers()
-	err = r.HandleFinalizer(cr)
+	finResult, err := r.HandleFinalizer(cr)
 	if err != nil {
 		return r.ManageError(cr, err)
 	}
 
+	if finResult != nil {
+		return *finResult, nil
+	}
+
+	err = r.ReconcileAllcomponents(cr)
+	if err != nil {
+		return r.ManageError(cr, err)
+	}
+
+	return r.ManageSuccess(cr, false)
+}
+
+func (r *NVMeshReconciler) ReconcileAllcomponents(cr *nvmeshv1.NVMesh) error {
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
 	csi := NVMeshCSIReconciler(*r)
@@ -129,7 +142,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	components := []NVMeshComponent{&mgmt, &core, &csi}
 	var errorList []error
 	for _, component := range components {
-		err = component.Reconcile(cr, r)
+		err := component.Reconcile(cr, r)
 		if err != nil {
 			errorList = append(errorList, err)
 		}
@@ -139,10 +152,10 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		for _, e := range errorList {
 			r.Log.Error(e, "Error from ReconcileComponent")
 		}
-		return r.ManageError(cr, errorList[0])
+		return errorList[0]
 	}
 
-	return r.ManageSuccess(cr, false)
+	return nil
 }
 
 func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {

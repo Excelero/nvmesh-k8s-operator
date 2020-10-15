@@ -8,6 +8,7 @@ import (
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	"github.com/prometheus/common/log"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -28,7 +29,7 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, requeue bool) (ctr
 		r.setStatusOnCustomResource(cr)
 		err := r.Client.Status().Update(context.TODO(), cr)
 
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf("unable to update status. %s", err))
 
 			// If we failed to update the status let's requeue and have the next cycle update the status

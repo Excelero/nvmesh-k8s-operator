@@ -89,6 +89,9 @@ spec:
                       description: The number of MongoDB replicas in the MongoDB Cluster - This field is ignored if management.mongoDB.external=true
                       format: int32
                       type: integer
+                    useOperator:
+                      description: If true the NVMesh Operator will deploy a MongoDB Operator and a MongoDB Cluster using a CutomResource
+                      type: boolean
                   type: object
                 noSSL:
                   description: Disable TLS/SSL on NVMesh-Management websocket and HTTP connections
@@ -135,6 +138,10 @@ spec:
                   type: string
                 status:
                   type: string
+              type: object
+            uninstallStatus:
+              additionalProperties:
+                type: string
               type: object
           type: object
       type: object

@@ -114,7 +114,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.NVMeshReconciler{
+	nvmeshReconciler := &controllers.NVMeshReconciler{
 		NVMeshBaseReconciler: controllers.NVMeshBaseReconciler{
 			Client:        mgr.GetClient(),
 			Log:           ctrl.Log.WithName("controllers").WithName("NVMesh"),
@@ -123,10 +123,19 @@ func main() {
 			Manager:       mgr,
 			EventManager:  eventManager,
 		},
-	}).SetupWithManager(mgr); err != nil {
+	}
+
+	if err = nvmeshReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NVMesh")
 		os.Exit(1)
 	}
+
+	_, err = nvmeshReconciler.ListenToNodeLabels()
+	if err != nil {
+		setupLog.Error(err, "unable to create node listener", "controller", "NVMesh")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

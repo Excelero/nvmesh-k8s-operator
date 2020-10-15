@@ -24,16 +24,19 @@ type NVMeshCSIReconciler struct {
 }
 
 func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	var err error
-	recursive := true
-
 	if !cr.Spec.CSI.Disabled {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, CSIAssetsLocation, recursive)
+		return r.DeployCSI(cr, nvmeshr)
 	} else {
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, CSIAssetsLocation, recursive)
+		return r.RemoveCSI(cr, nvmeshr)
 	}
+}
 
-	return err
+func (r *NVMeshCSIReconciler) DeployCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.CreateObjectsFromDir(cr, r, CSIAssetsLocation, true)
+}
+
+func (r *NVMeshCSIReconciler) RemoveCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.RemoveObjectsFromDir(cr, r, CSIAssetsLocation, true)
 }
 
 func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {

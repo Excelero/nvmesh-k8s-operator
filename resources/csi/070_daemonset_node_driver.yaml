@@ -20,7 +20,6 @@ spec:
         - name: nvmesh-csi-node-driver
           # if we use image tag :latest kubernetes will try to fetch from Docker Hub (hub.docker.com)
           image: "placeholder"
-          # TODO: revert imagePullPolicy to IfNotPresent once updated image is in DockerHub
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true

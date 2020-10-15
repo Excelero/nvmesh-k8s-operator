@@ -18,6 +18,7 @@ const (
 	ClientDriverDaemonSetName  = "nvmesh-client-driver-container"
 	DriverContainerImageName   = "nvmesh-driver-container"
 	FileServerAddress          = "https://repo.excelero.com/nvmesh/operator_binaries"
+	CoreImageVersionTag        = "0.7.0-2"
 )
 
 type NVMeshCoreReconciler struct {
@@ -25,15 +26,19 @@ type NVMeshCoreReconciler struct {
 }
 
 func (r *NVMeshCoreReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	var err error
-	recursive := true
 	if !cr.Spec.Core.Disabled {
-		err = nvmeshr.CreateObjectsFromDir(cr, r, NVMeshCoreAssestLocation, recursive)
+		return r.DeployCore(cr, nvmeshr)
 	} else {
-		err = nvmeshr.RemoveObjectsFromDir(cr, r, NVMeshCoreAssestLocation, recursive)
+		return r.RemoveCore(cr, nvmeshr)
 	}
+}
 
-	return err
+func (r *NVMeshCoreReconciler) RemoveCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.RemoveObjectsFromDir(cr, r, NVMeshCoreAssestLocation, true)
+}
+
+func (r *NVMeshCoreReconciler) DeployCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.CreateObjectsFromDir(cr, r, NVMeshCoreAssestLocation, true)
 }
 
 func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
@@ -91,7 +96,7 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 	for i, c := range ds.Spec.Template.Spec.Containers {
 		switch c.Name {
 		case "mcs":
-			fallthrough
+			imageName = "nvmesh-mcs"
 		case "agent":
 			imageName = "nvmesh-mcs"
 		case "toma":
@@ -102,8 +107,7 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 			imageName = "nvmesh-driver-container"
 		}
 
-		imageVersionTag := "0.7.0-1"
-		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + imageVersionTag
+		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + CoreImageVersionTag
 	}
 
 	return nil

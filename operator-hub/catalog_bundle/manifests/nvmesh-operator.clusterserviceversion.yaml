@@ -92,7 +92,6 @@ spec:
             - apiGroups:
               - ""
               resources:
-              - nodes
               - pods
               - services
               - services/finalizers
@@ -110,6 +109,14 @@ spec:
               - list
               - patch
               - update
+              - watch
+            - apiGroups:
+              - ""
+              resources:
+              - nodes
+              verbs:
+              - get
+              - list
               - watch
             - apiGroups:
               - ""
@@ -182,13 +189,6 @@ spec:
               - securitycontextconstraints
               verbs:
               - use
-              - create
-              - delete
-              - get
-              - list
-              - patch
-              - update
-              - watch
             - apiGroups:
               - coordination.k8s.io
               resources:
@@ -222,18 +222,6 @@ spec:
               - get
               - patch
               - update
-            - apiGroups:
-              - apiextensions.k8s.io
-              resources:
-              - customresourcedefinitions
-              verbs:
-              - create
-              - delete
-              - get
-              - list
-              - patch
-              - update
-              - watch
             # From MongoDB
             - apiGroups:
               - monitoring.coreos.com
@@ -268,6 +256,18 @@ spec:
               resources:
               - '*'
               - mongodbs
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - apiextensions.k8s.io
+              resources:
+              - customresourcedefinitions
               verbs:
               - create
               - delete

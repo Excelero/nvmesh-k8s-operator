@@ -147,6 +147,8 @@ type NVMeshStatus struct {
 	WebUIURL string `json:"WebUIURL,omitempty"`
 
 	ReconcileStatus ReconcileStatus `json:"reconcileStatus,omitempty"`
+
+	UninstallStatus map[string]string `json:"uninstallStatus,omitempty"`
 }
 
 // +kubebuilder:object:root=true
