@@ -1,5 +1,0 @@
-#Use https://unix4lyfe.org/crypt to generate an md5 hash + salt
-
-salt: "GlxtvdI9"
-users:
-  admin: "$1$GlxtvdI9$q3bzgLDsjPS2uBwI2IAde1"
