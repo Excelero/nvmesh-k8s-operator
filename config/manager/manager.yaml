@@ -5,22 +5,23 @@ metadata:
   labels:
     app: nvmesh-operator
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: nvmesh-operator
-  replicas: 1
   template:
     metadata:
       labels:
         app: nvmesh-operator
     spec:
+      serviceAccountName: nvmesh-operator
       containers:
-      - command:
+      - name: controller
+        image: excelero/nvmesh-operator:0.7.0-1
+        command:
         - /manager
         args:
         - --enable-leader-election
-        image: excelero/nvmesh-operator:latest
-        name: manager
         resources:
           limits:
             cpu: 100m

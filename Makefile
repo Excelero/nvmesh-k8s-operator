@@ -1,6 +1,10 @@
 # Current Operator version
-VERSION ?= 0.7.0
-RELEASE ?= 1
+
+CONFIG_FILE=manifests/config.yaml
+VERSION = `yq r $(CONFIG_FILE) "version_info.version"`
+RELEASE = `yq r $(CONFIG_FILE) "version_info.release"`
+CHANNELS = `yq r $(CONFIG_FILE) "version_info.channel"`
+DEFAULT_CHANNEL = $(CHANNELS)
 
 # Default bundle image tag
 BUNDLE_IMG ?= nvmesh-operator-bundle:$(VERSION)-$(RELEASE)
@@ -25,7 +29,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager
+all: manager manifests bundle
 
 # Run tests
 test-short:
@@ -71,8 +75,8 @@ deploy: manifests kustomize
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml deploy/010_nvmesh_crd.yaml
-	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml operator-hub/catalog_bundle/manifests/nvmesh.crd.yaml
+	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml manifests/bases/crd/nvmesh.crd.yaml
+	cd manifests && ./build_manifests.py
 
 # Run go fmt against code
 fmt:
@@ -129,10 +133,10 @@ endif
 # Generate bundle manifests and metadata, then validate generated files.
 .PHONY: bundle
 bundle: manifests
-	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-	operator-sdk bundle validate ./bundle
+	# operator-sdk generate kustomize manifests -q
+	# cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	# $(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	operator-sdk bundle validate ./operator-hub/catalog_bundle
 
 # Build the bundle image.
 .PHONY: bundle-build
@@ -145,3 +149,7 @@ bundle-registry-build:
 .PHONY: list
 list:
 	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$'
+
+.PHONY: debug-info
+debug-info:
+	echo $(VERSION)-$(RELEASE) $(DEFAULT_CHANNEL)

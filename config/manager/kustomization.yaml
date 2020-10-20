@@ -5,7 +5,7 @@ kind: Kustomization
 images:
 - name: controller
   newName: excelero/nvmesh-operator
-  newTag: 0.7.0-2
+  newTag: '-'
 - name: operator-name
   newName: nvmesh-operator
   newTag: dev

@@ -5,10 +5,15 @@ OPERATOR_REGISTRY_REPO=~/go/src/github.com/operator-registry
 # MANIFESTS_DIR the location of the nvmesh_bundle dir relative to the operator-registry repo root
 MANIFESTS_DIR=./nvmesh_bundle/manifests
 
-BUNDLE_BUILD=1
-VERSION=0.7.0-2-$BUNDLE_BUILD
-BUNDLE_IMAGE_NAME=docker.io/excelero/dev-os-bundle:$VERSION
-INDEX_IMAGE_NAME=docker.io/excelero/dev-os-catalog-source-index:$VERSION
+CONFIG_FILE=../manifests/config.yaml
+OPER_VERSION=`yq r $CONFIG_FILE "version_info.version"`
+OPER_RELEASE=`yq r $CONFIG_FILE "version_info.release"`
+BUNDLE_BUILD=`yq r $CONFIG_FILE "bundle.dev.bundle_build"`
+BUNDLE_IMG=`yq r $CONFIG_FILE "bundle.dev.bundle_image_name"`
+INDEX_IMG=`yq r $CONFIG_FILE "bundle.dev.indeX_image_name"`
+BUNDLE_VERSION="${OPER_VERSION}-${OPER_RELEASE}-${BUNDLE_BUILD}"
+BUNDLE_IMAGE_NAME="${BUNDLE_IMG}:${BUNDLE_VERSION}"
+INDEX_IMAGE_NAME="${INDEX_IMG}:${BUNDLE_VERSION}"
 PACKAGE_NAME=nvmesh-operator
 CHANNEL=beta
 

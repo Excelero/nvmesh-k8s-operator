@@ -1,0 +1,17 @@
+apiVersion: nvmesh.excelero.com/v1
+kind: NVMesh
+metadata:
+  name: cluster1
+spec:
+  core:
+    version: '2.0.3-4'
+  csi:
+    controllerReplicas: 1
+    version: v1.1.0
+  management:
+    mongoDB:
+      replicas: 1
+    externalIPs:
+     - 10.0.1.117
+    replicas: 1
+    version: 2.0.3-4

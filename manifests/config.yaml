@@ -1,0 +1,9 @@
+version_info:
+  version: 0.7.0
+  release: 1
+  channel: beta
+bundle:
+  dev:
+    bundle_image_name: "docker.io/excelero/dev-os-bundle"
+    bundle_build: 1
+    index_image_name: "docker.io/excelero/dev-os-catalog-source-index"

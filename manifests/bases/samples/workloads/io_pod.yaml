@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: block-device-io-test
+  labels:
+    app: block-device-io-test
+spec:
+  nodeName: nvme117.excelero.com
+  containers:
+    - name: block-device-io-test
+      image: excelero/nvmesh-io-test:dev
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: VOLUME_TYPE
+          value: Block
+        - name: VOLUME_PATH
+          value: /dev/my_block_dev
+      volumeDevices:
+        - name: block-volume
+          devicePath: /dev/my_block_dev
+  volumes:
+    - name: block-volume
+      persistentVolumeClaim:
+        claimName: block-pvc
