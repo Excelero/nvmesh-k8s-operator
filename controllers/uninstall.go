@@ -9,10 +9,11 @@ import (
 	errors "github.com/pkg/errors"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -22,106 +23,90 @@ const (
 	uninstallJobFile   = "resources/uninstall/uninstall_job.yaml"
 	clearDbJobFile     = "resources/uninstall/clear_db_job.yaml"
 	uninstallJobPrefix = "nvmesh-uninstall-"
+	clearDbJobName     = "nvmesh-clear-db-job"
 )
 
-type UninstallStage interface {
-	GetStageName() string
-	Start(*nvmeshv1.NVMesh, *NVMeshReconciler) (*ctrl.Result, error)
+var UninstallAction = nvmeshv1.ClusterAction{Name: "uninstall"}
+
+type TaskFunc func(cr *nvmeshv1.NVMesh) (ctrl.Result, error)
+
+type Task struct {
+	Name string
+	Run  TaskFunc
 }
 
-func (r *NVMeshReconciler) isUninstallStageDone(nvmeshCluster *nvmeshv1.NVMesh, stageName string) bool {
-	val, ok := nvmeshCluster.Status.UninstallStatus[stageName]
-	return ok && val == "done"
-}
-
-func (r *NVMeshReconciler) setUninstallStageStarted(nvmeshCluster *nvmeshv1.NVMesh, stageName string) {
-	nvmeshCluster.Status.UninstallStatus[stageName] = "started"
-}
-
-func (r *NVMeshReconciler) setUninstallStageDone(nvmeshCluster *nvmeshv1.NVMesh, stageName string) {
-	nvmeshCluster.Status.UninstallStatus[stageName] = "done"
-}
-
-type removeAllWorkloadsStage struct{}
-type clearDBStage struct{}
-type removeMongoStage struct{}
-type uninstallClusterNodesStage struct{}
-
-func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (*ctrl.Result, error) {
+func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	log := r.Log.WithValues("method", "UninstallCluster", "component", "Finalizer")
 
-	var result *ctrl.Result
+	var result ctrl.Result
 	var err error
 
-	if nvmeshCluster.Status.UninstallStatus == nil {
-		nvmeshCluster.Status.UninstallStatus = map[string]string{}
-	}
-
-	stages := []UninstallStage{
-		removeAllWorkloadsStage{},
-		clearDBStage{},
-		removeMongoStage{},
-		uninstallClusterNodesStage{},
+	var stages []Task = []Task{
+		{
+			"removeAllWorkloads",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return r.removeAllWorkloadsExceptMongo(cr)
+			},
+		},
+		{
+			"waitForWorkloadsToFinish",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return r.waitForWorkloadsToFinish(cr)
+			},
+		},
+		{
+			"clearDB",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return DoNotRequeue(), r.runClearDbJob(nvmeshCluster)
+			},
+		},
+		{
+			"waitForClearDBToFinish",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return r.waitForClearDBToFinish(cr)
+			},
+		},
+		{
+			"removeMongo",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return DoNotRequeue(), r.removeMongo(cr)
+			},
+		},
+		{
+			"uninstallClusterNodes",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return r.uninstallClusterNodes(cr)
+			},
+		},
 	}
 
 	for _, stage := range stages {
-		stageName := stage.GetStageName()
-		if !r.isUninstallStageDone(nvmeshCluster, stageName) {
+		stageName := stage.Name
+		if !r.isTaskFinished(nvmeshCluster, UninstallAction, stageName) {
 			log.Info(fmt.Sprintf("Uninstall stage: %s", stageName))
-			r.setUninstallStageStarted(nvmeshCluster, stageName)
-			result, err = stage.Start(nvmeshCluster, r)
+			r.setTaskStarted(nvmeshCluster, UninstallAction, stageName)
+			result, err = stage.Run(nvmeshCluster)
 
-			if result != nil && result.Requeue {
+			if result.Requeue {
 				log.Info(fmt.Sprintf("Uninstall stage %s not finished, will retry", stageName))
 				return result, nil
 			}
 
 			if err != nil {
-				return nil, err
+				return DoNotRequeue(), err
 			}
-			r.setUninstallStageDone(nvmeshCluster, stageName)
+			r.setTaskFinished(nvmeshCluster, UninstallAction, stageName)
 			log.Info(fmt.Sprintf("Uninstall stage %s done", stageName))
 		}
 	}
+
+	r.setActionComplete(nvmeshCluster, UninstallAction)
 
 	nvmeshCluster.Spec.CSI.Disabled = true
 	nvmeshCluster.Spec.Management.Disabled = true
 	nvmeshCluster.Spec.Core.Disabled = true
 
-	return nil, nil
-}
-
-func (removeAllWorkloadsStage) GetStageName() string {
-	return "removeAllWorkloads"
-}
-
-func (removeAllWorkloadsStage) Start(cr *nvmeshv1.NVMesh, r *NVMeshReconciler) (*ctrl.Result, error) {
-	return r.removeAllWorkloadsExceptMongo(cr)
-}
-
-func (clearDBStage) GetStageName() string {
-	return "clearDB"
-}
-
-func (clearDBStage) Start(cr *nvmeshv1.NVMesh, r *NVMeshReconciler) (*ctrl.Result, error) {
-	return r.clearDB(cr)
-}
-
-func (removeMongoStage) GetStageName() string {
-	return "removeMongo"
-}
-
-func (removeMongoStage) Start(cr *nvmeshv1.NVMesh, r *NVMeshReconciler) (*ctrl.Result, error) {
-	err := r.removeMongo(cr)
-	return nil, err
-}
-
-func (uninstallClusterNodesStage) GetStageName() string {
-	return "uninstallClusterNodes"
-}
-
-func (uninstallClusterNodesStage) Start(cr *nvmeshv1.NVMesh, r *NVMeshReconciler) (*ctrl.Result, error) {
-	return r.uninstallClusterNodes(cr)
+	return DoNotRequeue(), nil
 }
 
 func (r *NVMeshReconciler) removeMongo(cr *nvmeshv1.NVMesh) error {
@@ -141,38 +126,62 @@ func (r *NVMeshReconciler) removeMongo(cr *nvmeshv1.NVMesh) error {
 	return nil
 }
 
-func (r *NVMeshReconciler) removeAllWorkloadsExceptMongo(cr *nvmeshv1.NVMesh) (*ctrl.Result, error) {
+func (r *NVMeshReconciler) removeAllWorkloadsExceptMongo(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	core := NVMeshCoreReconciler(*r)
 	if err := core.RemoveCore(cr, r); err != nil {
-		return nil, err
+		return DoNotRequeue(), err
 	}
 
 	csi := NVMeshCSIReconciler(*r)
 	if err := csi.RemoveCSI(cr, r); err != nil {
-		return nil, err
+		return DoNotRequeue(), err
 	}
 
 	mgmt := NVMeshMgmtReconciler(*r)
 	if err := mgmt.RemoveManagement(cr, r); err != nil {
-		return nil, err
+		return DoNotRequeue(), err
 	}
 
-	result, err := r.waitForWorkloadsToFinish(cr)
-	return &result, err
+	return DoNotRequeue(), nil
+}
+
+func (r *NVMeshReconciler) waitForClearDBToFinish(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+	log := r.Log.WithValues("method", "clearDB", "component", "Finalizer")
+	result, err := r.waitForJobToFinish(cr.GetNamespace(), clearDbJobName)
+
+	if result.Requeue {
+		return result, nil
+	}
+
+	if err != nil {
+		log.Info("WARNING: Unable to clear MongoDB Database")
+	}
+
+	if err := r.deleteJob(cr.GetNamespace(), clearDbJobName); err != nil {
+		return DoNotRequeue(), err
+	}
+
+	return DoNotRequeue(), nil
 }
 
 func (r *NVMeshReconciler) waitForWorkloadsToFinish(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	log := r.Log.WithValues("method", "waitForWorkloadsToFinish", "component", "Finalizer")
-	dsList := &appsv1.DaemonSetList{}
-	matchLabels := client.MatchingLabels{nvmeshClientLabelKey: ""}
+	podList := &corev1.PodList{}
 
-	log.Info("checking if all daemonsets were removed")
-	if err := r.Client.List(context.TODO(), dsList, &matchLabels); err != nil {
+	require, err := labels.NewRequirement("nvmesh.excelero.com/component", selection.In, []string{"client", "target", "mcs-agent", "csi-node-driver"})
+	if err != nil {
 		return DoNotRequeue(), err
 	}
 
-	if len(dsList.Items) > 0 {
-		r.Log.Info(fmt.Sprintf("Waiting for all workloads to finish. Found %d DaemonSets", len(dsList.Items)))
+	matchLabels := client.MatchingLabelsSelector{Selector: labels.NewSelector().Add(*require)}
+
+	log.Info("checking if workload pods were removed")
+	if err := r.Client.List(context.TODO(), podList, &matchLabels); err != nil {
+		return DoNotRequeue(), err
+	}
+
+	if len(podList.Items) > 0 {
+		r.Log.Info(fmt.Sprintf("Waiting for all workloads to finish. Found %d Pods", len(podList.Items)))
 		return Requeue(time.Second), nil
 	}
 
@@ -219,7 +228,6 @@ func (r *NVMeshReconciler) getUninstallJob() (*batchv1.Job, error) {
 }
 
 func (r *NVMeshReconciler) getNodesWithLabel(key string, value string) (*corev1.NodeList, error) {
-	//TODO: check this:
 	nodeSelector := client.MatchingLabels{
 		key: value,
 	}
@@ -231,6 +239,20 @@ func (r *NVMeshReconciler) getNodesWithLabel(key string, value string) (*corev1.
 	}
 
 	return nodeList, err
+}
+
+func (r *NVMeshReconciler) getAllMgmtLabelledNodes(cr *nvmeshv1.NVMesh) ([]*corev1.Node, error) {
+	nodes, err := r.getNodesWithLabel(nvmeshMgmtLabelKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	nodeList := []*corev1.Node{}
+	for _, n := range nodes.Items {
+		nodeList = append(nodeList, &n)
+	}
+
+	return nodeList, nil
 }
 
 func (r *NVMeshReconciler) getAllNVMeshClusterNodes(cr *nvmeshv1.NVMesh) ([]*corev1.Node, error) {
@@ -339,7 +361,7 @@ func (r *NVMeshReconciler) runClearDbJob(cr *nvmeshv1.NVMesh) error {
 	job.ObjectMeta.Namespace = cr.GetNamespace()
 	labels := job.ObjectMeta.Labels
 	labels["app.kubernetes.io/managed-by"] = "nvmesh-operator"
-	//TODO: check this: labels[nvmeshClusterNameLabelKey] = cr.GetName()
+	labels[nvmeshClusterNameLabelKey] = cr.GetName()
 	container := &job.Spec.Template.Spec.Containers[0]
 	container.Args[0] = GetMongoConnectionString(cr) + "/management"
 	container.Image = GetMongoForNVMeshImageName()
@@ -352,63 +374,10 @@ func (r *NVMeshReconciler) runClearDbJob(cr *nvmeshv1.NVMesh) error {
 	return nil
 }
 
-func (r *NVMeshReconciler) waitForJobToFinish(namespace string, jobName string) (ctrl.Result, error) {
-	job := &batchv1.Job{}
-
-	objKey := client.ObjectKey{Name: jobName, Namespace: namespace}
-	err := r.Client.Get(context.TODO(), objKey, job)
-
-	if err != nil {
-		return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("Failed to get job %s", jobName))
-	}
-
-	completed, err := r.isSingleJobCompleted(job)
-
-	if err != nil {
-		return DoNotRequeue(), err
-	} else {
-		// no error
-		if !completed {
-			r.Log.Info(fmt.Sprintf("Waiting for %s to finish", job.ObjectMeta.GetName()))
-			return Requeue(time.Second), nil
-		} else {
-			return DoNotRequeue(), nil
-		}
-	}
-}
-
-func (r *NVMeshReconciler) deleteJob(namespace string, jobName string) error {
-	job := &batchv1.Job{}
-	job.SetName(jobName)
-	job.SetNamespace(namespace)
-
-	err := r.Client.Delete(context.TODO(), job)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, fmt.Sprintf("Failed to delete job %s", jobName))
-	}
-
-	// Find all Pods related to this job and delete them as well
-	podList := &corev1.PodList{}
-	matchLabels := client.MatchingLabels{"job-name": jobName}
-	err = r.Client.List(context.TODO(), podList, matchLabels)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, fmt.Sprintf("Failed to find pods from job %s for deletion", jobName))
-	}
-
-	for _, pod := range podList.Items {
-		err = r.Client.Delete(context.TODO(), &pod)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return errors.Wrap(err, fmt.Sprintf("Failed to delete pod %s", pod.GetName()))
-		}
-	}
-
-	return nil
-}
-
-func (r *NVMeshReconciler) uninstallClusterNodes(nvmeshCluster *nvmeshv1.NVMesh) (*ctrl.Result, error) {
+func (r *NVMeshReconciler) uninstallClusterNodes(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	nodeList, err := r.getAllNVMeshClusterNodes(nvmeshCluster)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Failed to list all of the nodes in NVMesh Cluster %s", nvmeshCluster.GetName()))
+		return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("Failed to list all of the nodes in NVMesh Cluster %s", nvmeshCluster.GetName()))
 	}
 
 	r.Log.Info(fmt.Sprintf("Uninstalling %d nodes", len(nodeList)))
@@ -417,44 +386,19 @@ func (r *NVMeshReconciler) uninstallClusterNodes(nvmeshCluster *nvmeshv1.NVMesh)
 	}
 
 	if err := r.runUninstallJobs(nvmeshCluster, nodeList); err != nil {
-		return nil, err
+		return DoNotRequeue(), err
 	}
 
 	result, err := r.waitForUninstallCompletion(nvmeshCluster.GetNamespace(), nodeList)
 	if err != nil || result.Requeue {
-		return &result, err
+		return result, err
 	}
 
 	if err := r.deleteUninstallJobs(nvmeshCluster, nodeList); err != nil {
-		return nil, err
+		return DoNotRequeue(), err
 	}
 
-	return nil, nil
-}
-
-func (r *NVMeshReconciler) clearDB(nvmeshCluster *nvmeshv1.NVMesh) (*ctrl.Result, error) {
-	log := r.Log.WithValues("method", "clearDB", "component", "Finalizer")
-
-	if err := r.runClearDbJob(nvmeshCluster); err != nil {
-		return nil, err
-	}
-
-	jobName := "nvmesh-clear-db-job"
-	result, err := r.waitForJobToFinish(nvmeshCluster.GetNamespace(), jobName)
-
-	if result.Requeue {
-		return &result, nil
-	}
-
-	if err != nil {
-		log.Info("WARNING: Unable to clear MongoDB Database")
-	}
-
-	if err := r.deleteJob(nvmeshCluster.GetNamespace(), jobName); err != nil {
-		return nil, err
-	}
-
-	return nil, nil
+	return DoNotRequeue(), nil
 }
 
 func (r *NVMeshReconciler) UninstallNode(nodeName string, namespace string, job *batchv1.Job) error {

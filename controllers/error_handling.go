@@ -10,11 +10,12 @@ import (
 	"github.com/prometheus/common/log"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, requeue bool) (ctrl.Result, error) {
+func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result) (ctrl.Result, error) {
 	//log := r.Log.WithValues("method", "DoNotRequeue")
 	var generation int64 = -1
 
@@ -27,10 +28,10 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, requeue bool) (ctr
 		}
 
 		r.setStatusOnCustomResource(cr)
-		err := r.Client.Status().Update(context.TODO(), cr)
+		err := r.UpdateStatus(cr)
 
 		if err != nil && !k8serrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("unable to update status. %s", err))
+			log.Error(err, "unable to update status")
 
 			// If we failed to update the status let's requeue and have the next cycle update the status
 			return reconcile.Result{
@@ -42,16 +43,7 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, requeue bool) (ctr
 	}
 
 	fmt.Printf("Reconcile Success. Cycle #: %d, Generation: %d\n", reconcileCycles, generation)
-	if requeue {
-		// trigger antoher reconcile cycle in one second
-		return reconcile.Result{
-			RequeueAfter: time.Second,
-			Requeue:      true,
-		}, nil
-	} else {
-		// Do not trigger another cycle
-		return reconcile.Result{}, nil
-	}
+	return result, nil
 }
 
 func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconcile.Result, error) {
@@ -73,7 +65,7 @@ func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconc
 
 	r.setStatusOnCustomResource(cr)
 	cr.Status.ReconcileStatus = newStatus
-	err := r.Client.Status().Update(context.TODO(), cr)
+	err := r.UpdateStatus(cr)
 
 	if err != nil {
 		log.Error(err, "unable to update status")
@@ -93,8 +85,31 @@ func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconc
 	maxTime := float64(time.Hour.Nanoseconds() * 6)
 	doubleLastTime := float64(retryInterval.Nanoseconds() * 2)
 	nextReconcile := time.Duration(math.Min(doubleLastTime, maxTime))
-	return reconcile.Result{
-		RequeueAfter: nextReconcile,
-		Requeue:      true,
-	}, nil
+	return Requeue(nextReconcile), nil
+}
+
+func (r *NVMeshReconciler) UpdateStatus(cr *nvmeshv1.NVMesh) error {
+	err := r.Client.Status().Update(context.TODO(), cr)
+
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return err
+		}
+
+		updated := &nvmeshv1.NVMesh{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: cr.GetName(), Namespace: cr.GetNamespace()}, updated)
+
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				// if the object was deleted, failing to update it's status is not an error
+				return nil
+			}
+			return err
+		}
+
+		updated.Status = cr.Status
+		return r.Client.Status().Update(context.TODO(), cr)
+	}
+
+	return nil
 }

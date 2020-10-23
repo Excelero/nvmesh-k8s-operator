@@ -41,33 +41,33 @@ func (r *NVMeshReconciler) removeFinalizerAndUpdate(nvmeshCluster *nvmeshv1.NVMe
 	return r.Update(context.TODO(), nvmeshCluster)
 }
 
-func (r *NVMeshReconciler) HandleFinalizer(nvmeshCluster *nvmeshv1.NVMesh) (*ctrl.Result, error) {
+func (r *NVMeshReconciler) HandleFinalizer(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	if isBeingDeleted(nvmeshCluster) {
 		if hasFinalizer(nvmeshCluster, clusterFinalizerName) {
 			return r.DoBeforeDeletingNVMesh(nvmeshCluster)
 		}
 
 		// Stop reconciliation as the item is being deleted
-		return nil, nil
+		return DoNotRequeue(), nil
 	} else {
 		// The object is not being deleted, so if it does not have our finalizer,
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
 		if !hasFinalizer(nvmeshCluster, clusterFinalizerName) {
 			if err := r.addFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
-				return nil, err
+				return DoNotRequeue(), err
 			}
 		}
 
-		return nil, nil
+		return DoNotRequeue(), nil
 	}
 }
 
-func (r *NVMeshReconciler) DoBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh) (*ctrl.Result, error) {
+func (r *NVMeshReconciler) DoBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
 
 	// Check if any volume or volumeattachment exists
 	if err := r.isAllowedToDeleteCluster(nvmeshCluster); err != nil {
-		return nil, err
+		return DoNotRequeue(), err
 	}
 
 	result, err := r.UninstallCluster(nvmeshCluster)
@@ -75,22 +75,23 @@ func (r *NVMeshReconciler) DoBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh
 		return result, err
 	}
 
-	if result != nil && result.Requeue {
+	if result.Requeue {
 		// Update the uninstall status
 		err := r.Client.Status().Update(context.TODO(), nvmeshCluster)
 		if err != nil {
 			log := r.Log.WithValues("method", "DoBeforeDeletingNVMesh", "component", "Finalizer")
-			log.Info(fmt.Sprintf("Failed to update uninstall status with %+v", nvmeshCluster.Status.UninstallStatus))
+			uninstallStatus := nvmeshCluster.Status.ActionsStatus[UninstallAction.Name]
+			log.Info(fmt.Sprintf("Failed to update uninstall status with %+v", uninstallStatus))
 		}
 
 		return result, nil
 	}
 
 	if err := r.removeFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
-		return nil, err
+		return DoNotRequeue(), err
 	}
 
-	return nil, nil
+	return DoNotRequeue(), nil
 }
 
 func (r *NVMeshReconciler) isAllowedToDeleteCluster(cr *nvmeshv1.NVMesh) error {
@@ -119,7 +120,6 @@ func (r *NVMeshReconciler) isAllowedToDeleteCluster(cr *nvmeshv1.NVMesh) error {
 		}
 	}
 
-	// TODO: Should we check the Management api for attachments AND / OR volumes?
 	return nil
 }
 

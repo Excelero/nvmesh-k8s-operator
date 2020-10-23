@@ -11,6 +11,7 @@ spec:
       name: nvmesh-mcs-agent
       labels:
         app: nvmesh-mcs-agent
+        nvmesh.excelero.com/component: mcs-agent
     spec:
       nodeSelector:
        nvmesh.excelero.com/nvmesh-client: ""
@@ -68,11 +69,13 @@ spec:
               mountPath: /etc/opt/NVMesh
             - name: var-opt-nvmesh
               mountPath: /var/opt/NVMesh
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
           securityContext:
             privileged: true
         - name: agent
           image: nvmesh-mcs:placeholder
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c", "/init.sh agent"]
           env:
           - name: NVMESH_CONF
@@ -112,6 +115,8 @@ spec:
               mountPath: /dev/
             - name: opt-nvmesh
               mountPath: /opt/NVMesh
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
       volumes:
         - name: var-run-nvmesh
           hostPath:
@@ -128,6 +133,9 @@ spec:
         - name: opt-nvmesh
           hostPath:
             path: /opt/NVMesh
+        - name: opt-nvmesh-operator
+          hostPath:
+            path: /opt/nvmesh-operator
         - name: var-opt-nvmesh
           hostPath:
             path: /var/opt/NVMesh/

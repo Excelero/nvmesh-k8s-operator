@@ -103,6 +103,13 @@ rules:
   - securitycontextconstraints
   verbs:
   - use
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -136,7 +143,6 @@ rules:
   - get
   - patch
   - update
-# From MongoDB
 - apiGroups:
   - monitoring.coreos.com
   resources:

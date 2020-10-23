@@ -108,6 +108,7 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 		}
 
 		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + CoreImageVersionTag
+		ds.Spec.Template.Spec.Containers[i].ImagePullPolicy = GetGlobalImagePullPolicy()
 	}
 
 	return nil

@@ -119,6 +119,14 @@ type OperatorFileServerSpec struct {
 	SkipCheckCertificate bool   `json:"skipCheckCertificate,omitempty"`
 }
 
+type ClusterAction struct {
+	// The type of cation to perform
+	Name string `json:"name,omitempty"`
+
+	// Arguments for the Action
+	Args map[string]string `json:"args,omitempty"`
+}
+
 // NVMeshSpec defines the desired state of NVMesh
 type NVMeshSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -136,7 +144,12 @@ type NVMeshSpec struct {
 	// Control the behavior of the NVMesh operator for this NVMesh Cluster
 	// +optional
 	Operator NVMeshOperatorSpec `json:"operator,omitempty"`
+
+	// Actions allow the user to intiate tasks for the operator to perform
+	Actions []ClusterAction `json:"actions"`
 }
+
+type ActionStatus map[string]string
 
 // NVMeshStatus defines the observed state of NVMesh
 type NVMeshStatus struct {
@@ -148,7 +161,7 @@ type NVMeshStatus struct {
 
 	ReconcileStatus ReconcileStatus `json:"reconcileStatus,omitempty"`
 
-	UninstallStatus map[string]string `json:"uninstallStatus,omitempty"`
+	ActionsStatus map[string]ActionStatus `json:"actionsStatus,omitempty"`
 }
 
 // +kubebuilder:object:root=true

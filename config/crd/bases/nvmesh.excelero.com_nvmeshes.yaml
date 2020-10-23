@@ -32,6 +32,20 @@ spec:
         spec:
           description: NVMeshSpec defines the desired state of NVMesh
           properties:
+            actions:
+              description: Actions allow the user to intiate tasks for the operator to perform
+              items:
+                properties:
+                  args:
+                    additionalProperties:
+                      type: string
+                    description: Arguments for the Action
+                    type: object
+                  name:
+                    description: The type of cation to perform
+                    type: string
+                type: object
+              type: array
             core:
               description: Core is an object describing the nvmesh-core deployment
               properties:
@@ -125,6 +139,8 @@ spec:
                   description: If IgnoreVolumeAttachmentOnDelete is true, The operator will allow deleting this cluster when there are active attachments of NVMesh volumes. This can lead to an unclean state left on the k8s cluster
                   type: boolean
               type: object
+          required:
+          - actions
           type: object
         status:
           description: NVMeshStatus defines the observed state of NVMesh
@@ -132,6 +148,12 @@ spec:
             WebUIURL:
               description: The URL of NVMesh Web GUI
               type: string
+            actionsStatus:
+              additionalProperties:
+                additionalProperties:
+                  type: string
+                type: object
+              type: object
             reconcileStatus:
               properties:
                 lastUpdate:
@@ -141,10 +163,6 @@ spec:
                   type: string
                 status:
                   type: string
-              type: object
-            uninstallStatus:
-              additionalProperties:
-                type: string
               type: object
           type: object
       type: object

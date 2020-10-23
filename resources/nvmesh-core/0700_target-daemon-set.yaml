@@ -14,6 +14,7 @@ spec:
       labels:
         name: nvmesh-target-driver-container
         nvmesh.driver-container-type: target
+        nvmesh.excelero.com/component: target
     spec:
       nodeSelector:
         nvmesh.excelero.com/nvmesh-target: ""
@@ -25,7 +26,7 @@ spec:
       containers:
         - name: driver-container
           image: nvmesh-driver-container:placeholder
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c", "/init.sh --type target --insert --remove-on-terminate --wait"]
           securityContext:
             privileged: true
@@ -70,10 +71,12 @@ spec:
               mountPath: /host/bin/
             - name: host-sbin
               mountPath: /host/sbin/
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
           terminationGracePeriodSeconds: 3600
         - name: toma
           image: nvmesh-toma:placeholder
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c", "/init.sh"]
           env:
             - name: NVMESH_VERSION
@@ -126,9 +129,11 @@ spec:
               mountPath: /host/sbin/
             - name: opt-nvmesh
               mountPath: /opt/NVMesh
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
         - name: tracer
           image: nvmesh-tracer:placeholder
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c", "/init.sh"]
           securityContext:
             privileged: true
@@ -169,6 +174,8 @@ spec:
               mountPath: /host/sbin/
             - name: opt-nvmesh
               mountPath: /opt/NVMesh
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
       volumes:
         - name: device-dir
           hostPath:
@@ -185,6 +192,9 @@ spec:
         - name: var-opt-nvmesh
           hostPath:
             path: /var/opt/NVMesh/
+        - name: opt-nvmesh-operator
+          hostPath:
+            path: /opt/nvmesh-operator
         - name: etc-opt-nvmesh
           hostPath:
             path: /etc/opt/NVMesh/

@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/utils/pointer"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,6 +33,7 @@ import (
 )
 
 const (
+	nvmeshMgmtLabelKey        = "nvmesh.excelero.com/nvmesh-management"
 	nvmeshClientLabelKey      = "nvmesh.excelero.com/nvmesh-client"
 	nvmeshTargetLabelKey      = "nvmesh.excelero.com/nvmesh-target"
 	nvmeshClusterNameLabelKey = "nvmesh.excelero.com/cluster-name"
@@ -51,6 +53,13 @@ func (r *NVMeshReconciler) ReconcileObject(cr *nvmeshv1.NVMesh, newObj *runtime.
 	}
 }
 
+func (r *NVMeshReconciler) GetOperatorLabels(cr *nvmeshv1.NVMesh) map[string]string {
+	return map[string]string{
+		"app.kubernetes.io/managed-by": "nvmesh-operator",
+		nvmeshClusterNameLabelKey:      cr.GetName(),
+	}
+}
+
 func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
 	v1obj := (*newObj).(metav1.Object)
 	v1obj.SetNamespace(cr.GetNamespace())
@@ -60,8 +69,12 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	if labels == nil {
 		labels = make(map[string]string)
 	}
-	labels["app.kubernetes.io/managed-by"] = "nvmesh-operator"
-	labels[nvmeshClusterNameLabelKey] = cr.GetName()
+
+	opLabels := r.GetOperatorLabels(cr)
+	for k, v := range opLabels {
+		labels[k] = v
+	}
+
 	v1obj.SetLabels(labels)
 
 	name, kind := GetRunetimeObjectNameAndKind(newObj)
@@ -108,7 +121,7 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 		}
 		return err
 	} else {
-		log.Info("Nothing to do")
+		//log.Info("Nothing to do")
 	}
 
 	return nil
@@ -122,14 +135,14 @@ func (r *NVMeshReconciler) MakeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *ru
 
 	_, err := r.getGenericObject(newObj, cr.GetNamespace())
 	if err != nil && k8serrors.IsNotFound(err) {
-		log.Info("Nothing to do")
+		//log.Info("Nothing to do")
 	} else if err != nil {
 		log.Error(err, "Error while trying to find out if object exists")
 		return err
 	} else {
 		log.Info("Deleting Object")
 		err = r.Client.Delete(context.TODO(), *newObj)
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			log.Info("Error deleting object")
 		}
 		return err
@@ -410,8 +423,6 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 				} else {
 					log.Info(fmt.Sprintf("%s %s Object Created\n", gvk.Kind, objName))
 				}
-			} else {
-				log.Info(fmt.Sprintf("%s %s Nothing to do\n", gvk.Kind, objName))
 			}
 
 		} else if err != nil {
@@ -450,4 +461,12 @@ func Requeue(duration time.Duration) ctrl.Result {
 
 func DoNotRequeue() ctrl.Result {
 	return ctrl.Result{}
+}
+
+func GetGlobalImagePullPolicy() corev1.PullPolicy {
+	if operatorOptions.Debug.ImagePullPolicyAlways {
+		return corev1.PullAlways
+	} else {
+		return corev1.PullIfNotPresent
+	}
 }

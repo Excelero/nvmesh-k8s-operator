@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: nvmesh-csi-controller
+        nvmesh.excelero.com/component: csi-controller
     spec:
       serviceAccount: nvmesh-csi-driver
       containers:

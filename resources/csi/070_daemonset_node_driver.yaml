@@ -10,6 +10,7 @@ spec:
     metadata:
       labels:
         app: nvmesh-csi-node-driver
+        nvmesh.excelero.com/component: csi-node-driver
     spec:
       serviceAccount: nvmesh-csi-driver
       hostNetwork: true
