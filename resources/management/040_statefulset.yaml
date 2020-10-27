@@ -10,14 +10,14 @@ spec:
   selector:
     matchLabels:
       app: nvmesh-management
-      nvmesh.excelero.com/nvmesh-management: ""
   template:
     metadata:
       labels:
         app: nvmesh-management
-        nvmesh.excelero.com/nvmesh-management: ""
         nvmesh.excelero.com/component: nvmesh-management
     spec:
+      nodeSelector:
+        nvmesh.excelero.com/nvmesh-management: ""
       imagePullSecrets:
         - name: excelero-registry-cred
       containers:

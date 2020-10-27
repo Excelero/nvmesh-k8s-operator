@@ -54,8 +54,8 @@ type OperatorOptions struct {
 
 var operatorOptions OperatorOptions = OperatorOptions{
 	Debug: DebugOptions{
-		CollectLogsJobsRunForever: true,
-		ImagePullPolicyAlways:     true,
+		CollectLogsJobsRunForever: false,
+		ImagePullPolicyAlways:     false,
 	},
 }
 

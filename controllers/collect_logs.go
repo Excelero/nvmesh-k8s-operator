@@ -56,7 +56,7 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 	}
 
 	// get all Cluster Nodes (including mgmt labelled nodes) for logs collection
-	nodeList, err := r.getAllNVMeshClusterNodes(cr)
+	nodeSet, err := r.getAllNVMeshClusterNodes(cr)
 	if err != nil {
 		return false, DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("Failed to list all of the nodes in NVMesh Cluster %s", cr.GetName()))
 	}
@@ -67,7 +67,14 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 		return false, DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("Failed to list nodes with label %s", nvmeshMgmtLabelKey))
 	}
 
-	nodeList = append(nodeList, mgmtLabeledNodes...)
+	for _, n := range mgmtLabeledNodes.Items {
+		nodeName := n.GetName()
+		if _, ok := nodeSet[nodeName]; !ok {
+			nodeSet[nodeName] = &n
+		}
+	}
+
+	nodeList := r.nodeSetToList(nodeSet)
 
 	// create logs collector jobs
 	if !r.isTaskFinished(cr, a, CollectLogsStage) {
@@ -88,14 +95,22 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 
 		// wait for db dump job to finish
 		res, err := r.waitForJobToFinish(cr.GetNamespace(), collectDbJobName)
-		if res.Requeue || err != nil {
+		if err != nil {
+			return false, res, err
+		}
+
+		if res.Requeue {
 			res.RequeueAfter = time.Second * 3
 			return false, res, err
 		}
 
 		// wait for collect config-maps job to finish
 		res, err = r.waitForJobToFinish(cr.GetNamespace(), collectConfigMapsJobName)
-		if res.Requeue || err != nil {
+		if err != nil {
+			return false, res, err
+		}
+
+		if res.Requeue {
 			res.RequeueAfter = time.Second * 3
 			return false, res, err
 		}

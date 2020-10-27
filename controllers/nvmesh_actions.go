@@ -80,7 +80,7 @@ func (r *NVMeshReconciler) removeFinishedActionStatuses(cr *nvmeshv1.NVMesh) ctr
 	var result ctrl.Result
 
 	if cr.Status.ActionsStatus != nil {
-		for actionName, _ := range cr.Status.ActionsStatus {
+		for actionName := range cr.Status.ActionsStatus {
 			found = false
 			for _, action := range cr.Spec.Actions {
 				if action.Name == actionName {
@@ -165,5 +165,3 @@ func getActionArg(action nvmeshv1.ClusterAction, key string) (string, bool) {
 		return "", false
 	}
 }
-
-// TODO: consider using polymorphism for each action AND uninstall process

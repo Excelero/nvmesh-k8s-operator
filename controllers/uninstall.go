@@ -241,21 +241,15 @@ func (r *NVMeshReconciler) getNodesWithLabel(key string, value string) (*corev1.
 	return nodeList, err
 }
 
-func (r *NVMeshReconciler) getAllMgmtLabelledNodes(cr *nvmeshv1.NVMesh) ([]*corev1.Node, error) {
+func (r *NVMeshReconciler) getAllMgmtLabelledNodes(cr *nvmeshv1.NVMesh) (*corev1.NodeList, error) {
 	nodes, err := r.getNodesWithLabel(nvmeshMgmtLabelKey, "")
 	if err != nil {
 		return nil, err
 	}
-
-	nodeList := []*corev1.Node{}
-	for _, n := range nodes.Items {
-		nodeList = append(nodeList, &n)
-	}
-
-	return nodeList, nil
+	return nodes, nil
 }
 
-func (r *NVMeshReconciler) getAllNVMeshClusterNodes(cr *nvmeshv1.NVMesh) ([]*corev1.Node, error) {
+func (r *NVMeshReconciler) getAllNVMeshClusterNodes(cr *nvmeshv1.NVMesh) (map[string]*corev1.Node, error) {
 
 	clients, err := r.getNodesWithLabel(nvmeshClientLabelKey, "")
 	if err != nil {
@@ -266,22 +260,19 @@ func (r *NVMeshReconciler) getAllNVMeshClusterNodes(cr *nvmeshv1.NVMesh) ([]*cor
 		return nil, err
 	}
 
-	nodesDict := make(map[string]bool)
-	nodesList := make([]*corev1.Node, 0)
+	nodesSet := make(map[string]*corev1.Node)
 
-	for i, c := range clients.Items {
-		nodesDict[c.GetName()] = true
-		nodesList = append(nodesList, &clients.Items[i])
+	for _, c := range clients.Items {
+		nodesSet[c.GetName()] = &c
 	}
 
-	for i, t := range targets.Items {
-		if _, ok := nodesDict[t.GetName()]; !ok {
-			nodesDict[t.GetName()] = true
-			nodesList = append(nodesList, &targets.Items[i])
+	for _, t := range targets.Items {
+		if _, ok := nodesSet[t.GetName()]; !ok {
+			nodesSet[t.GetName()] = &t
 		}
 	}
 
-	return nodesList, err
+	return nodesSet, err
 }
 
 func (r *NVMeshReconciler) waitForUninstallCompletion(namespace string, nodeList []*corev1.Node) (ctrl.Result, error) {
@@ -374,14 +365,25 @@ func (r *NVMeshReconciler) runClearDbJob(cr *nvmeshv1.NVMesh) error {
 	return nil
 }
 
+func (r *NVMeshReconciler) nodeSetToList(nodeSet map[string]*corev1.Node) []*corev1.Node {
+	var nodeList []*corev1.Node
+	for _, n := range nodeSet {
+		nodeList = append(nodeList, n)
+	}
+
+	return nodeList
+}
+
 func (r *NVMeshReconciler) uninstallClusterNodes(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
-	nodeList, err := r.getAllNVMeshClusterNodes(nvmeshCluster)
+	nodeSet, err := r.getAllNVMeshClusterNodes(nvmeshCluster)
 	if err != nil {
 		return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("Failed to list all of the nodes in NVMesh Cluster %s", nvmeshCluster.GetName()))
 	}
 
+	nodeList := r.nodeSetToList(nodeSet)
+
 	r.Log.Info(fmt.Sprintf("Uninstalling %d nodes", len(nodeList)))
-	for _, n := range nodeList {
+	for _, n := range nodeSet {
 		fmt.Printf(n.GetName())
 	}
 
