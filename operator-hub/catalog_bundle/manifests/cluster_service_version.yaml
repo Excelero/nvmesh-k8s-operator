@@ -275,7 +275,7 @@ spec:
                 - --enable-leader-election
                 command:
                 - /manager
-                image: nvmesh-operator:0.7.0-1
+                image: nvmesh-operator:0.7.0-2
                 name: controller
                 resources:
                   limits:
@@ -314,4 +314,4 @@ spec:
   maturity: beta
   provider:
     name: Excelero
-  version: 0.7.0-1
+  version: 0.7.0-2
