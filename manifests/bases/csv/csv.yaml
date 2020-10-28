@@ -3,7 +3,8 @@ apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[]'
+    # DO NOT EDIT this field. alm-examples field is added automatically by build_manifests.py
+    alm-examples: ''
     capabilities: Full Lifecycle
     operators.operatorframework.io/builder: operator-sdk-v1.0.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -17,6 +18,7 @@ metadata:
     containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-1
     createdAt: "2020-10-28T00:00:00Z"
     repository: https://github.com/Excelero/nvmesh-k8s-operator
+  # DO NOT EDIT this field. metadata.name field is added automatically by build_manifests.py
   name: nvmesh-operator.<version-placeholder>
   namespace: placeholder
 spec:
@@ -26,6 +28,7 @@ spec:
     NVMesh is a low-latency (5μs) distributed block storage for web-scale applications. The solution enables shared NVMe across any network and supports any local or distributed file system. NVMesh features an intelligent management layer that abstracts underlying hardware with CPU offload, creates logical volumes with redundancy, and provides centralized management and monitoring. Customers benefit from the performance of local flash with the convenience of centralized storage while avoiding proprietary hardware lock-in and reducing the overall storage TCO. NVMesh is deployed by major web-scale customers, for data analytics and machine learning applications and in Media & Entertainment post-production and HPC environments.
     For details, go to: [www.excelero.com](https://www.excelero.com).
 
+  # DO NOT EDIT this field. apiservicedefinitions field is added automatically by build_manifests.py
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -69,9 +72,11 @@ spec:
   install:
     strategy: deployment
     spec:
+      # DO NOT EDIT this field. deployments field is added automatically by build_manifests.py
       deployments: {}
       clusterPermissions:
         - serviceAccountName: nvmesh-operator
+          # DO NOT EDIT this field. rules field is added automatically by build_manifests.py
           rules: {}
   installModes:
   - supported: true
@@ -100,4 +105,5 @@ spec:
   maintainers:
   - name: Excelero
     email: support@excelero.com
-  version: 0.7.0-1
+  # DO NOT EDIT this field. version field is added automatically by build_manifests.py
+  version: 0.0.0-0

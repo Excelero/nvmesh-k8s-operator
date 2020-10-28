@@ -1,8 +1,10 @@
-version_info:
+operator:
   version: 0.7.0
   release: 2
   channel: beta
 bundle:
+  version: 0.7.0
+  release: 5
   dev:
     bundle_image_name: "docker.io/excelero/dev-os-bundle"
     bundle_build: 1

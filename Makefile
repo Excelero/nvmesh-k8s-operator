@@ -1,13 +1,15 @@
 # Current Operator version
 
 CONFIG_FILE=manifests/config.yaml
-VERSION = `yq r $(CONFIG_FILE) "version_info.version"`
-RELEASE = `yq r $(CONFIG_FILE) "version_info.release"`
-CHANNELS = `yq r $(CONFIG_FILE) "version_info.channel"`
+VERSION = $(shell yq r $(CONFIG_FILE) "operator.version")
+RELEASE = $(shell yq r $(CONFIG_FILE) "operator.release")
+BUNDLE_VERSION = $(shell yq r $(CONFIG_FILE) "bundle.version")
+BUNDLE_RELEASE = $(shell yq r $(CONFIG_FILE) "bundle.release")
+CHANNELS = $(shell yq r $(CONFIG_FILE) "operator.channel")
 DEFAULT_CHANNEL = $(CHANNELS)
 
 # Default bundle image tag
-BUNDLE_IMG ?= nvmesh-operator-bundle:$(VERSION)-$(RELEASE)
+BUNDLE_IMG ?= nvmesh-operator-bundle:$(BUNDLE_VERSION)-$(BUNDLE_RELEASE)
 # Options for 'bundle-build'
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
@@ -32,8 +34,8 @@ endif
 all: manager manifests bundle
 
 # Run tests
-test-short:
-	go test ./... -test.short -coverprofile coverage.out
+test:
+	go test ./... -test.short
 
 test-short-verbose:
 	go test ./... -test.v -test.short -coverprofile coverage.out
