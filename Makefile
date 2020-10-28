@@ -141,7 +141,7 @@ bundle: manifests
 # Build the bundle image.
 .PHONY: bundle-build
 bundle-build:
-	podman build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 bundle-registry-build:
 	cd operator-hub && ./build_dev_catalog_images.sh
