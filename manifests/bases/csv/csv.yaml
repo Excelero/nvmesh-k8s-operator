@@ -1,3 +1,4 @@
+
 apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
@@ -6,6 +7,16 @@ metadata:
     capabilities: Full Lifecycle
     operators.operatorframework.io/builder: operator-sdk-v1.0.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+
+    # annotations required by OpenShift
+    # Documentation: https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/creating-the-csv
+    # Preview: https://operatorhub.io/preview
+    categories: "Storage"
+    description: "NVMesh Operator enables users to install Excelero NVMesh on Kubernetes and OpenShift clusters"
+    support: Excelero Support (support@excelero.com)
+    containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-1
+    createdAt: "2020-10-28T00:00:00Z"
+    repository: https://github.com/Excelero/nvmesh-k8s-operator
   name: nvmesh-operator.<version-placeholder>
   namespace: placeholder
 spec:
