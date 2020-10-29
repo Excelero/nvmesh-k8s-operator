@@ -6,8 +6,8 @@ operator:
   repo: registry.connect.redhat.com/excelero
 bundle:
   version: 0.7.0
-  release: 6
+  release: 3
   dev:
     bundle_image_name: "docker.io/excelero/dev-os-bundle"
-    index_build: 1
+    index_build: 5
     index_image_name: "docker.io/excelero/dev-os-catalog-source-index"

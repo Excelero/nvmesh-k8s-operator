@@ -46,7 +46,7 @@ spec:
                     description: Arguments for the Action
                     type: object
                   name:
-                    description: The type of cation to perform
+                    description: The type of action to perform
                     type: string
                 type: object
               type: array
@@ -165,8 +165,6 @@ spec:
                     k8s cluster
                   type: boolean
               type: object
-          required:
-          - actions
           type: object
         status:
           description: NVMeshStatus defines the observed state of NVMesh

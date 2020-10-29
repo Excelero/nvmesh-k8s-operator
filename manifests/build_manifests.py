@@ -45,6 +45,16 @@ bundle_info = config['bundle']
 
 def get_alm_examples():
     cr_sample = load_yaml_file(cr_sample_file)
+
+    # add object status for scorecard validation
+    cr_sample['status'] = {
+        'reconcileStatus': {},
+        'actionsStatus': {}
+    }
+
+    # add empty array for the actions field
+    cr_sample['spec']['actions'] = []
+
     nvmesh_sample_as_json_string = json.dumps(cr_sample, separators=(',', ':'))
     alm_examples = '[{}]'.format(nvmesh_sample_as_json_string)
     return alm_examples

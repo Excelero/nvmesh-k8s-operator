@@ -28,7 +28,6 @@ spec:
     NVMesh is a low-latency (5μs) distributed block storage for web-scale applications. The solution enables shared NVMe across any network and supports any local or distributed file system. NVMesh features an intelligent management layer that abstracts underlying hardware with CPU offload, creates logical volumes with redundancy, and provides centralized management and monitoring. Customers benefit from the performance of local flash with the convenience of centralized storage while avoiding proprietary hardware lock-in and reducing the overall storage TCO. NVMesh is deployed by major web-scale customers, for data analytics and machine learning applications and in Media & Entertainment post-production and HPC environments.
     For details, go to: [www.excelero.com](https://www.excelero.com).
 
-  # DO NOT EDIT this field. apiservicedefinitions field is added automatically by build_manifests.py
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -47,47 +46,121 @@ spec:
         - kind: Service
           name: ""
           version: v1
+      # OLD Descriptors Reference: https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md
       specDescriptors:
         - description: NVMesh Core basic configuration.
           displayName: Core
           path: core
-          x-descriptors:
-          - urn:alm:descriptor:com.tectonic.ui:label
         - description: NVMesh Management basic configuration.
           displayName: Management
           path: management
-          x-descriptors:
-          - urn:alm:descriptor:com.tectonic.ui:label
         - description: NVMesh CSI Driver basic configuration
           displayName: CSI Driver
           path: csi
-          x-descriptors:
-          - urn:alm:descriptor:com.tectonic.ui:label
         - description: NVMesh Core version to be installed.
           displayName: Version
           path: core.version
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:label'
+            - 'urn:alm:descriptor:com.tectonic.ui:text'
         - description: NVMesh Management version to be installed.
           displayName: Management Version
           path: management.version
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:label'
+            - 'urn:alm:descriptor:com.tectonic.ui:text'
         - description: NVMesh CSI Driver version to be installed.
           displayName: CSI Version
           path: csi.version
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:label'
+            - 'urn:alm:descriptor:com.tectonic.ui:text'
         - description: The number of replicas in the NVMesh-Management server cluster
           displayName: Management Replica
           path: management.replicas
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:podCount'
         - description: The number of replicas in the MongoDB cluster
-          displayName: Management Replica
-          path: management.mongodb.replicas
+          displayName: MongoDB Replica
+          path: management.mongoDB.replicas
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+        # ADVANCED FIELDS
+        - description: A List of NVMesh cluster actions to perform (i.e collect-logs)
+          displayName: Cluster Actions
+          path: actions
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        - description: Disable SSL/TLS for the WebSockets and and HTTP connections to the NVMesh Management
+          displayName: Insecure Management Connections
+          path: management.noSSL
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        - description: Do not deploy NVMesh-Management
+          displayName: Disable NVMesh-Management
+          path: management.disabled
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        - description: Do not deploy NVMesh-Core
+          displayName: Disabel NVMesh-Core
+          path: core.disabled
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        - description: Do not deploy NVMesh CSI Driver
+          displayName: Disable CSI Driver
+          path: csi.disabled
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        - description: User an externally deployed mongoDB cluster
+          displayName: Use External MongoDB Cluster
+          path: management.mongoDB.external
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        - description: MongoDB Connection string when using an external MongoDB Cluster
+          displayName: External MongoDB Cluster Address
+          path: management.mongoDB.address
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:text'
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        - description: Deploy a MongoDB Operator
+          displayName: MongoDB Operator
+          path: management.mongoDB.useOperator
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
+            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+        # HIDDEN FIELDS (Hidden from the UI)
+        - displayName: HIDDEN FIELDS - Management ImageRegistry
+          description: >-
+              HIDDEN FIELDS - Override the default image registry for the management image
+          path: management.imageRegistry
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
+        - displayName: HIDDEN FIELDS - Core ImageRegistry
+          description: >-
+              HIDDEN FIELDS - Override the default image registry for the core images
+          path: core.imageRegistry
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
+        - displayName: HIDDEN FIELDS - CSI ImageName
+          description: >-
+              HIDDEN FIELDS - Override the default image for the CSI Driver
+          path: csi.imageName
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
+        - displayName: HIDDEN FIELDS - management ExternalIPs
+          description: >-
+              HIDDEN FIELDS - This field is relevant only for a non-OpenShift Kubernetes cluster - the externalIPs on which to expose the management GUI service
+          path: management.externalIPs
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
+        - displayName: HIDDEN FIELDS - Operator Controls
+          description: >-
+              HIDDEN FIELDS - Operator Controls - flags to control the behavior of the operator on this Cluster
+          path: operator
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
       statusDescriptors:
         - description: The URL to access the NVMesh-Management WebUI.
           displayName: WebUI URL
@@ -97,13 +170,24 @@ spec:
         - description: The status of the last operator reconcile cycle
           displayName: Reconcile Status
           path: reconcileStatus
+        - description: Last reconcile cycle
+          displayName: Last Update
+          path: reconcileStatus.lastUpdate
           x-descriptors:
-          - urn:alm:descriptor:com.tectonic.ui:label
+            - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - description: Last reconcile cycle error details
+          displayName: Error details
+          path: reconcileStatus.reason
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - description: Last reconcile cycle status
+          displayName: Status
+          path: reconcileStatus.status
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:label'
         - description: The status of NVMesh Cluster Actions
           displayName: Actions Status
-          path: actionStatus
-          x-descriptors:
-          - urn:alm:descriptor:com.tectonic.ui:label
+          path: actionsStatus
   displayName: NVMesh Operator
   icon:
   - base64data: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiIHdpZHRoPSIxNzJweCIgaGVpZ2h0PSIxNzJweCIgdmlld0JveD0iMCAwIDE3MiAxNzIiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDE3MiAxNzIiIHhtbDpzcGFjZT0icHJlc2VydmUiPiAgPGltYWdlIGlkPSJpbWFnZTAiIHdpZHRoPSIxNzIiIGhlaWdodD0iMTcyIiB4PSIwIiB5PSIwIgogICAgeGxpbms6aHJlZj0iZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUFLd0FBQUNzQ0FNQUFBRFI3N2ZxQUFBQUJHZEJUVUVBQUxHUEMveGhCUUFBQUNCalNGSk4KQUFCNkpnQUFnSVFBQVBvQUFBQ0E2QUFBZFRBQUFPcGdBQUE2bUFBQUYzQ2N1bEU4QUFBQWUxQk1WRVVBQUFCWXQrZFl0K2RhdCtkYQp0K2RZdCtkWXQrZFl0K2hadCtoWnVPaGF0ZXBadCtoWHVPaGdyOTladHVaWHVPaFp0dVphdGVSWXQrZGdyKzlZdCtkWnR1aFp0dWxYCnVPaFp1T2hZdCtkZ3YrOVh1T2hadU9oWnVPaFp1T2hZdCtsWXQraFp1T2hhdXVwWnVPaFl0K2RadCtoWXQraFp1T2ovLy8vVSs5TnAKQUFBQUpIUlNUbE1BSUlDQVlFQy92NysvTU4rUEVIRFBVRENmRU45d1VLK3ZZQkR2aisvUG45OXdNTjkzTVVCb0FBQUFBV0pMUjBRbwp2YkMxc2dBQUFBZDBTVTFGQitRSkZ3MG1FcmxnbjF3QUFCSy9TVVJCVkhqYTdWME5WeHRKcmcxNElMc0pBVUlnaEdVUzJQZEswdi8vCmg5dWxlNitxblEyWnVDRFlaODlVY2dEYjdXNjFTcVhQcStvM2IzNTlIQjMzc1RubXIvNFByOGFQOFdsOXVCcWJEUS9kckQvWjFIR2IKclM5dEgvUEhEb1QyY2RMTVd3NXZZY3VQL0cvOWYvTm9MWnIzUDVmWFljdnY1WC9FY2lBT1dvNTFmcmYvTnZlV3A3UDhodU1ObnQ3NgpHM2hweTFsdCticWQ3a3FzTCtlSXZISS9BMGp0cHdXSlJZK0JLRTh5bzcvclNVOGVFUDJBd0ZHR3UxNElUcks4LyszOVo5NUpmejlQCkZmMm90eFBFa2p0NTlhUXRrdnI4bTN6QkM5TmJ1RzVMMHZOR3dkNysrVUtrTC9TUXR6bGJub1E3cGdJbnc1M3V6RmtRdURBbjV4enoKcGFrMXlzUnlMUU9WaHZkd29PT3dmSW5iNUgxYnZqTE5oK1dFOUxjQzdBV3h6WGNtTnNTOFJTbzcwUzVaZEY0L1hHd2xVOXp5RU00QwptSmkzRkhtVTZTNUZsdU5HOGM0UWx1V2RmK3dzQnJsY0lLSUxpeUluRWJ4Y1hnVGVCQU03M2VSOFNqZEVKZGs4NUdVSWxKSEh4bldyCjZlaHJBdmYxejUzRkFHZnFESExJZmllL0UxaVg3R2MzRVNJaEFkY3Nid2VmUW9DNWl2SVY1Y0pCcUlkWjJ4bzdMekJMSW5PNk95K1gKdnlJbkhZS2dPNEhBTmQ0VHVTdDFFUDBqc294aXU1elJiR2hDeW5LUVNLemZDZFZsWUFNVmkxWVdkVXdLQStpVktvT1FEa1hCM3o3RQpNL1VvdWJ6Y1NVaDc1REtqekVMd2QrWnNBd3NDaXNoTHRwcDBWWFBLZ2EyMWhUbi93M1o0cVgvZXhoQmswMDhvYVFnMTdtQmlnWEhhCk1OdkpZUk16REF5VEFTcXhiTVdodW5DWkx0eXpRYUZSSVhhR1FMb2g3NWludHZNQ0cydVV5akw1akVsM0oydWpTVnRRU0NBMEFVb2IKRDZIVzBEdkZhbGd5bnRESzZ2cnVlcGFXZjJ2K3dtVmVxYStrWjNNaW9XWWhJbzJMVWJZMHlnUjM3V1RkQ0lSVWRJT0tTV25DU1NjVwpHTmM3TFhibmdjbnRvT2t4a3c2eU5FS2haU2VEd0tYWVN1WkpQUldJWWFyTVF4WWk4dFltRnBoWW1CY0k2a3d5b1ZZOEZ3dmxCUmNECklUbkRORXJXYkhnYXBqV1dhek9hWEFNS1YweUlnWHdyR3RKV2hqV2RLNmRTTkRrSFZBaVlUQytobE5tRmpKT1AzbGxMcTlCazcvS0cKQW4vTU9ESmRCMW5Ra2FMUFpQSVc0RG5TNDh2YkNDL3pTZWVGWG9Ldk5HcWV3bW90MFFiVFordEhMUHJYSjhUQTRiVDBkUnBlbmt0NApMWlh1bzRoOXc2RXhzTjVTeHNzdEpGMFFWTm92Zzg4bExZdEo3QzkyMXdhWTJTUXhVbFNIVGNJeUQvcWlhV21EVHFKVFdjS042T2JPCnFUeGgvaVR4aHRrdzJHWXplVi81YzBabXliSW8xWmcyemFQMEZNU1JSaGtLekdUbFphaVNtMTRxQVlMZTlZWXBwakF0TWEyOGlRVVcKZFBEVE94d3gwNWF4N0dTQU56Q1prUnBWbWphYzNvcGJXYWxtWllNbElYSTFGRVJNaVFGWVV0NmIzQkQ1ZTZab2hrWVNTaWtYcFkybwowY3FLUUVkVGhhVVlZWjdna0tYMEd5MzQ3aTZpdk1BbW0rU1NSNUJJbzhSSUlDZDJURFhWYVRydHdVaFNyZ1MxdHRnQU8wTmhnZzJjCkpUYnRZNk1IcnlEU29hbGd5VENuNnhud3NndjBLcnhrcHlsbzFqUXdVT3Z2UlVXT3UwZTMxUEVOczA5UElTOU5BY1BNZ2ZHR29FL2gKS1dnTFRRbTBocFVSNERtaHFWMUdSUzhzZGw5Z0Z0UUZwdVZDWno2OGZCcGJCZEl5dTRZTWdGT2lLOUEwU1dST0ExemhFZXdQcDNlNQp3dTR4bUkzRm1pNlJwcTI4QWg4NmszUEt1UzIzVjZyZVlONmM2aTBqQTFNa0xJVkFaN1QvdFhzbzN1OHhndm1BUHZrV2NGUVFXVlhjCm1oWU9jVUVicXg5T1JUampDVGsrekdwd0tkRkJad2haVHVlTXVkVWRNOHF2WElCVDVLakxhZWk5RkNZVUNGU2RyL01qWm93NHBBRkMKUmxZVXA2aUU3UnpXbU55aW9heUgwN1ZjY0lNODRlYS8wNGZLTVc3V0djZXRUemY2WUpXWDNHUytFUWZ2bkVVTWVkRDBWSk9WRWVEago0Z3JzZUw3Zk9rNmtaRnBGaEFyMkVSRHNtOEF0WWcxWlE2djBoQ3YxQ1FuY040RmJ4S1pwZGJuU0NnQ1FUT2cwNzV2QUxXTHA1Nld6CnpVREdwQnM3dmZzbWNJdFljd2FoMFNObnF6U1NNK0d6YndLM2lCVmhOT2xNWFNQNzNuWDZ2Z25jSXBaeEtQM25Tc1F4MVBQREluYmwKYUk5SVRrN1VZdG4zVGVBV3NXWDhLd1F0OXlURGgzMFQrRDJ4cGlTM3l6dFVrSFJvZXJaV0YxeFhwSUNRWlkrREl6Yjk0N1FLYnFHMApCbE9ZQjBkc2VmOWVoVFo2Mm1uVkRtdUJVUmNvbGFFNDN4UXU3SnZBYldJUmpQZ29iWVY4bU5Sait5WndtMWhWTDVFMll2VlZkYzBECjA3TnlaMHRYVllJUzlhVjlFN2hOTElOTnhhOU13WVVTR0U5Kzg5M0pQb2pWcENOcEtjOGdVamU4UC92eDF6NmNYL2psNnhOcnFMMVYKQlQ0WTFDNy9MbzQvUHZHbHEzN3NwOWNuTnRQQ3dvUzBvV1F2em85Ky9JMVA1OWVaSjdwNGRWclRLR1NxM1pWUDYxUmYzRHhCNlp2UAp0MHJlSE8rQldPa3NKWWFpUGNuVE4wZkgxOHdXTDZMeit1dXJxeTRGdHNuVjJ5Y3BmZlA1aTdSYnhoS3ZUeXZ5czFqKzRiZDMvM3JxCnVLT3plNi8wZUwrMzIzMFF5d2g4dWZyZDA4djdqMU5sVmhFSkw4ZWY3NFBZakY0V1NqODhlY2pIUDc4Q1g0TFNMUU9nanp0YzVNV0kKYlg1LzlST2VmcnI3Vmxudm5tQU9WamkvN29IV054OGZMbi8yNmRWOVlvVnNYWTdPOU92REMvRHA4dmpxOVA2Rjd1UER6WVVLUkZYcQpKT3pML2U0WkozNzMrZmpoOU90THVxQW5WOG9oaDFMV1dGdUlLbzVtenZudTVQanM5SnBRUmhhdVhvQ3A1OWZSMWtXdGdqd1JVL2U0CjIvbU9GaXJmUGxabHdRcmk4L3hJNVBLMlZYRkFJQjBsN2xtYlAvdkZVeDJkbkcvK2NVR1lrSVNLeGJYSUFPcFpsQjRkUHpKSkQzM0sKY29ickwzaTlsMzg1TnlkM3gyKy9OVmJyR3FGdFE1eUVUSGdPc1pkZlVOMnVFb3NxSFFOam10ZDRXaXQvV3FqOGNscmxkZFRXVVkweQpWbnVqbFpQM01LMnVGNU5xUWlKVmNUeVlYQlRZTTZ0ZjMzNzA5WlBQeDdlbld3Z1pRQlFJeDZOajF5RUxQUG5qK2JSTGZIZEtlQ3p5CjlxaVZaMkl4V0VkRXliR1h5RGJiVkY1dUhrN3ZWYnNWR3NFTEdSTldJRVZad09YRDI4K3psSDVNUHlWWkVhckttWVJNb1U0Qkh4dmQKdzBVVlhaMStaUUpIZU5XQytoRHZLL3hHTGFsK0YvZG5VN3F2aTluZFJTdlFDR014UWYwSzVnaFVETUFhUm9XWmRYMldVWm5QUTBoSAowMkVsUmN5akFzVFdMdTVtNS8vZDFWY3ZYQjdMczRyRFZSSVVqQnFGUWRVTGZhZ2kxWE5WWHlhK1RvbGVDQlpnZE8xaDFtMWZvbFJoCldKeEZwWlpTV2xLVzhhUXpObDlXUnhTL1c1SFQ1TjV3RXJJY1h1Z3BFN3F6bi9GNk16di9KMWRvU2NCeU42L1VEQXUzRk5oQ1k0ek8KaEFHZGNlbFBJUmFyUDhGWHMwVkJPdDIxQUtweGRQT2U1YU9CS2VObGV6a1VNMDFRWHNDRTZYZ05JU1lKOGFLY0VHVzA2aDFBc2ZuKwphbGFwWHQ0V0dyS1NSNFNhaFV3TXNhLzV2cGMyOHJvTDZFMkJVc2VDQk9xT3VEa3VTWHQvTTdtb2xpaFZNdVFETjVMOGlZTE1WTmxtCklMT0tvMWh4cGxuT09xL3lrRkRXVVJDd2xLQXZzNHZxN3Rhc3pQMFdsRVd6VmdsbFpSTUFkVEtFUUhXVDMxbXJrVFVua29XQWlYbWwKZW5UMk5kU1l3c0xjOEMyQU5JMXhYVTM5UUpRQjRDbmdDN1NzcnhVRWxRTmd1RjJtTG1iOTlMdTNWdVl3Qm9oTWZBaVc3U1cwcnZ5MwpnRVdWTkNqRlpZVDA4a2Q1UG9JdnpDclZqdy8zUkFjM0w3M1k1TGs0azkrZzVPSXRJRE9OWFVxMUVKdUVsQW9mM1RJRkErdCtBRFJKCi8vTDE4ZHlpV3FMVVBqa0dZUFpRZ2lXMlRXOWVYSjB2M0RodmhQdFhXVXc0TDZVYjZVdG5Yd2ROb05hZlpkdlk2YVNuOHU3aDNtd3MKY0dldmhyU21jSVRma3M0Y3A2aUVtTHE5VEJLckZvWkNxWVlheDV6NnpqdVk2ZjVxYmxGOXVIa3NsSE10bkVYdkIyb0hhTWE0dUxwWgpTOWNuQUR1SGNrMVEyaGFjakoxNVJrT3c4dE1Yby9ySGh5bFNUNjZZMEI0MmdBQjZha3ZPKy9hNDZ6Y1NNUEhzL1BBQmpoV2J5NG1FCkZhQjdiYmR6aStyby9GbzRLQ2NVUDdBK3dLR0xoNXNmbi9pVzB6QWdmMFRLRTREdUExZnFXdnlwQ2R2OThkejhmNzV0WlozVFFoWXoKbGd0ZFBKei9oQUZzQUNnelh5Yk5sQjhYcEU0ZGdFaWNUaXJWeGFRS0p0cUZqMzBOdVd4L1RtZmVKaFU2YkR4OVcwNjNoSlI5UFdxdAo2VCt1M2syUmVuY3JQNzNKUjArK2ZMdjZLenB6UEpSeVpUVlBUWUNTVDVuK1lEUEg4dGY3Zjg4dHFyTjdvdGhYNW1paDgrYVhCZisrCkRRL0txdVZzWkJIWVRZa0tGQUNibDFPVUxzT1lXQkI4Kzl2RHI5UFp4NG02T3NzbFZhVk1TUm1xQmNZSjgrRmZFc3VtNHYvU243ODQKTStWRWxYY0xYOCsya3lvUWs4ZTd1Zm5ud0lrdWZrMCtmekN1RlNTaU1CcWxUbHcydHR6YWR2WGNxbzFOOGJQRy82M1Q4WFNpRklhVgpwNUEzOERpcFZGOXdIRytEYVZORFI5V2pHNDJLMmVsek1zb3ZOUzRjU1RSdjVYY3BCTkFIMGI3TzU5UmVjaHpKRlN5UGpHMkFrV0RGCjFES1A1ODlhVkM4M2JsYTVIclpaamdieUZJYmJ5MzNUV09OQzBZd2l3Y2hFQ0xzd242ZFVYM3A4cUpSc3VwR3FLbkZ0emVmVWZzdjQKUXlraWVSWEtML2w4K1BmYnhoZTBSREsxV2dTMzluNHkvUHVONDBQRi95SFBOZE1iYnc5QnFYNC9QcnVyLzQvYk1peC8zajhjMEtKYQpqYXNvdGlvWDgvN21YODgvNzI4Wjl5MVdzZkJ6Y21xL2YzeDJKYThTbnpnYi9yM09PQnVZN3pZYi9yM2F1SzUyK2phZHFINnQ4VkVKCjJzZmpRMTFVWS95SjlUOGYvcjNtK05ZT1Y2bCtQNDZhLy85aGVTby9HVGNINTZuOFBmNGUvOVBqMEszWUdPL09yZytxTGZEcDhmR3MKcDd3T3FnUGthVW9aMys2YmtyK2s5TTlIeGpRdkFMLzdyV09SVTFhUnNQdlJ2dWw1ZXVUc3k1OTlOdnp1ZDQ0Qm1WaGxpdzlTR3h6ZApYRmdWdTlvS2lyUnZ3bjVBNlRjVm9XdXpINkpuRDB3YkxEd1YvRENUbklWSFFpRnMzK1J0a2ZxTmdHUHMrTVZkUDF3Ykd4N1dBanNwCnhIR29EY2hNeU9GZVY5bzNnVnZFdW9wRXJFY250QSsxbVV6STdwdkFMV0pSMWZUYWJ3WHR3ZzE1NUVQckZXL3FYQ1J1ckVxZ3hKYnMKbThBdFltMlY1ellCWGJScDJjTGxmUk80UlN4S2hvSm1KY2JFVlV5TUEzTmswTmdPSEtZMllEUVdGQk9LdW04Q3Q0Z0Yxc2tHM3NkcgpqNkoyYU9iMlJIdXRhazBsZm93OXJTN01weEhkQTBTOUlIWURGN3pHc2tVYmpwdnVPTEYzb2IwOWdZTnJNMXRuQzZrUkFzVlZOd0lCCjlhYjlCRmZLbUhpd2RVZURkbTVyVnJ2ZkNlaU0zZUFJSVNmOG83OC9zMjFiR29JdXBySm1XeUJvVkd2TXluWUlGK29yVEFleHpkcGMKVXpCaGVCaTVVN3kyd1dxcnZ5YTJleWVxc0xZamhockF4dDFHUTF3Ym5BM0F1VkRDdnNKN0VJeEFJSjdFUkh1OG1xQlhUcWpOeEhidgo1UlVXU2tNYityYkNMNDArSzJBdnVSMGJ1MFFFVHd0dHpzYm1DakgwTzVCTnRUVHN2bWV5QzZiVXRDbDFObFhVM24yRk14YStraEJiCjRhWmJyTzUyb0llNUNxM3FWSVFTbTJ0SFVwdllIbE43bmEvMjZocTdlcW9VMnByTXNvMDFua1ZUd2h5NWU3SEVnRUFxQXZVSysxUE8KUFU0NUk3TzFxcmhKUGh3YjdKR0hQbHRpenhVK2VCUmcxZ1YxSEYwVjVMVzJnUjFZY1JLci9xVVdPMjgxYUZ5K0ZIckFvdFZweGMxbApzWituVmRoVGtacTd0dnFzN2hHSmkxRlpHQ2wwYmo1SXhaR1dhRzVMMTRTKzhQa1IybW1lK25Ub0doSXZlYlRRTnJwcVpta3MrSGFaCkp6alF2WG9oeTJmV0F3OThnbGhmdVYwaFpCVFV2alZ1anFoT2hhQXFabWhSTHFVUi9LZDI4bEp6MkNHVlBXenE0Q3ZDZDk5eE11VUoKSzFTeFlpMWRMQmc5RW9OdEhYcEtCQ3ZuSlRQYXZwZnpnZ2VJWlB3SlFvVVJyL2FjQ2M2bUtBRU5VY08vbDhzb1dXekFkZXFuVEZXdwpTNjlVdFB0Z0kyYUlnR2dmanZQT25CMVA1cEQySEQ1NEc0cGltQVhFUEdwUGFKeDhyN1czQW9aTG5hRHQwdGJWZHA5U1hkVjZFclVYCnAxVWI3K29KQ0xLY1hwMlVDdGI3QXkzMDdBUjVtTmova2xRU2REZm1BU0k3czgrM0hFTkVpbzZkazNYWmtsVVRORjFHdDdJTmpTMEMKVVhwL2JQK01qWmpWUDdDU0dyeVkzSTJhcGtjZ3FlNG9SYTZsWEUrbG1aeUlYMU83c0tzYmo4TEIzcXZTQ2pBZ1JvVldqME5oeTh2dQpqeWdnZFdvL0dWU1JnWTBPMlRCWjJaUUhqMnMwakpxTUlIdFkwNmZvcWl1R0VMZksrZUE2dSsvNkR4YlVmdFNPN2pBZjdYMDJla09GCldCL3JiV1Z6Uzl3WkllY1c1OXJnbHcwdi9JaU95TXcrMzFIZzhKRGtCUlBmOURwZ092RmNHN3JrQkgzU1FxdGpkS1ZEcEttMWc1M1UKV0RSMVpjenM4KzE4MHBKWUZOcDlBRE1hQlVzY2JaU0toTXJ5a2E5aU1aK25wSGhMSG9PYzdxREdtTnJaZDlWYVZ4NWUxRDU1clRSeApZbWZsL3phMmpZN1FFY3hXY0VtQkNSbHBNVjFhMENaanNMR1dzNWN5QW8raU1ENGZKQjltZzhZcFVrTHU0UkVWd1hZYkprMFp6clo2ClZzaDRVQUNtVHQxT00ySmdLODZ1N0MyY2hZYitDZU56SzhhVFB4cnp6bnBraFNreUh2RmpXVVh1SDgzV0NacTFmcjdkeFNCUFpjTU4KOExWN1JNVXBaNnYyY0k5V2o0bFoxU0NZNEd2VjBSQVZPY0NVMFJNU3pIWEtLQlRrbEN2SitNd1NVNDRPMlFuVHM1N0ljL2tyYkIrVwpxeHBlaXF3YUdueDFDVW5zMUROQTZDV1orTkRLR0l4MkZ6M01aY1RnRFU4bVVqZGpwWFhVaFVXZm05dC94YXB4THExdnNuL3VVVEIwCnBzV09WWnFsSE1WNldJeVlTb2NmRWlHVE1YWW01Nk5MNUdmb2JOVlROaHVLYzhaSGlxWEo2eXhlVjIrN0htQlM3YXA2VXBmemNXYmgKZEJGcU9wcGEzS1RreW5QZWZZSEpBSldkOUpYMnB6S2x1MVQ5MWM1bi96QmpFV3JDWURUUjlMQW9xMmVhaVVLMk84RlQzNVhZbzYxZAp6OGZ2elhpMDR1YTdROWJib1crMkg5V29MZFcvTzluNi9kVlpOck1iQ1B3OS91Zkdmd0JNWXRNYlVoK3ZKQUFBQUNWMFJWaDBaR0YwClpUcGpjbVZoZEdVQU1qQXlNQzB3T1MweU0xUXhNem96T0RveE9Dc3dNem93TUdncmxVQUFBQUFsZEVWWWRHUmhkR1U2Ylc5a2FXWjUKQURJd01qQXRNRGt0TWpOVU1UTTZNemc2TVRnck1ETTZNREFaZGkzOEFBQUFBRWxGVGtTdVFtQ0MiIC8+Cjwvc3ZnPgo="

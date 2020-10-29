@@ -120,7 +120,7 @@ type OperatorFileServerSpec struct {
 }
 
 type ClusterAction struct {
-	// The type of cation to perform
+	// The type of action to perform
 	Name string `json:"name,omitempty"`
 
 	// Arguments for the Action
@@ -146,7 +146,7 @@ type NVMeshSpec struct {
 	Operator NVMeshOperatorSpec `json:"operator,omitempty"`
 
 	// Actions allow the user to intiate tasks for the operator to perform
-	Actions []ClusterAction `json:"actions"`
+	Actions []ClusterAction `json:"actions,omitempty"`
 }
 
 type ActionStatus map[string]string

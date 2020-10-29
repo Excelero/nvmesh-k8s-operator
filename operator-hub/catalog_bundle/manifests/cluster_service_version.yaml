@@ -4,7 +4,7 @@ apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"kind":"NVMesh","spec":{"core":{"version":"2.0.3-4"},"management":{"mongoDB":{"replicas":1},"version":"2.0.3-4","replicas":1},"csi":{"version":"v1.1.0","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
+    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"version":"2.0.3-4"},"management":{"mongoDB":{"replicas":1},"version":"2.0.3-4","replicas":1},"csi":{"version":"v1.1.0","controllerReplicas":1},"actions":[]},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
     containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-2
@@ -39,43 +39,115 @@ spec:
       - description: NVMesh Core basic configuration.
         displayName: Core
         path: core
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: NVMesh Management basic configuration.
         displayName: Management
         path: management
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: NVMesh CSI Driver basic configuration
         displayName: CSI Driver
         path: csi
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: NVMesh Core version to be installed.
         displayName: Version
         path: core.version
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: NVMesh Management version to be installed.
         displayName: Management Version
         path: management.version
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: NVMesh CSI Driver version to be installed.
         displayName: CSI Version
         path: csi.version
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: The number of replicas in the NVMesh-Management server cluster
         displayName: Management Replica
         path: management.replicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podCount
       - description: The number of replicas in the MongoDB cluster
-        displayName: Management Replica
-        path: management.mongodb.replicas
+        displayName: MongoDB Replica
+        path: management.mongoDB.replicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podCount
+      - description: A List of NVMesh cluster actions to perform (i.e collect-logs)
+        displayName: Cluster Actions
+        path: actions
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Disable SSL/TLS for the WebSockets and and HTTP connections to
+          the NVMesh Management
+        displayName: Insecure Management Connections
+        path: management.noSSL
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Do not deploy NVMesh-Management
+        displayName: Disable NVMesh-Management
+        path: management.disabled
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Do not deploy NVMesh-Core
+        displayName: Disabel NVMesh-Core
+        path: core.disabled
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Do not deploy NVMesh CSI Driver
+        displayName: Disable CSI Driver
+        path: csi.disabled
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: User an externally deployed mongoDB cluster
+        displayName: Use External MongoDB Cluster
+        path: management.mongoDB.external
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: MongoDB Connection string when using an external MongoDB Cluster
+        displayName: External MongoDB Cluster Address
+        path: management.mongoDB.address
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Deploy a MongoDB Operator
+        displayName: MongoDB Operator
+        path: management.mongoDB.useOperator
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: HIDDEN FIELDS - Override the default image registry for the management
+          image
+        displayName: HIDDEN FIELDS - Management ImageRegistry
+        path: management.imageRegistry
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: HIDDEN FIELDS - Override the default image registry for the core
+          images
+        displayName: HIDDEN FIELDS - Core ImageRegistry
+        path: core.imageRegistry
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: HIDDEN FIELDS - Override the default image for the CSI Driver
+        displayName: HIDDEN FIELDS - CSI ImageName
+        path: csi.imageName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: HIDDEN FIELDS - This field is relevant only for a non-OpenShift
+          Kubernetes cluster - the externalIPs on which to expose the management GUI
+          service
+        displayName: HIDDEN FIELDS - management ExternalIPs
+        path: management.externalIPs
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: HIDDEN FIELDS - Operator Controls - flags to control the behavior
+          of the operator on this Cluster
+        displayName: HIDDEN FIELDS - Operator Controls
+        path: operator
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       statusDescriptors:
       - description: The URL to access the NVMesh-Management WebUI.
         displayName: WebUI URL
@@ -85,13 +157,24 @@ spec:
       - description: The status of the last operator reconcile cycle
         displayName: Reconcile Status
         path: reconcileStatus
+      - description: Last reconcile cycle
+        displayName: Last Update
+        path: reconcileStatus.lastUpdate
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
+      - description: Last reconcile cycle error details
+        displayName: Error details
+        path: reconcileStatus.reason
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
+      - description: Last reconcile cycle status
+        displayName: Status
+        path: reconcileStatus.status
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: The status of NVMesh Cluster Actions
         displayName: Actions Status
-        path: actionStatus
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        path: actionsStatus
       version: v1
   description: "NVMesh Operator enables users to install Excelero NVMesh on Kubernetes\
     \ and OpenShift clusters.\n\nNVMesh is a low-latency (5\u03BCs) distributed block\
@@ -297,6 +380,19 @@ spec:
           - apiextensions.k8s.io
           resources:
           - customresourcedefinitions
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - batch
+          - extensions
+          resources:
+          - jobs
           verbs:
           - create
           - delete
