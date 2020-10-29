@@ -45,7 +45,7 @@ bundle_info = config['bundle']
 
 def get_alm_examples():
     cr_sample = load_yaml_file(cr_sample_file)
-    nvmesh_sample_as_json_string = json.dumps(cr_sample)
+    nvmesh_sample_as_json_string = json.dumps(cr_sample, separators=(',', ':'))
     alm_examples = '[{}]'.format(nvmesh_sample_as_json_string)
     return alm_examples
 
@@ -60,7 +60,7 @@ def build_csv():
         'spec': operator['spec']
     }
     # update operator image version tag
-    operator_image = 'nvmesh-operator:{version}-{release}'.format(**version_info)
+    operator_image = '{repo}/{image_name}:{version}-{release}'.format(**version_info)
     install_dep_item['spec']['template']['spec']['containers'][0]['image'] = operator_image
 
     cluster_permissions = {
@@ -109,8 +109,8 @@ def update_catalog_source():
     image = '{image}:{version}-{rel}-{bundle_build}'.format(
         image=bundle_info['dev']['index_image_name'],
         version=version_info['version'],
-        rel=version_info['release'],
-        bundle_build=bundle_info['dev']['bundle_build']
+        rel=bundle_info['release'],
+        bundle_build=bundle_info['dev']['index_build']
     )
     cat_source['spec']['image'] = image
 

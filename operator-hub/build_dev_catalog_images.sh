@@ -1,17 +1,18 @@
 OPM=./bin/opm
 
+CURR_DIR=$(pwd)
 OPERATOR_REGISTRY_REPO=~/go/src/github.com/operator-registry
 
 # MANIFESTS_DIR the location of the nvmesh_bundle dir relative to the operator-registry repo root
 MANIFESTS_DIR=./nvmesh_bundle/manifests
 
 CONFIG_FILE=../manifests/config.yaml
-OPER_VERSION=`yq r $CONFIG_FILE "version_info.version"`
-OPER_RELEASE=`yq r $CONFIG_FILE "version_info.release"`
-BUNDLE_BUILD=`yq r $CONFIG_FILE "bundle.dev.bundle_build"`
-BUNDLE_IMG=`yq r $CONFIG_FILE "bundle.dev.bundle_image_name"`
-INDEX_IMG=`yq r $CONFIG_FILE "bundle.dev.indeX_image_name"`
-BUNDLE_VERSION="${OPER_VERSION}-${OPER_RELEASE}-${BUNDLE_BUILD}"
+OPER_VERSION=$(yq r $CONFIG_FILE "operator.version")
+BUNDLE_RELEASE=$(yq r $CONFIG_FILE "bundle.release")
+INDEX_BUILD=$(yq r $CONFIG_FILE "bundle.dev.index_build")
+BUNDLE_IMG=$(yq r $CONFIG_FILE "bundle.dev.bundle_image_name")
+INDEX_IMG=$(yq r $CONFIG_FILE "bundle.dev.index_image_name")
+BUNDLE_VERSION="${OPER_VERSION}-${BUNDLE_RELEASE}-${INDEX_BUILD}"
 BUNDLE_IMAGE_NAME="${BUNDLE_IMG}:${BUNDLE_VERSION}"
 INDEX_IMAGE_NAME="${INDEX_IMG}:${BUNDLE_VERSION}"
 PACKAGE_NAME=nvmesh-operator
@@ -32,8 +33,11 @@ exit_if_err() {
 copy_sources_to_operator_registry_repo() {
     BUNDLE_SOURCE_DIR=./catalog_bundle/
     BUNDLE_TARGET_DIR=$OPERATOR_REGISTRY_REPO/nvmesh_bundle
+
     if [ ! -d "$BUNDLE_TARGET_DIR" ]; then
         mkdir -p "$BUNDLE_TARGET_DIR"
+    else
+        sudo rm -rf $BUNDLE_TARGET_DIR/*
     fi
 
     echo "Copying bundle data from $BUNDLE_SOURCE_DIR to $BUNDLE_TARGET_DIR"
@@ -69,5 +73,9 @@ exit_if_err $? "Failed to run $OPM index add --bundles $BUNDLE_IMAGE_NAME --tag 
 podman push $INDEX_IMAGE_NAME #--tls-verify=false
 exit_if_err $? "Failed to push index image. command: podman push $INDEX_IMAGE_NAME"
 
+echo "Editing dev/catalog_source.yaml"
+cd $CURR_DIR
+echo "yq w -i dev/catalog_source.yaml 'spec.image' $INDEX_IMAGE_NAME"
+yq w -i dev/catalog_source.yaml 'spec.image' $INDEX_IMAGE_NAME
 
 echo "Done."

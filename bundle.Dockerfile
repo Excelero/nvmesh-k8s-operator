@@ -23,3 +23,4 @@ LABEL com.redhat.delivery.operator.bundle=true
 
 COPY operator-hub/catalog_bundle/manifests /manifests/
 COPY operator-hub/catalog_bundle/metadata /metadata/
+COPY operator-hub/catalog_bundle/tests /tests/

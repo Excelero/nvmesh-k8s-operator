@@ -155,3 +155,7 @@ list:
 .PHONY: debug-info
 debug-info:
 	echo $(VERSION)-$(RELEASE) $(DEFAULT_CHANNEL)
+
+.PHONY: scorecard
+scorecard:
+	operator-sdk scorecard operator-hub/catalog_bundle/ -o text
