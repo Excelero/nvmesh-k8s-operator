@@ -70,7 +70,7 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 	for _, n := range mgmtLabeledNodes.Items {
 		nodeName := n.GetName()
 		if _, ok := nodeSet[nodeName]; !ok {
-			nodeSet[nodeName] = &n
+			nodeSet[nodeName] = n
 		}
 	}
 
@@ -142,7 +142,7 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 	return true, DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) deleteCollectLogJobs(cr *nvmeshv1.NVMesh, nodeList []*corev1.Node) error {
+func (r *NVMeshReconciler) deleteCollectLogJobs(cr *nvmeshv1.NVMesh, nodeList []corev1.Node) error {
 
 	err := r.deleteJob(cr.GetNamespace(), collectDbJobName)
 	if err != nil {
@@ -244,6 +244,7 @@ func (r *NVMeshReconciler) runCollectDBJob(cr *nvmeshv1.NVMesh, action nvmeshv1.
 		},
 	}
 
+	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
 	setContainerAsPrivileged(container)
 
 	r.addClusterNameEnvVar(container, cr)
@@ -277,6 +278,7 @@ func (r *NVMeshReconciler) runCollectConfigMapsJob(cr *nvmeshv1.NVMesh, action n
 	container.Command = []string{"/bin/bash"}
 	container.Args = []string{"-c", "/init.sh --config-maps"}
 
+	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
 	setContainerAsPrivileged(container)
 
 	r.addClusterNameEnvVar(container, cr)
@@ -321,6 +323,7 @@ func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvme
 	container.Command = []string{"sudo"}
 	container.Args = []string{"-E", "/init.sh", "--node-logs"}
 
+	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
 	setContainerAsPrivileged(container)
 	r.addClusterNameEnvVar(container, cr)
 
@@ -354,6 +357,3 @@ func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvme
 	r.Log.Info(fmt.Sprintf("Created collect log job for node %s\n", nodeName))
 	return nil
 }
-
-// FIXME: collect logs health_check hangs in container
-// FIXME: when healthcheck hangs - no logs are printed to stdout of the nvmesh_logs_collector process

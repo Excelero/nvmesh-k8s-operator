@@ -18,9 +18,8 @@ LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
 LABEL com.redhat.openshift.versions="v4.5,v4.6"
 LABEL com.redhat.delivery.operator.bundle=true
 
-# This is used to indicate support for OpenShift versions before 4.5. If you don't specify this flag, your operator won't be listed in 4.4 or earlier.
-#LABEL com.redhat.delivery.backport=true
+# backport flag is used to indicate support for OpenShift versions before 4.5.
+LABEL com.redhat.delivery.backport=true
 
 COPY operator-hub/catalog_bundle/manifests /manifests/
 COPY operator-hub/catalog_bundle/metadata /metadata/
-COPY operator-hub/catalog_bundle/tests /tests/

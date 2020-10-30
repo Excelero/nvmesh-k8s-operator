@@ -24,4 +24,7 @@ bin
 *.swo
 *~
 
-fileServer/http_static_file_server
+.secrets
+.log
+testbin
+__debug_bin

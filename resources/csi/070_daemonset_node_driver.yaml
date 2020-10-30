@@ -12,7 +12,7 @@ spec:
         app: nvmesh-csi-node-driver
         nvmesh.excelero.com/component: csi-node-driver
     spec:
-      serviceAccount: nvmesh-csi-driver
+      serviceAccountName: nvmesh-csi-driver
       hostNetwork: true
       nodeSelector:
         nvmesh.excelero.com/nvmesh-client: ''

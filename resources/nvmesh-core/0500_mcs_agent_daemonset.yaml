@@ -15,7 +15,7 @@ spec:
     spec:
       nodeSelector:
        nvmesh.excelero.com/nvmesh-client: ""
-      serviceAccount: kmod-manager
+      serviceAccountName: nvmesh-cluster
       # hostNetwork: true allows the pod to have the hostname of the node where the pod is run
       hostNetwork: true
       # dnsPolicy: ClusterFirstWithHostNet allows the pod to have cluster DNS to be able to resolve service dns names. this is needed only when hostNetwork is true
@@ -51,12 +51,12 @@ spec:
           - name: KMOD_SERVER_USERNAME
             valueFrom:
               secretKeyRef:
-                name: file-server-cred
+                name: nvmesh-file-server-cred
                 key: username
           - name: KMOD_SERVER_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: file-server-cred
+                name: nvmesh-file-server-cred
                 key: password
           volumeMounts:
             - name: var-run-nvmesh
@@ -101,12 +101,12 @@ spec:
           - name: KMOD_SERVER_USERNAME
             valueFrom:
               secretKeyRef:
-                name: file-server-cred
+                name: nvmesh-file-server-cred
                 key: username
           - name: KMOD_SERVER_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: file-server-cred
+                name: nvmesh-file-server-cred
                 key: password
           volumeMounts:
             - name: var-run-nvmesh

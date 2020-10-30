@@ -142,11 +142,26 @@ bundle: manifests
 
 # Build the bundle image.
 .PHONY: bundle-build
-bundle-build:
+bundle-build: manifests
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
-bundle-registry-build:
+# Build the bundle image and Custom Source index image
+# and push both to DockerHub
+.PHONY: bundle-dev-build
+bundle-dev-build: manifests docker-build
 	cd operator-hub && ./build_dev_catalog_images.sh
+
+# Deploy the customn source in the cluster
+.PHONY: bundle-dev-deploy
+bundle-dev-deploy: all manifests docker-build bundle-dev-build docker-push
+	kubectl apply -f operator-hub/dev/catalog_source.yaml
+
+.PHONY: simulate-bundle-test
+bundle-test:
+	kubectl delete namespace test-operator || echo "namespace test-operator doesn't exists, proceeding with tests"
+	kubectl create namespace test-operator
+	kubectl create -f .secrets/openshift_scan_object.yaml -n test-operator
+	date && kubectl apply -f operator-hub/dev/cr_sample.yaml -n test-operator && sleep 1 && date && kubectl delete -f operator-hub/dev/cr_sample.yaml -n test-operator
 
 .PHONY: list
 list:

@@ -111,6 +111,9 @@ type NVMeshOperatorSpec struct {
 	// If IgnorePersistentVolumesOnDelete is true, The operator will allow deleting this cluster when there are NVMesh PersistentVolumes on the cluster. This can lead to an unclean state left on the k8s cluster
 	IgnorePersistentVolumesOnDelete bool `json:"ignorePersistentVolumesOnDelete,omitempty"`
 
+	// If SkipUninstall is true, The operator will not clear the mongo db or remove files the NVMesh software has saved locally on the nodes. This can lead to an unclean state left on the k8s cluster
+	SkipUninstall bool `json:"skipUninstall,omitempty"`
+
 	FileServer OperatorFileServerSpec `json:"fileServer,omitempty"`
 }
 

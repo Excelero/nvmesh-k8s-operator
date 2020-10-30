@@ -6,4 +6,4 @@ metadata:
   name: nvmesh-csi.excelero.com
 spec:
   attachRequired: false
-  podInfoOnMount: false
+  podInfoOnMount: true

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	goerrors "errors"
 	"fmt"
 	"time"
@@ -11,6 +12,8 @@ import (
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -20,10 +23,10 @@ import (
 )
 
 const (
-	uninstallJobFile   = "resources/uninstall/uninstall_job.yaml"
-	clearDbJobFile     = "resources/uninstall/clear_db_job.yaml"
-	uninstallJobPrefix = "nvmesh-uninstall-"
-	clearDbJobName     = "nvmesh-clear-db-job"
+	uninstallJobNamePrefix          = "nvmesh-uninstall-"
+	clearDbJobName                  = "nvmesh-clear-db-job"
+	uninstallJobImage               = "registry.excelero.com/nvmesh-uninstall-job:0.7.0-2"
+	nvmeshClusterServiceAccountName = "nvmesh-cluster"
 )
 
 var UninstallAction = nvmeshv1.ClusterAction{Name: "uninstall"}
@@ -37,6 +40,12 @@ type Task struct {
 
 func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	log := r.Log.WithValues("method", "UninstallCluster", "component", "Finalizer")
+
+	if nvmeshCluster.Spec.Operator.SkipUninstall {
+		// Skip uninstall procedure
+		log.Info("Spec.Operator.SkipUninstall: true - Skipping Uninstall")
+		return DoNotRequeue(), nil
+	}
 
 	var result ctrl.Result
 	var err error
@@ -76,6 +85,12 @@ func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctr
 			"uninstallClusterNodes",
 			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 				return r.uninstallClusterNodes(cr)
+			},
+		},
+		{
+			"deleteClusterServiceAccount",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return r.deleteClusterServiceAccount(cr)
 			},
 		},
 	}
@@ -145,16 +160,87 @@ func (r *NVMeshReconciler) removeAllWorkloadsExceptMongo(cr *nvmeshv1.NVMesh) (c
 	return DoNotRequeue(), nil
 }
 
+func (r *NVMeshReconciler) debug_jobs(cr *nvmeshv1.NVMesh) {
+	log := r.Log.WithValues("method", "debug_cluster")
+	log.Info("debug_jobs -->")
+	// 1. check the job pods and it's status
+	podList, err := r.getJobPods(cr.GetNamespace(), clearDbJobName)
+	if err != nil && !k8serrors.IsNotFound(err) {
+		log.Info(fmt.Sprintf("DEBUG: Failed to find pods from job %s for deletion", clearDbJobName))
+	}
+
+	log.Info(fmt.Sprintf("found %d pods for job %s", len(podList.Items), clearDbJobName))
+
+	if len(podList.Items) == 0 {
+		log.Info(fmt.Sprintf("Found no pods from job %s", clearDbJobName))
+	}
+
+	for _, pod := range podList.Items {
+		log.Info(fmt.Sprintf("DEBUG: JOB PODS - pod: %s status: %+v", pod.GetName(), pod.Status.ContainerStatuses))
+	}
+
+	// print the job
+	if false {
+		jobKey := client.ObjectKey{Name: clearDbJobName, Namespace: cr.GetNamespace()}
+		job := &batchv1.Job{}
+		err = r.Client.Get(context.TODO(), jobKey, job)
+		if err != nil {
+			log.Info(fmt.Sprintf("DEBUG: Failed to get job %s. Error: %s", clearDbJobName, err))
+		}
+
+		bytes, err := json.MarshalIndent(job, "", "    ")
+		if err != nil {
+			log.Info(fmt.Sprintf("Error printing json %s", err))
+		} else {
+			log.Info(fmt.Sprintf("DEBUG: Job %s:\n%s", clearDbJobName, string(bytes)))
+		}
+	}
+
+	//2. list all pods and their statuses (in the current namespace)
+	if false {
+		allPodsList := &corev1.PodList{}
+		err = r.Client.List(context.TODO(), allPodsList, &client.ListOptions{Namespace: cr.GetNamespace()})
+		if err != nil {
+			log.Info(fmt.Sprintf("DEBUG: Failed to find all pods: %s", err))
+		}
+
+		log.Info(fmt.Sprintf("DEBUG: all pods - found %d pods in namespace %s", len(allPodsList.Items), cr.GetNamespace()))
+
+		for _, pod := range allPodsList.Items {
+			if pod.Status.ContainerStatuses != nil {
+				log.Info(fmt.Sprintf("DEBUG: all pods - pod: %s status: %+v", pod.GetName(), pod.Status.ContainerStatuses))
+			}
+		}
+	}
+
+	if false {
+		// 3. check if the secrets appear
+		// make sure RBAC rules allow this
+		secret := &corev1.Secret{}
+		secret_name := exceleroRegistrySecretName
+		secretKey := client.ObjectKey{Name: exceleroRegistrySecretName, Namespace: cr.GetNamespace()}
+		err = r.Client.Get(context.TODO(), secretKey, secret)
+		if err != nil {
+			log.Info(fmt.Sprintf("DEBUG: Failed to find secret: %s error: %s", secret_name, err))
+		}
+
+		log.Info(fmt.Sprintf("DEBUG: secret: %s found", secret_name))
+	}
+
+	log.Info("debug_jobs <--")
+}
+
 func (r *NVMeshReconciler) waitForClearDBToFinish(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	log := r.Log.WithValues("method", "clearDB", "component", "Finalizer")
 	result, err := r.waitForJobToFinish(cr.GetNamespace(), clearDbJobName)
 
 	if result.Requeue {
+		r.debug_jobs(cr)
 		return result, nil
 	}
 
 	if err != nil {
-		log.Info("WARNING: Unable to clear MongoDB Database")
+		log.Info(fmt.Sprintf("WARNING: Unable to clear MongoDB Database for NVMesh Cluster %s on namespace %s", cr.GetName(), cr.GetNamespace()))
 	}
 
 	if err := r.deleteJob(cr.GetNamespace(), clearDbJobName); err != nil {
@@ -188,43 +274,39 @@ func (r *NVMeshReconciler) waitForWorkloadsToFinish(cr *nvmeshv1.NVMesh) (ctrl.R
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) runUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []*corev1.Node) error {
-
-	// create uninstall job from a template file that will run a pod on each of the found nodes
-	jobTemplate, err := r.getUninstallJob()
-	if err != nil {
-		return err
-	}
-
-	var firstError error
+func (r *NVMeshReconciler) runUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []corev1.Node) error {
+	var err error
 	for _, node := range nodeList {
-		job := jobTemplate.DeepCopy()
-		err := r.UninstallNode(node.GetName(), cr.GetNamespace(), job)
+		nodeName := node.GetName()
+		err := r.UninstallNode(cr, nodeName)
 		if err != nil {
-			r.Log.Info(fmt.Sprintf("Uninstall Failed on node %s", node.GetName()))
-			if firstError == nil {
-				firstError = err
-			}
+			r.Log.Info(fmt.Sprintf("Uninstall Failed on node %s. Error: %s", nodeName, err))
 		}
 	}
 
-	return firstError
+	return err
 }
 
-func (r *NVMeshReconciler) getUninstallJob() (*batchv1.Job, error) {
-	decoder := r.getDecoder()
-	objects, err := YamlFileToObjects(uninstallJobFile, decoder)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error gettings UninstallJob template from file")
+func (r *NVMeshReconciler) getUninstallJob(cr *nvmeshv1.NVMesh, nodeName string) *batchv1.Job {
+	jobName := r.getUninstallJobName(nodeName)
+	job := r.getNewJob(cr, jobName, uninstallJobImage)
+
+	podSpec := &job.Spec.Template.Spec
+	r.addHostPathMount(podSpec, 0, "/opt")
+	r.addHostPathMount(podSpec, 0, "/etc/opt")
+	r.addHostPathMount(podSpec, 0, "/var/log")
+
+	container := &podSpec.Containers[0]
+	container.Env = []corev1.EnvVar{
+		{Name: "KEEP_DOWNLOAD_CACHE", Value: "false"},
 	}
 
-	job := objects[0].(*batchv1.Job)
+	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
+	setContainerAsPrivileged(container)
 
-	labels := job.ObjectMeta.Labels
-	labels["app.kubernetes.io/managed-by"] = "nvmesh-operator"
-	job.Spec.Template.Spec.NodeSelector = client.MatchingLabels{nvmeshClientLabelKey: ""}
+	podSpec.NodeName = nodeName
 
-	return job, nil
+	return job
 }
 
 func (r *NVMeshReconciler) getNodesWithLabel(key string, value string) (*corev1.NodeList, error) {
@@ -249,7 +331,7 @@ func (r *NVMeshReconciler) getAllMgmtLabelledNodes(cr *nvmeshv1.NVMesh) (*corev1
 	return nodes, nil
 }
 
-func (r *NVMeshReconciler) getAllNVMeshClusterNodes(cr *nvmeshv1.NVMesh) (map[string]*corev1.Node, error) {
+func (r *NVMeshReconciler) getAllNVMeshClusterNodes(cr *nvmeshv1.NVMesh) (map[string]corev1.Node, error) {
 
 	clients, err := r.getNodesWithLabel(nvmeshClientLabelKey, "")
 	if err != nil {
@@ -260,27 +342,34 @@ func (r *NVMeshReconciler) getAllNVMeshClusterNodes(cr *nvmeshv1.NVMesh) (map[st
 		return nil, err
 	}
 
-	nodesSet := make(map[string]*corev1.Node)
+	nodesSet := make(map[string]corev1.Node)
 
 	for _, c := range clients.Items {
-		nodesSet[c.GetName()] = &c
+		nodesSet[c.GetName()] = c
 	}
 
 	for _, t := range targets.Items {
 		if _, ok := nodesSet[t.GetName()]; !ok {
-			nodesSet[t.GetName()] = &t
+			nodesSet[t.GetName()] = t
 		}
 	}
 
 	return nodesSet, err
 }
 
-func (r *NVMeshReconciler) waitForUninstallCompletion(namespace string, nodeList []*corev1.Node) (ctrl.Result, error) {
+func (r *NVMeshReconciler) getUninstallJobName(nodeName string) string {
+	return uninstallJobNamePrefix + sanitizeString(nodeName)
+}
+
+func (r *NVMeshReconciler) waitForUninstallCompletion(namespace string, nodeList []corev1.Node) (ctrl.Result, error) {
 	for _, node := range nodeList {
-		result, err := r.waitForJobToFinish(namespace, uninstallJobPrefix+node.GetName())
+		jobName := r.getUninstallJobName(node.GetName())
+		result, err := r.waitForJobToFinish(namespace, jobName)
 		if result.Requeue || err != nil {
 			return result, err
 		}
+
+		r.Log.Info(fmt.Sprintf("job %s finished", jobName))
 	}
 
 	return DoNotRequeue(), nil
@@ -291,7 +380,7 @@ func (r *NVMeshReconciler) checkUninstallCompletion(cr *nvmeshv1.NVMesh, node *c
 
 	job := &batchv1.Job{}
 
-	objKey := client.ObjectKey{Namespace: cr.GetNamespace(), Name: uninstallJobPrefix + node.GetName()}
+	objKey := client.ObjectKey{Namespace: cr.GetNamespace(), Name: uninstallJobNamePrefix + node.GetName()}
 	err := r.Client.Get(context.TODO(), objKey, job)
 	if err != nil {
 		return false, errors.Wrap(err, "Failed to get nvmesh-uninstall job")
@@ -327,10 +416,11 @@ func (r *NVMeshReconciler) isSingleJobCompleted(job *batchv1.Job) (completed boo
 	return false, nil
 }
 
-func (r *NVMeshReconciler) deleteUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []*corev1.Node) error {
+func (r *NVMeshReconciler) deleteUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []corev1.Node) error {
 
 	for _, node := range nodeList {
-		jobName := uninstallJobPrefix + node.GetName()
+		jobName := r.getUninstallJobName(node.GetName())
+		r.Log.Info(fmt.Sprintf("Deleting job %s\n", jobName))
 		err := r.deleteJob(cr.GetNamespace(), jobName)
 		if err != nil {
 			return err
@@ -341,23 +431,19 @@ func (r *NVMeshReconciler) deleteUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []*
 }
 
 func (r *NVMeshReconciler) runClearDbJob(cr *nvmeshv1.NVMesh) error {
-	decoder := r.getDecoder()
-	objects, err := YamlFileToObjects(clearDbJobFile, decoder)
-	if err != nil {
-		return err
-	}
-
-	job := objects[0].(*batchv1.Job)
-
-	job.ObjectMeta.Namespace = cr.GetNamespace()
-	labels := job.ObjectMeta.Labels
-	labels["app.kubernetes.io/managed-by"] = "nvmesh-operator"
-	labels[nvmeshClusterNameLabelKey] = cr.GetName()
+	mongoImage := GetMongoForNVMeshImageName()
+	job := r.getNewJob(cr, clearDbJobName, mongoImage)
+	backoffLimit := int32(1)
+	job.Spec.BackoffLimit = &backoffLimit
 	container := &job.Spec.Template.Spec.Containers[0]
-	container.Args[0] = GetMongoConnectionString(cr) + "/management"
-	container.Image = GetMongoForNVMeshImageName()
 
-	err = r.Client.Create(context.TODO(), job)
+	container.Command = []string{"mongo"}
+	mongoConnString := GetMongoConnectionString(cr) + "/management"
+	container.Args = []string{mongoConnString, "--eval", "db.dropDatabase()"}
+
+	job.Spec.Template.Spec.ImagePullSecrets = r.getExceleroRegistryPullSecrets()
+
+	err := r.Client.Create(context.TODO(), job)
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return errors.Wrap(err, "Failed to create Clear DB job")
 	}
@@ -365,8 +451,8 @@ func (r *NVMeshReconciler) runClearDbJob(cr *nvmeshv1.NVMesh) error {
 	return nil
 }
 
-func (r *NVMeshReconciler) nodeSetToList(nodeSet map[string]*corev1.Node) []*corev1.Node {
-	var nodeList []*corev1.Node
+func (r *NVMeshReconciler) nodeSetToList(nodeSet map[string]corev1.Node) []corev1.Node {
+	var nodeList []corev1.Node
 	for _, n := range nodeSet {
 		nodeList = append(nodeList, n)
 	}
@@ -403,29 +489,32 @@ func (r *NVMeshReconciler) uninstallClusterNodes(nvmeshCluster *nvmeshv1.NVMesh)
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) UninstallNode(nodeName string, namespace string, job *batchv1.Job) error {
+func (r *NVMeshReconciler) UninstallNode(cr *nvmeshv1.NVMesh, nodeName string) error {
 	r.Log.Info(fmt.Sprintf("Running Uninstall Job on Node %s", nodeName))
-	var err error
-	if job == nil {
-		job, err = r.getUninstallJob()
-		if err != nil {
-			return err
-		}
-	}
 
-	job.ObjectMeta.Name = uninstallJobPrefix + nodeName
-	if namespace != "" {
-		job.ObjectMeta.Namespace = namespace
-	}
-
-	job.Spec.Selector.MatchLabels["job-name"] = job.ObjectMeta.Name
-	job.Spec.Template.ObjectMeta.Labels = job.Spec.Selector.MatchLabels
+	job := r.getUninstallJob(cr, nodeName)
+	labels := map[string]string{"job-name": job.ObjectMeta.Name}
+	job.Spec.Selector = &metav1.LabelSelector{MatchLabels: labels}
+	job.Spec.Template.ObjectMeta.Labels = labels
 	job.Spec.Template.Spec.NodeSelector = client.MatchingLabels{"kubernetes.io/hostname": nodeName}
 
-	err = r.Client.Create(context.TODO(), job)
+	err := r.Client.Create(context.TODO(), job)
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		return errors.Wrap(err, fmt.Sprintf("Failed to run UninstallJob on node %s", nodeName))
+		return errors.Wrap(err, fmt.Sprintf("Failed to run UninstallJob on node %s. Error: %s", nodeName, err))
 	}
 
 	return nil
+}
+
+func (r *NVMeshReconciler) deleteClusterServiceAccount(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+	sa := r.getClusterServiceAccount(cr)
+	r.Log.Info(fmt.Sprintf("Removing service account %s in namespace %s", sa.GetName(), sa.GetNamespace()))
+	err := r.Client.Delete(context.TODO(), sa)
+	if err != nil && !k8serrors.IsNotFound(err) {
+		r.Log.Info(fmt.Sprintf("Warning: failed to delete Cluster Service Account %s in namespace %s", sa.GetName(), sa.GetNamespace()))
+		return ctrl.Result{}, err
+	}
+
+	r.removeClusterServiceAccountFromSCC(cr)
+	return ctrl.Result{}, nil
 }

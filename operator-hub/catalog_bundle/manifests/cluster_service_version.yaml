@@ -4,10 +4,10 @@ apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"version":"2.0.3-4"},"management":{"mongoDB":{"replicas":1},"version":"2.0.3-4","replicas":1},"csi":{"version":"v1.1.0","controllerReplicas":1},"actions":[]},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
+    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"version":"2.0.3-4"},"management":{"mongoDB":{"replicas":1},"version":"2.0.3-6","replicas":1},"csi":{"version":"v1.1.1","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
-    containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-2
+    containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-22
     createdAt: '2020-10-28T00:00:00Z'
     description: NVMesh Operator enables users to install Excelero NVMesh on Kubernetes
       and OpenShift clusters
@@ -89,7 +89,7 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
         - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: Do not deploy NVMesh-Core
-        displayName: Disabel NVMesh-Core
+        displayName: Disable NVMesh-Core
         path: core.disabled
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
@@ -291,17 +291,25 @@ spec:
           - watch
         - apiGroups:
           - security.openshift.io
+          resourceNames:
+          - nvmesh-operator
           resources:
           - securitycontextconstraints
           verbs:
-          - use
-          - create
-          - delete
           - get
-          - list
+          - use
           - patch
           - update
           - watch
+          - delete
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - get
+          - list
+          - create
         - apiGroups:
           - coordination.k8s.io
           resources:
@@ -419,7 +427,7 @@ spec:
                 - --enable-leader-election
                 command:
                 - /manager
-                image: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-2
+                image: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-22
                 name: controller
                 resources:
                   limits:
@@ -458,4 +466,4 @@ spec:
   maturity: beta
   provider:
     name: Excelero
-  version: 0.7.0-2
+  version: 0.7.0-22

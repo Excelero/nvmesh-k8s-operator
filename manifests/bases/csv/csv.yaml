@@ -15,7 +15,7 @@ metadata:
     categories: "Storage"
     description: "NVMesh Operator enables users to install Excelero NVMesh on Kubernetes and OpenShift clusters"
     support: Excelero Support (support@excelero.com)
-    containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-1
+    containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:placeholder
     createdAt: "2020-10-28T00:00:00Z"
     repository: https://github.com/Excelero/nvmesh-k8s-operator
   # DO NOT EDIT this field. metadata.name field is added automatically by build_manifests.py
@@ -46,7 +46,7 @@ spec:
         - kind: Service
           name: ""
           version: v1
-      # OLD Descriptors Reference: https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md
+      # OLM Descriptors Reference: https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md
       specDescriptors:
         - description: NVMesh Core basic configuration.
           displayName: Core
@@ -101,7 +101,7 @@ spec:
             - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
             - 'urn:alm:descriptor:com.tectonic.ui:advanced'
         - description: Do not deploy NVMesh-Core
-          displayName: Disabel NVMesh-Core
+          displayName: Disable NVMesh-Core
           path: core.disabled
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'

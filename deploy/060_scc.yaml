@@ -2,8 +2,8 @@ apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
 metadata:
   annotations:
-    kubernetes.io/description: 'SCC for allowing driver containers to manage kernel modules on the cluster'
-  name: kmod-manager-scc
+    kubernetes.io/description: 'SCC for allowing NVMesh Operator to deploy privileged containers'
+  name: nvmesh-operator
 allowHostDirVolumePlugin: true
 allowHostIPC: true
 allowHostNetwork: true
@@ -30,6 +30,6 @@ seccompProfiles:
 supplementalGroups:
   type: RunAsAny
 users:
-- system:serviceaccount:default:kmod-manager
+  - system:serviceaccount:test-operator:nvmesh-operator
 volumes:
 - '*'

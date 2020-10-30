@@ -10,6 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,7 +41,8 @@ var (
 )
 
 const (
-	defaultRegistry string = "registry.excelero.com"
+	defaultRegistry           string = "registry.excelero.com"
+	clusterServiceAccountName        = "nvmesh-cluster"
 )
 
 type DebugOptions struct {
@@ -118,6 +120,15 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	r.stopAllUnstructuredWatchers()
+
+	// Make sure SCC and ServiceAccount exists
+	if err := r.makeSureSCCExists(cr); err != nil {
+		return r.ManageError(cr, err)
+	}
+
+	if err := r.makeSureServiceAccountExists(cr); err != nil {
+		return r.ManageError(cr, err)
+	}
 
 	// Handle Cluster Deletion
 	finResult, err := r.HandleFinalizer(cr)
@@ -248,6 +259,15 @@ func (r *NVMeshReconciler) IsInitialized(cr *nvmeshv1.NVMesh) bool {
 	if cr.Spec.Management.ImageRegistry == "" {
 		ok = false
 		cr.Spec.Management.ImageRegistry = defaultRegistry
+	}
+
+	if cr.Spec.Management.ImageRegistry == "" {
+		ok = false
+		cr.Spec.Management.ImageRegistry = defaultRegistry
+	}
+
+	if cr.Spec.Actions == nil {
+		cr.Spec.Actions = make([]nvmeshv1.ClusterAction, 0)
 	}
 
 	return ok

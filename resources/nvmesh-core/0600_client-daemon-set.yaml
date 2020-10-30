@@ -16,6 +16,7 @@ spec:
         nvmesh.driver-container-type: client
         nvmesh.excelero.com/component: client
     spec:
+      serviceAccountName: nvmesh-cluster
       nodeSelector:
         nvmesh.excelero.com/nvmesh-client: ""
       imagePullSecrets:
@@ -46,12 +47,12 @@ spec:
             - name: KMOD_SERVER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: username
             - name: KMOD_SERVER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: password
           volumeMounts:
             - name: device-dir

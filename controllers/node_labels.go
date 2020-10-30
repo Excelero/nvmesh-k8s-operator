@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	v1 "k8s.io/api/core/v1"
 	fields "k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -79,8 +80,11 @@ func (r *NVMeshReconciler) OnNodeUpdate(oldNode *v1.Node, newNode *v1.Node) {
 
 func (r *NVMeshReconciler) UninstallAndWaitToFinish(nodeName string) {
 	namespace := "default"
-	jobName := uninstallJobPrefix + nodeName
-	err := r.UninstallNode(nodeName, namespace, nil)
+	jobName := uninstallJobNamePrefix + nodeName
+
+	fakeCR := &nvmeshv1.NVMesh{}
+	fakeCR.SetName("uninstall-node-from-event")
+	err := r.UninstallNode(fakeCR, nodeName)
 	if err != nil {
 		fmt.Printf("Failed to create uninstall job on node %s\n", nodeName)
 	}

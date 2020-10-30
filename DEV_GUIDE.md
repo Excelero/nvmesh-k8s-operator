@@ -42,6 +42,6 @@ Build the bundle image for deployment in *RedHat OpenShift OperatorHub*:
 make bundle-build
 ```
 
-To upload the image follow the instructions on the RedHat Partner Connect website for uploda, scan and certification
+To upload the image follow the instructions on the RedHat Partner Connect website for upload, scan and certification
 
 

@@ -138,6 +138,9 @@ spec:
                 ignoreVolumeAttachmentOnDelete:
                   description: If IgnoreVolumeAttachmentOnDelete is true, The operator will allow deleting this cluster when there are active attachments of NVMesh volumes. This can lead to an unclean state left on the k8s cluster
                   type: boolean
+                skipUninstall:
+                  description: If SkipUninstall is true, The operator will not clear the mongo db or remove files the NVMesh software has saved locally on the nodes. This can lead to an unclean state left on the k8s cluster
+                  type: boolean
               type: object
           type: object
         status:

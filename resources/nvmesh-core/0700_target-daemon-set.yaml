@@ -16,6 +16,7 @@ spec:
         nvmesh.driver-container-type: target
         nvmesh.excelero.com/component: target
     spec:
+      serviceAccountName: nvmesh-cluster
       nodeSelector:
         nvmesh.excelero.com/nvmesh-target: ""
         nvmesh.excelero.com/nvmesh-client: ""
@@ -49,12 +50,12 @@ spec:
             - name: KMOD_SERVER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: username
             - name: KMOD_SERVER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: password
           volumeMounts:
             - name: device-dir
@@ -97,12 +98,12 @@ spec:
             - name: KMOD_SERVER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: username
             - name: KMOD_SERVER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: password
           securityContext:
             privileged: true
@@ -156,12 +157,12 @@ spec:
             - name: KMOD_SERVER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: username
             - name: KMOD_SERVER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: file-server-cred
+                  name: nvmesh-file-server-cred
                   key: password
           volumeMounts:
             - name: var-run-nvmesh

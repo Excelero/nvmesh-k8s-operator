@@ -46,6 +46,13 @@ func (r *NVMeshReconciler) waitForJobToFinish(namespace string, jobName string) 
 	}
 }
 
+func (r *NVMeshReconciler) getJobPods(namespace string, jobName string) (*corev1.PodList, error) {
+	podList := &corev1.PodList{}
+	matchLabels := client.MatchingLabels{"job-name": jobName}
+	err := r.Client.List(context.TODO(), podList, matchLabels)
+	return podList, err
+}
+
 func (r *NVMeshReconciler) deleteJob(namespace string, jobName string) error {
 	job := &batchv1.Job{}
 	job.SetName(jobName)
@@ -57,9 +64,7 @@ func (r *NVMeshReconciler) deleteJob(namespace string, jobName string) error {
 	}
 
 	// Find all Pods related to this job and delete them as well
-	podList := &corev1.PodList{}
-	matchLabels := client.MatchingLabels{"job-name": jobName}
-	err = r.Client.List(context.TODO(), podList, matchLabels)
+	podList, err := r.getJobPods(namespace, jobName)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, fmt.Sprintf("Failed to find pods from job %s for deletion", jobName))
 	}
@@ -81,17 +86,25 @@ func MatchNode(nodeName string) map[string]string {
 func (r *NVMeshReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image string) *batchv1.Job {
 	backOffLimit := int32(3)
 	completions := int32(1)
+
+	labels := r.GetOperatorLabels(cr)
+	labels["job-name"] = jobName
+
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobName,
 			Namespace: cr.GetNamespace(),
-			Labels:    r.GetOperatorLabels(cr),
+			Labels:    labels,
 		},
 		Spec: batchv1.JobSpec{
 			BackoffLimit: &backOffLimit,
 			Completions:  &completions,
 			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
 				Spec: v1.PodSpec{
+
 					ImagePullSecrets: []v1.LocalObjectReference{{Name: registryCredSecretName}},
 					RestartPolicy:    corev1.RestartPolicyOnFailure,
 					Containers: []v1.Container{

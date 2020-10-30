@@ -14,7 +14,7 @@ spec:
         app: nvmesh-csi-controller
         nvmesh.excelero.com/component: csi-controller
     spec:
-      serviceAccount: nvmesh-csi-driver
+      serviceAccountName: nvmesh-csi-driver
       containers:
         # NVMesh Driver
         - name: nvmesh-csi-controller
