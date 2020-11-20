@@ -46,7 +46,7 @@ func TestCoreReconciler(t *testing.T) {
 	//Start
 	userspaceDS := appsv1.DaemonSet{}
 	userspaceDS.SetNamespace(TestingNamespace)
-	userspaceDS.SetName(CoreUserspaceDaemonSetName)
+	userspaceDS.SetName(coreUserspaceDaemonSetName)
 
 	err = e.Client.Delete(context.TODO(), &userspaceDS)
 	if err != nil {

@@ -15,16 +15,16 @@ import (
 )
 
 const (
-	collectLogsImageName     = "registry.excelero.com/nvmesh-logs-collector:" + CoreImageVersionTag
+	collectLogsImageName     = "registry.excelero.com/nvmesh-logs-collector:" + coreImageVersionTag
 	collectDbJobName         = "collect-db"
 	collectConfigMapsJobName = "collect-config-maps"
 	collectLogsJobName       = "collect-logs"
 
-	CollectDBStage         = "CollectDB"
-	CollectConfigMapsStage = "CollectConfigMaps"
-	CollectLogsStage       = "CollectLogs"
-	WaitForJobsToFinish    = "WaitForJobsToFinish"
-	DeleteJobsStage        = "DeleteJobs"
+	collectDBStage         = "CollectDB"
+	collectConfigMapsStage = "CollectConfigMaps"
+	collectLogsStage       = "CollectLogs"
+	waitForJobsToFinish    = "waitForJobsToFinish"
+	deleteJobsStage        = "DeleteJobs"
 
 	mgmtConfigMapName   = "nvmesh-mgmt-config"
 	nvmeshConfigMapName = "nvmesh-core-config"
@@ -36,23 +36,23 @@ const (
 
 func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.ClusterAction) (bool, ctrl.Result, error) {
 	// run db dump job
-	if !r.isTaskFinished(cr, a, CollectDBStage) {
-		r.setTaskStarted(cr, a, CollectDBStage)
+	if !r.isTaskFinished(cr, a, collectDBStage) {
+		r.setTaskStarted(cr, a, collectDBStage)
 		err := r.runCollectDBJob(cr, a)
 		if err != nil {
 			return false, DoNotRequeue(), err
 		}
-		r.setTaskFinished(cr, a, CollectDBStage)
+		r.setTaskFinished(cr, a, collectDBStage)
 	}
 
 	// run collect config-maps job
-	if !r.isTaskFinished(cr, a, CollectConfigMapsStage) {
-		r.setTaskStarted(cr, a, CollectConfigMapsStage)
+	if !r.isTaskFinished(cr, a, collectConfigMapsStage) {
+		r.setTaskStarted(cr, a, collectConfigMapsStage)
 		err := r.runCollectConfigMapsJob(cr, a)
 		if err != nil {
 			return false, DoNotRequeue(), err
 		}
-		r.setTaskFinished(cr, a, CollectConfigMapsStage)
+		r.setTaskFinished(cr, a, collectConfigMapsStage)
 	}
 
 	// get all Cluster Nodes (including mgmt labelled nodes) for logs collection
@@ -77,8 +77,8 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 	nodeList := r.nodeSetToList(nodeSet)
 
 	// create logs collector jobs
-	if !r.isTaskFinished(cr, a, CollectLogsStage) {
-		r.setTaskStarted(cr, a, CollectLogsStage)
+	if !r.isTaskFinished(cr, a, collectLogsStage) {
+		r.setTaskStarted(cr, a, collectLogsStage)
 
 		for _, node := range nodeList {
 			err := r.createCollectLogsJob(cr, a, node.GetName())
@@ -87,11 +87,11 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 			}
 		}
 
-		r.setTaskFinished(cr, a, CollectLogsStage)
+		r.setTaskFinished(cr, a, collectLogsStage)
 	}
 
-	if !r.isTaskFinished(cr, a, WaitForJobsToFinish) {
-		r.setTaskStarted(cr, a, WaitForJobsToFinish)
+	if !r.isTaskFinished(cr, a, waitForJobsToFinish) {
+		r.setTaskStarted(cr, a, waitForJobsToFinish)
 
 		// wait for db dump job to finish
 		res, err := r.waitForJobToFinish(cr.GetNamespace(), collectDbJobName)
@@ -125,17 +125,17 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 			}
 		}
 
-		r.setTaskFinished(cr, a, WaitForJobsToFinish)
+		r.setTaskFinished(cr, a, waitForJobsToFinish)
 	}
 
-	if !r.isTaskFinished(cr, a, DeleteJobsStage) {
-		r.setTaskStarted(cr, a, DeleteJobsStage)
+	if !r.isTaskFinished(cr, a, deleteJobsStage) {
+		r.setTaskStarted(cr, a, deleteJobsStage)
 		err := r.deleteCollectLogJobs(cr, nodeList)
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return false, Requeue(time.Second), err
 		}
 
-		r.setTaskFinished(cr, a, DeleteJobsStage)
+		r.setTaskFinished(cr, a, deleteJobsStage)
 	}
 
 	r.setActionComplete(cr, a)
@@ -174,12 +174,12 @@ func (r *NVMeshReconciler) addClusterNameEnvVar(container *corev1.Container, cr 
 		container.Env = []corev1.EnvVar{}
 	}
 
-	cluster_name_var := corev1.EnvVar{
+	clusterNameVar := corev1.EnvVar{
 		Name:  "CLUSTER_NAME",
 		Value: r.getNVMeshClusterName(cr),
 	}
 
-	container.Env = append(container.Env, cluster_name_var)
+	container.Env = append(container.Env, clusterNameVar)
 }
 
 func (r *NVMeshReconciler) addS3CredentialsEnvVar(container *corev1.Container, bucketName string) {
@@ -240,7 +240,7 @@ func (r *NVMeshReconciler) runCollectDBJob(cr *nvmeshv1.NVMesh, action nvmeshv1.
 	container.Env = []corev1.EnvVar{
 		{
 			Name:  "MONGO_URI",
-			Value: "mongodb://" + GetMongoConnectionString(cr) + "/management",
+			Value: "mongodb://" + getMongoConnectionString(cr) + "/management",
 		},
 	}
 
@@ -347,7 +347,7 @@ func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvme
 		r.addHostPathMount(podSpec, containerIndex, mount)
 	}
 
-	podSpec.NodeSelector = MatchNode(nodeName)
+	podSpec.NodeSelector = matchNode(nodeName)
 
 	err := r.Client.Create(context.TODO(), job)
 	if err != nil && !k8serrors.IsAlreadyExists(err) {

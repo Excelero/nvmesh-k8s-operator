@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+//ManageSuccess - Handles Reconcile success result
 func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result) (ctrl.Result, error) {
 	//log := r.Log.WithValues("method", "DoNotRequeue")
 	var generation int64 = -1
@@ -46,6 +47,7 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result
 	return result, nil
 }
 
+//ManageError - Handles Reconcile errors, updates CR status, prints to log, and returns reconcile.Result
 func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconcile.Result, error) {
 	log := r.Log.WithValues("method", "ManageError")
 	var retryInterval time.Duration
@@ -88,6 +90,7 @@ func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconc
 	return Requeue(nextReconcile), nil
 }
 
+//UpdateStatus - Updates CR Status field
 func (r *NVMeshReconciler) UpdateStatus(cr *nvmeshv1.NVMesh) error {
 	err := r.Client.Status().Update(context.TODO(), cr)
 

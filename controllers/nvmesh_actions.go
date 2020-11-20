@@ -14,16 +14,25 @@ import (
 )
 
 const (
-	ActionComplete = "ActionComplete"
-	TaskFinished   = "TaskFinished"
-	TaskStarted    = "TaskStarted"
+	actionComplete = "ActionComplete"
+	taskFinished   = "TaskFinished"
+	taskStarted    = "TaskStarted"
 )
 
-func (r *NVMeshReconciler) HasActions(cr *nvmeshv1.NVMesh) bool {
+// TaskFunc - Type to represent a function to invoke when task is started
+type TaskFunc func(cr *nvmeshv1.NVMesh) (ctrl.Result, error)
+
+//Task - represent a sub-task in a ClusterAction
+type Task struct {
+	Name string
+	Run  TaskFunc
+}
+
+func (r *NVMeshReconciler) hasActions(cr *nvmeshv1.NVMesh) bool {
 	return len(cr.Spec.Actions) > 0
 }
 
-func (r *NVMeshReconciler) HandleActions(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+func (r *NVMeshReconciler) handleActions(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	pendingActions := cr.Spec.Actions
 
 	if len(pendingActions) > 0 {
@@ -142,26 +151,26 @@ func (r *NVMeshReconciler) setTaskStatus(cr *nvmeshv1.NVMesh, action nvmeshv1.Cl
 }
 
 func (r *NVMeshReconciler) isTaskFinished(cr *nvmeshv1.NVMesh, action nvmeshv1.ClusterAction, key string) bool {
-	return r.getTaskStatus(cr, action, key) == TaskFinished
+	return r.getTaskStatus(cr, action, key) == taskFinished
 }
 
 func (r *NVMeshReconciler) setTaskStarted(cr *nvmeshv1.NVMesh, action nvmeshv1.ClusterAction, key string) {
-	r.setTaskStatus(cr, action, key, TaskStarted)
+	r.setTaskStatus(cr, action, key, taskStarted)
 }
 
 func (r *NVMeshReconciler) setTaskFinished(cr *nvmeshv1.NVMesh, action nvmeshv1.ClusterAction, key string) {
-	r.setTaskStatus(cr, action, key, TaskFinished)
+	r.setTaskStatus(cr, action, key, taskFinished)
 }
 
 func (r *NVMeshReconciler) setActionComplete(cr *nvmeshv1.NVMesh, action nvmeshv1.ClusterAction) {
-	r.setTaskStatus(cr, action, ActionComplete, TaskFinished)
+	r.setTaskStatus(cr, action, actionComplete, taskFinished)
 }
 
 func getActionArg(action nvmeshv1.ClusterAction, key string) (string, bool) {
 	if action.Args != nil {
 		val, ok := action.Args[key]
 		return val, ok
-	} else {
-		return "", false
 	}
+
+	return "", false
 }

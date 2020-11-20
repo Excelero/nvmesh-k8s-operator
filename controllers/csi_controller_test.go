@@ -52,7 +52,7 @@ func TestCsiReconciler(t *testing.T) {
 	//Start
 	csiSS := appsv1.StatefulSet{}
 	csiSS.SetNamespace(TestingNamespace)
-	csiSS.SetName(CSIStatefulSetName)
+	csiSS.SetName(csiStatefulSetName)
 
 	err = e.Client.Delete(context.TODO(), &csiSS)
 	if err != nil {
@@ -65,7 +65,7 @@ func TestCsiReconciler(t *testing.T) {
 
 	csiDS := appsv1.DaemonSet{}
 	csiDS.SetNamespace(TestingNamespace)
-	csiDS.SetName(CSIDaemonSetName)
+	csiDS.SetName(csiDaemonSetName)
 
 	err = e.Client.Delete(context.TODO(), &csiDS)
 	if err != nil {
@@ -120,7 +120,7 @@ func TestCsiReconcileGenericObject(t *testing.T) {
 	//Start
 	csiSS := appsv1.StatefulSet{}
 	csiSS.SetNamespace(TestingNamespace)
-	csiSS.SetName(CSIStatefulSetName)
+	csiSS.SetName(csiStatefulSetName)
 
 	err = e.Client.Delete(context.TODO(), &csiSS)
 	if err != nil {
@@ -133,7 +133,7 @@ func TestCsiReconcileGenericObject(t *testing.T) {
 
 	csiDS := appsv1.DaemonSet{}
 	csiDS.SetNamespace(TestingNamespace)
-	csiDS.SetName(CSIDaemonSetName)
+	csiDS.SetName(csiDaemonSetName)
 
 	err = e.Client.Delete(context.TODO(), &csiDS)
 	if err != nil {
@@ -145,18 +145,18 @@ func TestCsiReconcileGenericObject(t *testing.T) {
 	}
 
 	By("Make sure exists First Attempt")
-	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, false)
+	err = r.reconcileYamlObjectsFromFile(cr, csiAssetsLocation+"statefulset_controller.yaml", &csir, false)
 	Expect(err).To(BeNil())
 
 	By("Make sure exists Second Attempt")
-	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, false)
+	err = r.reconcileYamlObjectsFromFile(cr, csiAssetsLocation+"statefulset_controller.yaml", &csir, false)
 	Expect(err).To(BeNil())
 
 	By("Make sure *removed* First Attempt")
-	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, true)
+	err = r.reconcileYamlObjectsFromFile(cr, csiAssetsLocation+"statefulset_controller.yaml", &csir, true)
 	Expect(err).To(BeNil())
 
 	By("Make sure *removed* Second Attempt")
-	err = r.ReconcileYamlObjectsFromFile(cr, CSIAssetsLocation+"statefulset_controller.yaml", &csir, true)
+	err = r.reconcileYamlObjectsFromFile(cr, csiAssetsLocation+"statefulset_controller.yaml", &csir, true)
 	Expect(err).To(BeNil())
 }

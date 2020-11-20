@@ -53,22 +53,22 @@ var (
 	watchers []watch.Interface
 )
 
-func (r *NVMeshReconciler) ReconcileObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent, removeObject bool) error {
+func (r *NVMeshReconciler) reconcileObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent, removeObject bool) error {
 	if removeObject == false {
-		return r.MakeSureObjectExists(cr, newObj, component)
-	} else {
-		return r.MakeSureObjectRemoved(cr, newObj, component)
+		return r.makeSureObjectExists(cr, newObj, component)
 	}
+
+	return r.makeSureObjectRemoved(cr, newObj, component)
 }
 
-func (r *NVMeshReconciler) GetOperatorLabels(cr *nvmeshv1.NVMesh) map[string]string {
+func (r *NVMeshReconciler) getOperatorLabels(cr *nvmeshv1.NVMesh) map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/managed-by": "nvmesh-operator",
 		nvmeshClusterNameLabelKey:      cr.GetName(),
 	}
 }
 
-func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
+func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
 	v1obj := (*newObj).(metav1.Object)
 	v1obj.SetNamespace(cr.GetNamespace())
 
@@ -78,15 +78,15 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 		labels = make(map[string]string)
 	}
 
-	opLabels := r.GetOperatorLabels(cr)
+	opLabels := r.getOperatorLabels(cr)
 	for k, v := range opLabels {
 		labels[k] = v
 	}
 
 	v1obj.SetLabels(labels)
 
-	name, kind := GetRunetimeObjectNameAndKind(newObj)
-	log := r.Log.WithValues("method", "MakeSureObjectExists", "name", name, "kind", kind)
+	name, kind := getRunetimeObjectNameAndKind(newObj)
+	log := r.Log.WithValues("method", "makeSureObjectExists", "name", name, "kind", kind)
 
 	err := (*component).InitObject(cr, newObj)
 	if err != nil {
@@ -135,11 +135,11 @@ func (r *NVMeshReconciler) MakeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	return nil
 }
 
-func (r *NVMeshReconciler) MakeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
+func (r *NVMeshReconciler) makeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
 	v1obj := (*newObj).(metav1.Object)
 	v1obj.SetNamespace(cr.GetNamespace())
-	name, kind := GetRunetimeObjectNameAndKind(newObj)
-	log := r.Log.WithValues("method", "MakeSureObjectRemoved", "name", name, "kind", kind)
+	name, kind := getRunetimeObjectNameAndKind(newObj)
+	log := r.Log.WithValues("method", "makeSureObjectRemoved", "name", name, "kind", kind)
 
 	_, err := r.getGenericObject(newObj, cr.GetNamespace())
 	if err != nil && k8serrors.IsNotFound(err) {
@@ -148,9 +148,9 @@ func (r *NVMeshReconciler) MakeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *ru
 		if _, ok := err.(*meta.NoKindMatchError); ok && kind == "SecurityContextConstraints" {
 			log.Info("Ignoring no kind SecurityContextConstraints error, This is probably not an openshift cluster")
 			return nil
-		} else {
-			log.Error(err, "Error while trying to find out if object exists")
 		}
+
+		log.Error(err, "Error while trying to find out if object exists")
 
 		return err
 	} else {
@@ -167,7 +167,7 @@ func (r *NVMeshReconciler) MakeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *ru
 
 func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespace string) (*runtime.Object, error) {
 	// Extract name and namespace without knowing the type
-	name, kind := GetRunetimeObjectNameAndKind(fromObject)
+	name, kind := getRunetimeObjectNameAndKind(fromObject)
 	//r.Log.Info("Going to get Object", "ns", namespace, "name", name, "kind", kind)
 	if stringInSlice(kind, GloballyNamedKinds) {
 		namespace = ""
@@ -183,7 +183,7 @@ func (r *NVMeshReconciler) getDecoder() runtime.Decoder {
 	return Codecs.UniversalDeserializer()
 }
 
-func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent, removeObject bool) error {
+func (r *NVMeshReconciler) reconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, filename string, component NVMeshComponent, removeObject bool) error {
 	log := r.Log.WithValues("method", "reconcileYamlObjectsFromFile", "filename", filename)
 
 	decoder := r.getDecoder()
@@ -200,7 +200,7 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 
 	var reconcileErrors []error
 	for _, obj := range objects {
-		err = r.ReconcileObject(cr, &obj, &component, removeObject)
+		err = r.reconcileObject(cr, &obj, &component, removeObject)
 		if err != nil {
 			log.Info(fmt.Sprintf("Failed to Reconcile %s %+v\n", reflect.TypeOf(obj), err))
 			reconcileErrors = append(reconcileErrors, err)
@@ -214,22 +214,22 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 	return nil
 }
 
-func (r *NVMeshReconciler) CreateObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, recursive bool) error {
-	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, false, recursive)
+func (r *NVMeshReconciler) createObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, recursive bool) error {
+	return r.reconcileYamlObjectsFromDir(cr, comp, dir, false, recursive)
 }
 
-func (r *NVMeshReconciler) RemoveObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, recursive bool) error {
-	return r.ReconcileYamlObjectsFromDir(cr, comp, dir, true, recursive)
+func (r *NVMeshReconciler) removeObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, recursive bool) error {
+	return r.reconcileYamlObjectsFromDir(cr, comp, dir, true, recursive)
 }
 
-func (r *NVMeshReconciler) ReconcileYamlObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, removeObjects bool, recursive bool) error {
-	files, err := ListFilesInDir(dir, recursive)
+func (r *NVMeshReconciler) reconcileYamlObjectsFromDir(cr *nvmeshv1.NVMesh, comp NVMeshComponent, dir string, removeObjects bool, recursive bool) error {
+	files, err := listFilesInDir(dir, recursive)
 	if err != nil {
 		return err
 	}
 
 	for _, file := range files {
-		err = r.ReconcileYamlObjectsFromFile(cr, file, comp, removeObjects)
+		err = r.reconcileYamlObjectsFromFile(cr, file, comp, removeObjects)
 		if err != nil {
 			return err
 		}
@@ -238,7 +238,7 @@ func (r *NVMeshReconciler) ReconcileYamlObjectsFromDir(cr *nvmeshv1.NVMesh, comp
 	return nil
 }
 
-func GetRunetimeObjectNameAndKind(obj *runtime.Object) (string, string) {
+func getRunetimeObjectNameAndKind(obj *runtime.Object) (string, string) {
 	v1obj := (*obj).(metav1.Object)
 	name := v1obj.GetName()
 	kind := (*obj).GetObjectKind().GroupVersionKind().Kind
@@ -254,27 +254,27 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
-func ListFilesInDir(dir string, recursive bool) ([]string, error) {
+func listFilesInDir(dir string, recursive bool) ([]string, error) {
 	if recursive == true {
-		return ListFilesInSubDirs(dir)
-	} else {
-		files, err := ioutil.ReadDir(dir)
-		if err != nil {
-			return nil, err
-		}
-
-		filenames := make([]string, 0)
-		for _, f := range files {
-			if !f.IsDir() {
-				filenames = append(filenames, path.Join(dir, f.Name()))
-			}
-		}
-
-		return filenames, nil
+		return listFilesInSubDirs(dir)
 	}
+
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	filenames := make([]string, 0)
+	for _, f := range files {
+		if !f.IsDir() {
+			filenames = append(filenames, path.Join(dir, f.Name()))
+		}
+	}
+
+	return filenames, nil
 }
 
-func ListFilesInSubDirs(root string) ([]string, error) {
+func listFilesInSubDirs(root string) ([]string, error) {
 	var files []string
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -302,7 +302,7 @@ func addNamespaceToRoleBinding(cr *nvmeshv1.NVMesh, rb *rbac.RoleBinding) {
 	}
 }
 
-func SetControllerReferenceOnUnstructured(owner metav1.Object, object *unstructured.Unstructured, gvk *schema.GroupVersionKind) {
+func setControllerReferenceOnUnstructured(owner metav1.Object, object *unstructured.Unstructured, gvk *schema.GroupVersionKind) {
 	ref := metav1.OwnerReference{
 		APIVersion:         gvk.GroupVersion().String(),
 		Kind:               gvk.Kind,
@@ -381,12 +381,12 @@ func (r *NVMeshReconciler) addUnstructuredWatch(res dynamic.ResourceInterface, o
 
 type unstructuredUpdater func(*nvmeshv1.NVMesh, *unstructured.Unstructured, *schema.GroupVersionKind)
 
-func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, directoryPath string, shouldCreate bool, processFunc unstructuredUpdater) error {
-	log := r.Log.WithValues("method", "ReconcileUnstructuredObjects")
+func (r *NVMeshReconciler) reconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, directoryPath string, shouldCreate bool, processFunc unstructuredUpdater) error {
+	log := r.Log.WithValues("method", "reconcileUnstructuredObjects")
 
 	var errList []error = make([]error, 0)
 
-	files, listFilesErr := ListFilesInSubDirs(directoryPath)
+	files, listFilesErr := listFilesInSubDirs(directoryPath)
 	if listFilesErr != nil {
 		return listFilesErr
 	}
@@ -427,11 +427,11 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 		_, err = res.Get(context.TODO(), objName, metav1.GetOptions{})
 		if err != nil && k8serrors.IsNotFound(err) {
 			if shouldCreate == true {
-				SetControllerReferenceOnUnstructured(cr, obj, gvk)
+				setControllerReferenceOnUnstructured(cr, obj, gvk)
 				_, err = res.Create(context.TODO(), obj, metav1.CreateOptions{})
 				if err != nil {
-					objJson := UnstructuredToString(*obj)
-					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to create object using dynamic client %s. Object: %s", gvrMapping.Resource, objJson))
+					objJSON := unstructuredToString(*obj)
+					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to create object using dynamic client %s. Object: %s", gvrMapping.Resource, objJSON))
 					errList = append(errList, wrappedErr)
 					log.Info(fmt.Sprintln(wrappedErr))
 				} else {
@@ -461,11 +461,12 @@ func (r *NVMeshReconciler) ReconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 
 	if len(errList) > 0 {
 		return errList[0]
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
+//Requeue Returns Controller Result with Requeue
 func Requeue(duration time.Duration) ctrl.Result {
 	return ctrl.Result{
 		Requeue:      true,
@@ -473,16 +474,17 @@ func Requeue(duration time.Duration) ctrl.Result {
 	}
 }
 
+//DoNotRequeue Returns Controller Result without Requeue
 func DoNotRequeue() ctrl.Result {
 	return ctrl.Result{}
 }
 
-func (r *NVMeshBaseReconciler) GetGlobalImagePullPolicy() corev1.PullPolicy {
+func (r *NVMeshBaseReconciler) getGlobalImagePullPolicy() corev1.PullPolicy {
 	if r.Options.Debug.ImagePullPolicyAlways {
 		return corev1.PullAlways
-	} else {
-		return corev1.PullIfNotPresent
 	}
+
+	return corev1.PullIfNotPresent
 }
 
 func (r *NVMeshBaseReconciler) imagePullSecretsFromName(secretName string) []corev1.LocalObjectReference {
@@ -515,7 +517,7 @@ func (r *NVMeshReconciler) getNVMeshSCC(cr *nvmeshv1.NVMesh) *securityv1.Securit
 			Annotations: map[string]string{
 				"kubernetes.io/description": "SCC for allowing NVMesh Operator to deploy privileged containers",
 			},
-			Labels: r.GetOperatorLabels(cr),
+			Labels: r.getOperatorLabels(cr),
 		},
 		AllowHostDirVolumePlugin: true,
 		AllowHostIPC:             true,

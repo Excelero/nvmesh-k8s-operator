@@ -41,36 +41,36 @@ func (r *NVMeshReconciler) removeFinalizerAndUpdate(nvmeshCluster *nvmeshv1.NVMe
 	return r.Update(context.TODO(), nvmeshCluster)
 }
 
-func (r *NVMeshReconciler) HandleFinalizer(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
+func (r *NVMeshReconciler) handleFinalizer(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	if isBeingDeleted(nvmeshCluster) {
 		if hasFinalizer(nvmeshCluster, clusterFinalizerName) {
-			return r.DoBeforeDeletingNVMesh(nvmeshCluster)
+			return r.doBeforeDeletingNVMesh(nvmeshCluster)
 		}
 
 		// Stop reconciliation as the item is being deleted
 		return DoNotRequeue(), nil
-	} else {
-		// The object is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object. This is equivalent
-		// registering our finalizer.
-		if !hasFinalizer(nvmeshCluster, clusterFinalizerName) {
-			if err := r.addFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
-				return DoNotRequeue(), err
-			}
-		}
-
-		return DoNotRequeue(), nil
 	}
+
+	// The object is not being deleted, so if it does not have our finalizer,
+	// then lets add the finalizer and update the object. This is equivalent
+	// registering our finalizer.
+	if !hasFinalizer(nvmeshCluster, clusterFinalizerName) {
+		if err := r.addFinalizerAndUpdate(nvmeshCluster, clusterFinalizerName); err != nil {
+			return DoNotRequeue(), err
+		}
+	}
+
+	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) DoBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
+func (r *NVMeshReconciler) doBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
 
 	// Check if any volume or volumeattachment exists
 	if err := r.isAllowedToDeleteCluster(nvmeshCluster); err != nil {
 		return DoNotRequeue(), err
 	}
 
-	result, err := r.UninstallCluster(nvmeshCluster)
+	result, err := r.uninstallCluster(nvmeshCluster)
 	if err != nil {
 		return result, err
 	}
@@ -80,7 +80,7 @@ func (r *NVMeshReconciler) DoBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh
 		err := r.Client.Status().Update(context.TODO(), nvmeshCluster)
 		if err != nil {
 			log := r.Log.WithValues("method", "DoBeforeDeletingNVMesh", "component", "Finalizer")
-			uninstallStatus := nvmeshCluster.Status.ActionsStatus[UninstallAction.Name]
+			uninstallStatus := nvmeshCluster.Status.ActionsStatus[uninstallAction.Name]
 			log.Info(fmt.Sprintf("Failed to update uninstall status with %+v", uninstallStatus))
 		}
 

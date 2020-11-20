@@ -35,16 +35,16 @@ func (r *NVMeshReconciler) waitForJobToFinish(namespace string, jobName string) 
 
 	if err != nil {
 		return DoNotRequeue(), err
-	} else {
-		// no error
-		if !completed {
-			r.Log.Info(fmt.Sprintf("Waiting for %s to finish", job.ObjectMeta.GetName()))
-			r.monitorJob(jobName, namespace)
-			return Requeue(time.Second), nil
-		} else {
-			return DoNotRequeue(), nil
-		}
 	}
+
+	// no error
+	if !completed {
+		r.Log.Info(fmt.Sprintf("Waiting for %s to finish", job.ObjectMeta.GetName()))
+		r.monitorJob(jobName, namespace)
+		return Requeue(time.Second), nil
+	}
+
+	return DoNotRequeue(), nil
 }
 
 func (r *NVMeshReconciler) getJobPods(namespace string, jobName string) (*corev1.PodList, error) {
@@ -80,7 +80,7 @@ func (r *NVMeshReconciler) deleteJob(namespace string, jobName string) error {
 	return nil
 }
 
-func MatchNode(nodeName string) map[string]string {
+func matchNode(nodeName string) map[string]string {
 	return map[string]string{"kubernetes.io/hostname": nodeName}
 }
 
@@ -88,7 +88,7 @@ func (r *NVMeshReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image 
 	backOffLimit := int32(3)
 	completions := int32(1)
 
-	labels := r.GetOperatorLabels(cr)
+	labels := r.getOperatorLabels(cr)
 	labels["job-name"] = jobName
 
 	return &batchv1.Job{
@@ -112,7 +112,7 @@ func (r *NVMeshReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image 
 						{
 							Name:            jobName,
 							Image:           image,
-							ImagePullPolicy: r.GetGlobalImagePullPolicy(),
+							ImagePullPolicy: r.getGlobalImagePullPolicy(),
 						},
 					},
 				},
@@ -162,7 +162,7 @@ func (r *NVMeshReconciler) addConfigMapMount(podSpec *corev1.PodSpec, containerI
 }
 
 func (r *NVMeshReconciler) printJob(jobName string, namespace string) {
-	jobJSONBytes, err := r.getJobAsJson(jobName, namespace)
+	jobJSONBytes, err := r.getJobAsJSON(jobName, namespace)
 
 	if err != nil {
 		r.Log.Info(fmt.Sprintf("Error printing json %s", err))

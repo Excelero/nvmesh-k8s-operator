@@ -26,6 +26,7 @@ import (
 )
 
 var (
+	//GloballyNamedKinds - a list of Globally named kinds that are used in this operator
 	GloballyNamedKinds = []string{
 		"CSIDriver",
 		"ClusterRole",
@@ -43,7 +44,7 @@ const (
 	clusterServiceAccountName        = "nvmesh-cluster"
 )
 
-// NVMeshReconciler reconciles a NVMesh object
+// NVMeshBaseReconciler - a base for NVMesh Component reconcilers
 type NVMeshBaseReconciler struct {
 	client.Client
 	Log           logr.Logger
@@ -53,10 +54,13 @@ type NVMeshBaseReconciler struct {
 	EventManager  *EventManager
 	Options       OperatorOptions
 }
+
+// NVMeshReconciler - Reconciles an NVMesh CR
 type NVMeshReconciler struct {
 	NVMeshBaseReconciler
 }
 
+// NVMeshComponent - defines the interface for NVMeshComponents (CSI, Core, Management)
 type NVMeshComponent interface {
 	InitObject(*nvmeshv1.NVMesh, *runtime.Object) error
 	ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
@@ -67,6 +71,7 @@ type NVMeshComponent interface {
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes/status,verbs=get;update;patch
 // +kubebuilder:subresource:status
 
+// Reconcile - Reconciles an NVMesh CR
 func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("nvmesh", req.NamespacedName)
@@ -91,7 +96,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	r.initializeEmptyFieldsOnCustomResource(cr)
 
 	//Validate CustomResource
-	err = r.IsValid(cr)
+	err = r.isValid(cr)
 	if err != nil {
 		return r.ManageError(cr, err)
 	}
@@ -110,7 +115,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Handle Cluster Deletion
-	finResult, err := r.HandleFinalizer(cr)
+	finResult, err := r.handleFinalizer(cr)
 	if err != nil {
 		return r.ManageError(cr, err)
 	}
@@ -120,7 +125,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Reconcile
-	err = r.ReconcileAllcomponents(cr)
+	err = r.reconcileAllcomponents(cr)
 	if err != nil {
 		return r.ManageError(cr, err)
 	}
@@ -132,8 +137,8 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Handle Actions
-	if r.HasActions(cr) {
-		actionResult, err := r.HandleActions(cr)
+	if r.hasActions(cr) {
+		actionResult, err := r.handleActions(cr)
 		if err != nil {
 			return r.ManageError(cr, err)
 		}
@@ -146,7 +151,7 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return r.ManageSuccess(cr, DoNotRequeue())
 }
 
-func (r *NVMeshReconciler) ReconcileAllcomponents(cr *nvmeshv1.NVMesh) error {
+func (r *NVMeshReconciler) reconcileAllcomponents(cr *nvmeshv1.NVMesh) error {
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
 	csi := NVMeshCSIReconciler(*r)
@@ -196,6 +201,7 @@ func (r *NVMeshReconciler) setStatusOnCustomResource(cr *nvmeshv1.NVMesh) {
 	cr.Status.WebUIURL = r.getManagementGUIURL(cr)
 }
 
+//SetupWithManager - adds this reconciler to a manager
 func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// this handler will initiate Reconcile cycle whenever an object is Created, Deleted or Updated

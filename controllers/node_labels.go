@@ -11,6 +11,7 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
+//ListenToNodeLabels - Listens to node events and runs uninstall if necessary
 func (r *NVMeshReconciler) ListenToNodeLabels() (chan struct{}, error) {
 	clientset, err := kubernetes.NewForConfig(r.Manager.GetConfig())
 	if err != nil {
@@ -32,7 +33,7 @@ func (r *NVMeshReconciler) ListenToNodeLabels() (chan struct{}, error) {
 			UpdateFunc: func(oldObj, newObj interface{}) {
 				oldNode := oldObj.(*v1.Node)
 				newNode := newObj.(*v1.Node)
-				r.OnNodeUpdate(oldNode, newNode)
+				r.onNodeUpdate(oldNode, newNode)
 			},
 		},
 	)
@@ -43,7 +44,7 @@ func (r *NVMeshReconciler) ListenToNodeLabels() (chan struct{}, error) {
 	return stopChannel, nil
 }
 
-func (r *NVMeshReconciler) OnNodeUpdate(oldNode *v1.Node, newNode *v1.Node) {
+func (r *NVMeshReconciler) onNodeUpdate(oldNode *v1.Node, newNode *v1.Node) {
 	var targetRemoved bool
 	var clientRemoved bool
 
@@ -74,17 +75,17 @@ func (r *NVMeshReconciler) OnNodeUpdate(oldNode *v1.Node, newNode *v1.Node) {
 	}
 
 	if !targetInNew && !clientInNew && (clientRemoved || targetRemoved) {
-		go r.UninstallAndWaitToFinish(nodeName)
+		go r.uninstallAndWaitToFinish(nodeName)
 	}
 }
 
-func (r *NVMeshReconciler) UninstallAndWaitToFinish(nodeName string) {
+func (r *NVMeshReconciler) uninstallAndWaitToFinish(nodeName string) {
 	namespace := "default"
 	jobName := uninstallJobNamePrefix + nodeName
 
 	fakeCR := &nvmeshv1.NVMesh{}
 	fakeCR.SetName("uninstall-node-from-event")
-	err := r.UninstallNode(fakeCR, nodeName)
+	err := r.uninstallNode(fakeCR, nodeName)
 	if err != nil {
 		fmt.Printf("Failed to create uninstall job on node %s\n", nodeName)
 	}

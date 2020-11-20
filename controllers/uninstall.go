@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	goerrors "errors"
 	"fmt"
 	"time"
 
@@ -29,17 +28,10 @@ const (
 	nvmeshClusterServiceAccountName = "nvmesh-cluster"
 )
 
-var UninstallAction = nvmeshv1.ClusterAction{Name: "uninstall"}
+var uninstallAction = nvmeshv1.ClusterAction{Name: "uninstall"}
 
-type TaskFunc func(cr *nvmeshv1.NVMesh) (ctrl.Result, error)
-
-type Task struct {
-	Name string
-	Run  TaskFunc
-}
-
-func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
-	log := r.Log.WithValues("method", "UninstallCluster", "component", "Finalizer")
+func (r *NVMeshReconciler) uninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
+	log := r.Log.WithValues("method", "uninstallCluster", "component", "Finalizer")
 
 	if nvmeshCluster.Spec.Operator.SkipUninstall {
 		// Skip uninstall procedure
@@ -97,9 +89,9 @@ func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctr
 
 	for _, stage := range stages {
 		stageName := stage.Name
-		if !r.isTaskFinished(nvmeshCluster, UninstallAction, stageName) {
+		if !r.isTaskFinished(nvmeshCluster, uninstallAction, stageName) {
 			log.Info(fmt.Sprintf("Uninstall stage: %s", stageName))
-			r.setTaskStarted(nvmeshCluster, UninstallAction, stageName)
+			r.setTaskStarted(nvmeshCluster, uninstallAction, stageName)
 			result, err = stage.Run(nvmeshCluster)
 
 			if result.Requeue {
@@ -110,12 +102,12 @@ func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctr
 			if err != nil {
 				return DoNotRequeue(), err
 			}
-			r.setTaskFinished(nvmeshCluster, UninstallAction, stageName)
+			r.setTaskFinished(nvmeshCluster, uninstallAction, stageName)
 			log.Info(fmt.Sprintf("Uninstall stage %s done", stageName))
 		}
 	}
 
-	r.setActionComplete(nvmeshCluster, UninstallAction)
+	r.setActionComplete(nvmeshCluster, uninstallAction)
 
 	nvmeshCluster.Spec.CSI.Disabled = true
 	nvmeshCluster.Spec.Management.Disabled = true
@@ -126,15 +118,15 @@ func (r *NVMeshReconciler) UninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctr
 
 func (r *NVMeshReconciler) removeMongo(cr *nvmeshv1.NVMesh) error {
 	mgmt := NVMeshMgmtReconciler(*r)
-	if err := mgmt.RemoveMongoDBOperator(cr, r); err != nil {
+	if err := mgmt.removeMongoDBOperator(cr, r); err != nil {
 		return err
 	}
 
-	if err := mgmt.RemoveMongoCustomResource(cr, r); err != nil {
+	if err := mgmt.removeMongoCustomResource(cr, r); err != nil {
 		return err
 	}
 
-	if err := mgmt.RemoveMongoDBWithoutOperator(cr, r); err != nil {
+	if err := mgmt.removeMongoDBWithoutOperator(cr, r); err != nil {
 		return err
 	}
 
@@ -143,24 +135,24 @@ func (r *NVMeshReconciler) removeMongo(cr *nvmeshv1.NVMesh) error {
 
 func (r *NVMeshReconciler) removeAllWorkloadsExceptMongo(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	core := NVMeshCoreReconciler(*r)
-	if err := core.RemoveCore(cr, r); err != nil {
+	if err := core.removeCore(cr, r); err != nil {
 		return DoNotRequeue(), err
 	}
 
 	csi := NVMeshCSIReconciler(*r)
-	if err := csi.RemoveCSI(cr, r); err != nil {
+	if err := csi.removeCSI(cr, r); err != nil {
 		return DoNotRequeue(), err
 	}
 
 	mgmt := NVMeshMgmtReconciler(*r)
-	if err := mgmt.RemoveManagement(cr, r); err != nil {
+	if err := mgmt.removeManagement(cr, r); err != nil {
 		return DoNotRequeue(), err
 	}
 
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) getJobAsJson(jobName string, namespace string) ([]byte, error) {
+func (r *NVMeshReconciler) getJobAsJSON(jobName string, namespace string) ([]byte, error) {
 	jobKey := client.ObjectKey{Name: jobName, Namespace: namespace}
 	job := &batchv1.Job{}
 	err := r.Client.Get(context.TODO(), jobKey, job)
@@ -219,7 +211,7 @@ func (r *NVMeshReconciler) runUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []core
 	var err error
 	for _, node := range nodeList {
 		nodeName := node.GetName()
-		err := r.UninstallNode(cr, nodeName)
+		err := r.uninstallNode(cr, nodeName)
 		if err != nil {
 			r.Log.Info(fmt.Sprintf("Uninstall Failed on node %s. Error: %s", nodeName, err))
 		}
@@ -333,7 +325,7 @@ func (r *NVMeshReconciler) checkUninstallCompletion(cr *nvmeshv1.NVMesh, node *c
 			return true, nil
 		} else {
 			// some jobs failed
-			return false, goerrors.New(fmt.Sprintf("Uninstall failed on %d nodes. Check failed jobs for details", job.Status.Failed))
+			return false, fmt.Errorf("Uninstall failed on %d nodes. Check failed jobs for details", job.Status.Failed)
 		}
 	} else {
 		// still some jobs running
@@ -349,9 +341,9 @@ func (r *NVMeshReconciler) isSingleJobCompleted(job *batchv1.Job) (completed boo
 	} else if s.Failed+s.Succeeded >= *job.Spec.Completions {
 		return true, nil
 	} else if s.Failed > 0 {
-		return true, errors.New(fmt.Sprintf("Job %s failed", job.GetName()))
+		return true, fmt.Errorf("Job %s failed", job.GetName())
 	} else if len(s.Conditions) > 0 && s.Conditions[0].Type == "Failed" {
-		return true, errors.New(s.Conditions[0].Message)
+		return true, fmt.Errorf(s.Conditions[0].Message)
 	}
 
 	return false, nil
@@ -372,14 +364,14 @@ func (r *NVMeshReconciler) deleteUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []c
 }
 
 func (r *NVMeshReconciler) runClearDbJob(cr *nvmeshv1.NVMesh) error {
-	mongoImage := GetMongoForNVMeshImageName()
+	mongoImage := getMongoForNVMeshImageName()
 	job := r.getNewJob(cr, clearDbJobName, mongoImage)
 	backoffLimit := int32(1)
 	job.Spec.BackoffLimit = &backoffLimit
 	container := &job.Spec.Template.Spec.Containers[0]
 
 	container.Command = []string{"mongo"}
-	mongoConnString := GetMongoConnectionString(cr) + "/management"
+	mongoConnString := getMongoConnectionString(cr) + "/management"
 	container.Args = []string{mongoConnString, "--eval", "db.dropDatabase()"}
 
 	job.Spec.Template.Spec.ImagePullSecrets = r.getExceleroRegistryPullSecrets()
@@ -430,7 +422,7 @@ func (r *NVMeshReconciler) uninstallClusterNodes(nvmeshCluster *nvmeshv1.NVMesh)
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) UninstallNode(cr *nvmeshv1.NVMesh, nodeName string) error {
+func (r *NVMeshReconciler) uninstallNode(cr *nvmeshv1.NVMesh, nodeName string) error {
 	r.Log.Info(fmt.Sprintf("Running Uninstall Job on Node %s", nodeName))
 
 	job := r.getUninstallJob(cr, nodeName)

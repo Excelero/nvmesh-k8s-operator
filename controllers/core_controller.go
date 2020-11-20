@@ -12,37 +12,40 @@ import (
 )
 
 const (
-	NVMeshCoreAssestLocation   = "resources/nvmesh-core"
-	CoreUserspaceDaemonSetName = "nvmesh-mcs-agent"
-	TargetDriverDaemonSetName  = "nvmesh-target-driver-container"
-	ClientDriverDaemonSetName  = "nvmesh-client-driver-container"
-	DriverContainerImageName   = "nvmesh-driver-container"
-	FileServerAddress          = "https://repo.excelero.com/nvmesh/operator_binaries"
-	CoreImageVersionTag        = "0.7.0-2"
+	nvmeshCoreAssestLocation   = "resources/nvmesh-core"
+	coreUserspaceDaemonSetName = "nvmesh-mcs-agent"
+	targetDriverDaemonSetName  = "nvmesh-target-driver-container"
+	clientDriverDaemonSetName  = "nvmesh-client-driver-container"
+	driverContainerImageName   = "nvmesh-driver-container"
+	fileServerAddress          = "https://repo.excelero.com/nvmesh/operator_binaries"
+	coreImageVersionTag        = "0.7.0-2"
 )
 
+//NVMeshCoreReconciler - Reconciles NVMesh Core Component
 type NVMeshCoreReconciler struct {
 	NVMeshBaseReconciler
 }
 
+//Reconcile NVMesh Core Component
 func (r *NVMeshCoreReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	if !cr.Spec.Core.Disabled {
-		return r.DeployCore(cr, nvmeshr)
-	} else {
-		return r.RemoveCore(cr, nvmeshr)
+		return r.deployCore(cr, nvmeshr)
 	}
+
+	return r.removeCore(cr, nvmeshr)
 }
 
-func (r *NVMeshCoreReconciler) RemoveCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.RemoveObjectsFromDir(cr, r, NVMeshCoreAssestLocation, true)
+func (r *NVMeshCoreReconciler) removeCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.removeObjectsFromDir(cr, r, nvmeshCoreAssestLocation, true)
 }
 
-func (r *NVMeshCoreReconciler) DeployCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.CreateObjectsFromDir(cr, r, NVMeshCoreAssestLocation, true)
+func (r *NVMeshCoreReconciler) deployCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.createObjectsFromDir(cr, r, nvmeshCoreAssestLocation, true)
 }
 
+//InitObject Initialize objects in Core
 func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
-	//name, kind := GetRunetimeObjectNameAndKind(obj)
+	//name, kind := getRunetimeObjectNameAndKind(obj)
 	switch o := (*obj).(type) {
 	case *appsv1.DaemonSet:
 		err := r.initDaemonSets(cr, o)
@@ -56,15 +59,16 @@ func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 	return nil
 }
 
+//ShouldUpdateObject Manages update objects in Core
 func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, obj *runtime.Object) bool {
-	name, _ := GetRunetimeObjectNameAndKind(obj)
+	name, _ := getRunetimeObjectNameAndKind(obj)
 	switch o := (*obj).(type) {
 	case *appsv1.DaemonSet:
 		expDS := (*exp).(*appsv1.DaemonSet)
 		switch name {
-		case CoreUserspaceDaemonSetName:
+		case coreUserspaceDaemonSetName:
 			fallthrough
-		case TargetDriverDaemonSetName:
+		case targetDriverDaemonSetName:
 			fallthrough
 		case "nvmesh-client-driver-container":
 			return r.shouldUpdateDaemonSet(cr, expDS, o)
@@ -107,8 +111,8 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 			imageName = "nvmesh-driver-container"
 		}
 
-		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + CoreImageVersionTag
-		ds.Spec.Template.Spec.Containers[i].ImagePullPolicy = r.GetGlobalImagePullPolicy()
+		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + coreImageVersionTag
+		ds.Spec.Template.Spec.Containers[i].ImagePullPolicy = r.getGlobalImagePullPolicy()
 	}
 
 	return nil
@@ -119,9 +123,9 @@ func (r *NVMeshCoreReconciler) configStringToDict(conf string) map[string]string
 
 	lines := strings.Split(conf, "\n")
 	for _, line := range lines {
-		line_parts := strings.Split(line, "=")
-		key := line_parts[0]
-		value := strings.Join(line_parts[1:], "=")
+		lineParts := strings.Split(line, "=")
+		key := lineParts[0]
+		value := strings.Join(lineParts[1:], "=")
 
 		// add to map
 		configDict[key] = value
@@ -156,7 +160,7 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 	if cr.Spec.Operator.FileServer.Address != "" {
 		cm.Data["fileServer.address"] = cr.Spec.Operator.FileServer.Address
 	} else {
-		cm.Data["fileServer.address"] = FileServerAddress
+		cm.Data["fileServer.address"] = fileServerAddress
 	}
 
 	cm.Data["fileServer.skipCheckCertificate"] = strconv.FormatBool(cr.Spec.Operator.FileServer.SkipCheckCertificate)

@@ -9,21 +9,25 @@ import (
 	"k8s.io/client-go/tools/record"
 )
 
+//EventManager - allows to create events on objects
 type EventManager struct {
 	config   *rest.Config
 	recorder record.EventRecorder
 }
 
+//Normal - create an event with type Normal
 func (e *EventManager) Normal(cr *nvmeshv1.NVMesh, reason string, message string) {
 	e.recorder.Event(cr, "Normal", reason, message)
 }
 
+//Warning - create an event with type Warning
 func (e *EventManager) Warning(cr *nvmeshv1.NVMesh, reason string, message string) {
 	e.recorder.Event(cr, "Warning", reason, message)
 }
 
+//NewEventManager - create a new EventManager to update events on objects
 func NewEventManager(config *rest.Config) (*EventManager, error) {
-	recorder, err := GetEventRecorder(config)
+	recorder, err := getEventRecorder(config)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +41,7 @@ func NewEventManager(config *rest.Config) (*EventManager, error) {
 
 }
 
-func GetEventRecorder(config *rest.Config) (record.EventRecorder, error) {
+func getEventRecorder(config *rest.Config) (record.EventRecorder, error) {
 	kubeClient, err := typedcorev1.NewForConfig(config)
 	if err != nil {
 		return nil, err

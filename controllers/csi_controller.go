@@ -13,34 +13,37 @@ import (
 )
 
 const (
-	CSIAssetsLocation  = "resources/csi/"
-	CSIDaemonSetName   = "nvmesh-csi-node-driver"
-	CSIStatefulSetName = "nvmesh-csi-controller"
-	CSIDriverImageName = "excelero/nvmesh-csi-driver"
+	csiAssetsLocation  = "resources/csi/"
+	csiDaemonSetName   = "nvmesh-csi-node-driver"
+	csiStatefulSetName = "nvmesh-csi-controller"
+	csiDriverImageName = "excelero/nvmesh-csi-driver"
 )
 
+//NVMeshCSIReconciler is a Reconciler for CSI
 type NVMeshCSIReconciler struct {
 	NVMeshBaseReconciler
 }
 
+//Reconcile Reconciles CSI
 func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	if !cr.Spec.CSI.Disabled {
-		return r.DeployCSI(cr, nvmeshr)
-	} else {
-		return r.RemoveCSI(cr, nvmeshr)
+		return r.deployCSI(cr, nvmeshr)
 	}
+
+	return r.removeCSI(cr, nvmeshr)
 }
 
-func (r *NVMeshCSIReconciler) DeployCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.CreateObjectsFromDir(cr, r, CSIAssetsLocation, true)
+func (r *NVMeshCSIReconciler) deployCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.createObjectsFromDir(cr, r, csiAssetsLocation, true)
 }
 
-func (r *NVMeshCSIReconciler) RemoveCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.RemoveObjectsFromDir(cr, r, CSIAssetsLocation, true)
+func (r *NVMeshCSIReconciler) removeCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.removeObjectsFromDir(cr, r, csiAssetsLocation, true)
 }
 
+//InitObject Initializes CSI Objects
 func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
-	name, _ := GetRunetimeObjectNameAndKind(obj)
+	name, _ := getRunetimeObjectNameAndKind(obj)
 
 	switch o := (*obj).(type) {
 	case *appsv1.StatefulSet:
@@ -72,8 +75,9 @@ func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Objec
 	return nil
 }
 
+//ShouldUpdateObject Manages CIS object updates
 func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, found *runtime.Object) bool {
-	name, _ := GetRunetimeObjectNameAndKind(found)
+	name, _ := getRunetimeObjectNameAndKind(found)
 
 	switch o := (*found).(type) {
 	case *appsv1.StatefulSet:
@@ -123,13 +127,13 @@ func initCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, ss *appsv1.StatefulSet) e
 }
 
 func initCSIConfigMap(cr *nvmeshv1.NVMesh, conf *v1.ConfigMap) error {
-	conf.Data["management.protocol"] = MgmtProtocol
-	conf.Data["management.servers"] = MgmtGuiServiceName + "." + cr.GetNamespace() + ".svc.cluster.local:4000"
+	conf.Data["management.protocol"] = mgmtProtocol
+	conf.Data["management.servers"] = mgmtGuiServiceName + "." + cr.GetNamespace() + ".svc.cluster.local:4000"
 	return nil
 }
 
 func getCSIFullImageName(cr *nvmeshv1.NVMesh) string {
-	imageName := CSIDriverImageName
+	imageName := csiDriverImageName
 	if cr.Spec.CSI.ImageName != "" {
 		imageName = cr.Spec.CSI.ImageName
 	}
