@@ -145,7 +145,7 @@ func (r *NVMeshCoreReconciler) getMgmtServersConnectionString(cr *nvmeshv1.NVMes
 
 	replicas := int(cr.Spec.Management.Replicas)
 	for i := 0; i < replicas; i++ {
-		server := fmt.Sprintf("nvmesh-management-%d.nvmesh-management-ws.default.svc.cluster.local:4001", i)
+		server := fmt.Sprintf("nvmesh-management-%d.nvmesh-management-ws.%s.svc.cluster.local:4001", i, cr.GetNamespace())
 		servers = append(servers, server)
 	}
 
@@ -164,9 +164,9 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 
 	configDict := r.configStringToDict(cm.Data["nvmesh.conf"])
 
-	management_servers := r.getMgmtServersConnectionString(cr)
+	managementServers := r.getMgmtServersConnectionString(cr)
 	// Wrap value with double quotes
-	configDict["MANAGEMENT_SERVERS"] = fmt.Sprintf("\"%s\"", management_servers)
+	configDict["MANAGEMENT_SERVERS"] = fmt.Sprintf("\"%s\"", managementServers)
 
 	cm.Data["nvmesh.conf"] = r.configDictToString(configDict)
 	return nil
