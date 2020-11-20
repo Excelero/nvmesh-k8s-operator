@@ -1,10 +1,14 @@
 package controllers
 
 import (
+	"context"
 	goerrors "errors"
 	"fmt"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func ValidationError(cr *nvmeshv1.NVMesh, errorMessage string, additionlaDetails string) error {
@@ -30,4 +34,29 @@ func (r *NVMeshReconciler) IsValid(cr *nvmeshv1.NVMesh) error {
 	}
 
 	return nil
+}
+
+func (r *NVMeshReconciler) verifySecretExists(secretName string, ns string) error {
+	// check if a secret exist
+	secret := &corev1.Secret{}
+	secretKey := client.ObjectKey{Name: exceleroRegistrySecretName, Namespace: ns}
+	err := r.Client.Get(context.TODO(), secretKey, secret)
+
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			r.Log.Info(fmt.Sprintf("DEBUG: secret %s was not found in the namespace %s", secretName, ns))
+		} else {
+			r.Log.Info(fmt.Sprintf("DEBUG: Error while trying to get secret: %s in namespace %s. error: %s", secretName, ns, err))
+		}
+	}
+
+	r.Log.Info(fmt.Sprintf("DEBUG: Secret: %s found", secretName))
+
+	return err
+}
+
+func (r *NVMeshReconciler) verifyNVMeshSecretsExist(namespace string) {
+	// check if the secrets exist in the current namespace
+	r.verifySecretExists(exceleroRegistrySecretName, namespace)
+	r.verifySecretExists(fileServerSecretName, namespace)
 }
