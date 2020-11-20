@@ -39,6 +39,7 @@ func (r *NVMeshReconciler) waitForJobToFinish(namespace string, jobName string) 
 		// no error
 		if !completed {
 			r.Log.Info(fmt.Sprintf("Waiting for %s to finish", job.ObjectMeta.GetName()))
+			r.monitorJob(jobName, namespace)
 			return Requeue(time.Second), nil
 		} else {
 			return DoNotRequeue(), nil
@@ -111,7 +112,7 @@ func (r *NVMeshReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image 
 						{
 							Name:            jobName,
 							Image:           image,
-							ImagePullPolicy: GetGlobalImagePullPolicy(),
+							ImagePullPolicy: r.GetGlobalImagePullPolicy(),
 						},
 					},
 				},
@@ -158,4 +159,46 @@ func (r *NVMeshReconciler) addConfigMapMount(podSpec *corev1.PodSpec, containerI
 	}
 
 	podSpec.Containers[containerIndex].VolumeMounts = append(podSpec.Containers[containerIndex].VolumeMounts, mount)
+}
+
+func (r *NVMeshReconciler) printJob(jobName string, namespace string) {
+	jobJSONBytes, err := r.getJobAsJson(jobName, namespace)
+
+	if err != nil {
+		r.Log.Info(fmt.Sprintf("Error printing json %s", err))
+	} else {
+		r.Log.Info(fmt.Sprintf("DEBUG: Job %s:\n%s", jobName, string(jobJSONBytes)))
+	}
+}
+
+func (r *NVMeshReconciler) monitorJob(jobName string, namespace string) {
+	log := r.Log.WithValues("method", "debug_cluster")
+	// 1. check the job pods and it's status
+	podList, err := r.getJobPods(namespace, jobName)
+	if err != nil && !k8serrors.IsNotFound(err) {
+		log.Info(fmt.Sprintf("Warning: Failed to list pods from job %s", jobName))
+	}
+
+	log.Info(fmt.Sprintf("Found %d pods for job %s", len(podList.Items), jobName))
+
+	if len(podList.Items) == 0 {
+		log.Info(fmt.Sprintf("Found no pods from job %s", jobName))
+	}
+
+	if r.Options.Debug.DebugJobs {
+		log.Info("debugJobs -->")
+
+		for _, pod := range podList.Items {
+			log.Info(fmt.Sprintf("DEBUG: JOB PODS - pod: %s status: %+v", pod.GetName(), pod.Status.ContainerStatuses))
+		}
+
+		r.printJob(jobName, namespace)
+
+		r.printAllPodsStatuses(namespace)
+
+		// If a job doesn't finish it is possible a container has ErrImagePull
+		// which could be caused by missing or wrong secrets
+		r.verifyNVMeshSecretsExist(namespace)
+		log.Info("debugJobs <--")
+	}
 }

@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -476,27 +477,27 @@ func DoNotRequeue() ctrl.Result {
 	return ctrl.Result{}
 }
 
-func GetGlobalImagePullPolicy() corev1.PullPolicy {
-	if operatorOptions.Debug.ImagePullPolicyAlways {
+func (r *NVMeshBaseReconciler) GetGlobalImagePullPolicy() corev1.PullPolicy {
+	if r.Options.Debug.ImagePullPolicyAlways {
 		return corev1.PullAlways
 	} else {
 		return corev1.PullIfNotPresent
 	}
 }
 
-func (r *NVMeshReconciler) imagePullSecretsFromName(secretName string) []corev1.LocalObjectReference {
+func (r *NVMeshBaseReconciler) imagePullSecretsFromName(secretName string) []corev1.LocalObjectReference {
 	return []corev1.LocalObjectReference{{Name: secretName}}
 }
 
-func (r *NVMeshReconciler) getExceleroRegistryPullSecrets() []corev1.LocalObjectReference {
+func (r *NVMeshBaseReconciler) getExceleroRegistryPullSecrets() []corev1.LocalObjectReference {
 	return r.imagePullSecretsFromName(exceleroRegistrySecretName)
 }
 
-func (r *NVMeshReconciler) getClusterServiceAccountName(cr *nvmeshv1.NVMesh) string {
+func (r *NVMeshBaseReconciler) getClusterServiceAccountName(cr *nvmeshv1.NVMesh) string {
 	return clusterServiceAccountName
 }
 
-func (r *NVMeshReconciler) getClusterServiceAccount(cr *nvmeshv1.NVMesh) *corev1.ServiceAccount {
+func (r *NVMeshBaseReconciler) getClusterServiceAccount(cr *nvmeshv1.NVMesh) *corev1.ServiceAccount {
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.getClusterServiceAccountName(cr),
@@ -579,9 +580,11 @@ func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) err
 		}
 	}
 
-	err = r.addClusterServiceAccountToSCC(cr)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed to add ServiceAccount to SCC. Error: %s", err))
+	if r.Options.IsOpenShift {
+		err = r.addClusterServiceAccountToSCC(cr)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Failed to add ServiceAccount to SCC. Error: %s", err))
+		}
 	}
 
 	return nil
@@ -663,4 +666,45 @@ func (r *NVMeshReconciler) removeClusterServiceAccountFromSCC(cr *nvmeshv1.NVMes
 	}
 
 	return nil
+}
+
+func (r *NVMeshReconciler) printAllPodsStatuses(namespace string) {
+	allPodsList := &corev1.PodList{}
+	err := r.Client.List(context.TODO(), allPodsList, &client.ListOptions{Namespace: namespace})
+	if err != nil {
+		r.Log.Info(fmt.Sprintf("DEBUG: Failed to find all pods: %s", err))
+	}
+
+	r.Log.Info(fmt.Sprintf("DEBUG: all pods - found %d pods in namespace %s", len(allPodsList.Items), namespace))
+
+	for _, pod := range allPodsList.Items {
+		if pod.Status.ContainerStatuses != nil {
+			r.Log.Info(fmt.Sprintf("DEBUG: all pods - pod: %s status: %+v", pod.GetName(), pod.Status.ContainerStatuses))
+		}
+	}
+}
+
+func (r *NVMeshReconciler) verifySecretExists(secretName string, ns string) error {
+	// check if a secret exist
+	secret := &corev1.Secret{}
+	secretKey := client.ObjectKey{Name: exceleroRegistrySecretName, Namespace: ns}
+	err := r.Client.Get(context.TODO(), secretKey, secret)
+
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			r.Log.Info(fmt.Sprintf("DEBUG: secret %s was not found in the namespace %s", secretName, ns))
+		} else {
+			r.Log.Info(fmt.Sprintf("DEBUG: Error while trying to get secret: %s in namespace %s. error: %s", secretName, ns, err))
+		}
+	}
+
+	r.Log.Info(fmt.Sprintf("DEBUG: Secret: %s found", secretName))
+
+	return err
+}
+
+func (r *NVMeshReconciler) verifyNVMeshSecretsExist(namespace string) {
+	// check if the secrets exist in the current namespace
+	r.verifySecretExists(exceleroRegistrySecretName, namespace)
+	r.verifySecretExists(fileServerSecretName, namespace)
 }

@@ -85,11 +85,21 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 
+	operatorOptions := controllers.OperatorOptions{
+		Debug: controllers.DebugOptions{
+			CollectLogsJobsRunForever: false,
+			ImagePullPolicyAlways:     false,
+			DebugJobs:                 false,
+		},
+		IsOpenShift: false,
+	}
+
 	// metrics-addr default is 0 - so it is disable, if we want to re-enable it, we should set the default to :8080
 	flag.StringVar(&metricsAddr, "metrics-addr", "0", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&operatorOptions.IsOpenShift, "openshift", false, "Set this flag if you are running on an openshift cluster")
+	flag.BoolVar(&operatorOptions.Debug.ImagePullPolicyAlways, "image-pull-always", false, "Set ImagePullPolicy = Always for all NVMesh images. Enabling this will make the pods always fetch the updated image")
+	flag.BoolVar(&operatorOptions.Debug.DebugJobs, "debug-jobs", false, "Debug running jobs. This will print additional information on running jobs and their pods")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
@@ -122,6 +132,7 @@ func main() {
 			DynamicClient: GetDynamicClientOrDie(mgr.GetConfig()),
 			Manager:       mgr,
 			EventManager:  eventManager,
+			Options:       operatorOptions,
 		},
 	}
 

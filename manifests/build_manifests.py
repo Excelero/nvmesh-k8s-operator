@@ -72,7 +72,10 @@ def build_csv():
     }
     # update operator image version tag
     operator_image = '{repo}/{image_name}:{version}-{release}'.format(**version_info)
-    install_dep_item['spec']['template']['spec']['containers'][0]['image'] = operator_image
+    operatorPodSpec = install_dep_item['spec']['template']['spec']
+    operatorContainer = operatorPodSpec['containers'][0]
+    operatorContainer['image'] = operator_image
+    operatorContainer['args'].append("--openshift")
 
     cluster_permissions = {
         'serviceAccountName': get_name(service_account),

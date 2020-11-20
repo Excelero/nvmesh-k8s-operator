@@ -45,22 +45,6 @@ const (
 	clusterServiceAccountName        = "nvmesh-cluster"
 )
 
-type DebugOptions struct {
-	CollectLogsJobsRunForever bool
-	ImagePullPolicyAlways     bool
-}
-
-type OperatorOptions struct {
-	Debug DebugOptions
-}
-
-var operatorOptions OperatorOptions = OperatorOptions{
-	Debug: DebugOptions{
-		CollectLogsJobsRunForever: false,
-		ImagePullPolicyAlways:     false,
-	},
-}
-
 // NVMeshReconciler reconciles a NVMesh object
 type NVMeshBaseReconciler struct {
 	client.Client
@@ -69,6 +53,7 @@ type NVMeshBaseReconciler struct {
 	DynamicClient dynamic.Interface
 	Manager       ctrl.Manager
 	EventManager  *EventManager
+	Options       OperatorOptions
 }
 type NVMeshReconciler struct {
 	NVMeshBaseReconciler
@@ -121,9 +106,11 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	r.stopAllUnstructuredWatchers()
 
-	// Make sure SCC and ServiceAccount exists
-	if err := r.makeSureSCCExists(cr); err != nil {
-		return r.ManageError(cr, err)
+	if r.Options.IsOpenShift {
+		// Make sure SCC and ServiceAccount exists
+		if err := r.makeSureSCCExists(cr); err != nil {
+			return r.ManageError(cr, err)
+		}
 	}
 
 	if err := r.makeSureServiceAccountExists(cr); err != nil {

@@ -160,74 +160,16 @@ func (r *NVMeshReconciler) removeAllWorkloadsExceptMongo(cr *nvmeshv1.NVMesh) (c
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) debug_jobs(cr *nvmeshv1.NVMesh) {
-	log := r.Log.WithValues("method", "debug_cluster")
-	log.Info("debug_jobs -->")
-	// 1. check the job pods and it's status
-	podList, err := r.getJobPods(cr.GetNamespace(), clearDbJobName)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		log.Info(fmt.Sprintf("DEBUG: Failed to find pods from job %s for deletion", clearDbJobName))
+func (r *NVMeshReconciler) getJobAsJson(jobName string, namespace string) ([]byte, error) {
+	jobKey := client.ObjectKey{Name: jobName, Namespace: namespace}
+	job := &batchv1.Job{}
+	err := r.Client.Get(context.TODO(), jobKey, job)
+	if err != nil {
+		r.Log.Info(fmt.Sprintf("DEBUG: Failed to get job %s. Error: %s", jobName, err))
 	}
+	bytes, err := json.MarshalIndent(job, "", "    ")
 
-	log.Info(fmt.Sprintf("found %d pods for job %s", len(podList.Items), clearDbJobName))
-
-	if len(podList.Items) == 0 {
-		log.Info(fmt.Sprintf("Found no pods from job %s", clearDbJobName))
-	}
-
-	for _, pod := range podList.Items {
-		log.Info(fmt.Sprintf("DEBUG: JOB PODS - pod: %s status: %+v", pod.GetName(), pod.Status.ContainerStatuses))
-	}
-
-	// print the job
-	if false {
-		jobKey := client.ObjectKey{Name: clearDbJobName, Namespace: cr.GetNamespace()}
-		job := &batchv1.Job{}
-		err = r.Client.Get(context.TODO(), jobKey, job)
-		if err != nil {
-			log.Info(fmt.Sprintf("DEBUG: Failed to get job %s. Error: %s", clearDbJobName, err))
-		}
-
-		bytes, err := json.MarshalIndent(job, "", "    ")
-		if err != nil {
-			log.Info(fmt.Sprintf("Error printing json %s", err))
-		} else {
-			log.Info(fmt.Sprintf("DEBUG: Job %s:\n%s", clearDbJobName, string(bytes)))
-		}
-	}
-
-	//2. list all pods and their statuses (in the current namespace)
-	if false {
-		allPodsList := &corev1.PodList{}
-		err = r.Client.List(context.TODO(), allPodsList, &client.ListOptions{Namespace: cr.GetNamespace()})
-		if err != nil {
-			log.Info(fmt.Sprintf("DEBUG: Failed to find all pods: %s", err))
-		}
-
-		log.Info(fmt.Sprintf("DEBUG: all pods - found %d pods in namespace %s", len(allPodsList.Items), cr.GetNamespace()))
-
-		for _, pod := range allPodsList.Items {
-			if pod.Status.ContainerStatuses != nil {
-				log.Info(fmt.Sprintf("DEBUG: all pods - pod: %s status: %+v", pod.GetName(), pod.Status.ContainerStatuses))
-			}
-		}
-	}
-
-	if false {
-		// 3. check if the secrets appear
-		// make sure RBAC rules allow this
-		secret := &corev1.Secret{}
-		secret_name := exceleroRegistrySecretName
-		secretKey := client.ObjectKey{Name: exceleroRegistrySecretName, Namespace: cr.GetNamespace()}
-		err = r.Client.Get(context.TODO(), secretKey, secret)
-		if err != nil {
-			log.Info(fmt.Sprintf("DEBUG: Failed to find secret: %s error: %s", secret_name, err))
-		}
-
-		log.Info(fmt.Sprintf("DEBUG: secret: %s found", secret_name))
-	}
-
-	log.Info("debug_jobs <--")
+	return bytes, err
 }
 
 func (r *NVMeshReconciler) waitForClearDBToFinish(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
@@ -235,7 +177,6 @@ func (r *NVMeshReconciler) waitForClearDBToFinish(cr *nvmeshv1.NVMesh) (ctrl.Res
 	result, err := r.waitForJobToFinish(cr.GetNamespace(), clearDbJobName)
 
 	if result.Requeue {
-		r.debug_jobs(cr)
 		return result, nil
 	}
 

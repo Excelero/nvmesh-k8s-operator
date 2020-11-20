@@ -254,7 +254,7 @@ func (r *NVMeshReconciler) runCollectDBJob(cr *nvmeshv1.NVMesh, action nvmeshv1.
 		r.addS3CredentialsEnvVar(container, bucketName)
 	}
 
-	if operatorOptions.Debug.CollectLogsJobsRunForever {
+	if r.Options.Debug.CollectLogsJobsRunForever {
 		container.Args = append(container.Args, "--debug")
 	}
 
@@ -288,7 +288,7 @@ func (r *NVMeshReconciler) runCollectConfigMapsJob(cr *nvmeshv1.NVMesh, action n
 		r.addS3CredentialsEnvVar(container, bucketName)
 	}
 
-	if operatorOptions.Debug.CollectLogsJobsRunForever {
+	if r.Options.Debug.CollectLogsJobsRunForever {
 		container.Args = append(container.Args, "--debug")
 	}
 
@@ -332,7 +332,7 @@ func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvme
 		r.addS3CredentialsEnvVar(container, bucketName)
 	}
 
-	if operatorOptions.Debug.CollectLogsJobsRunForever {
+	if r.Options.Debug.CollectLogsJobsRunForever {
 		container.Args = append(container.Args, "--debug")
 	}
 
