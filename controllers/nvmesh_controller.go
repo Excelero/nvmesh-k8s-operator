@@ -3,10 +3,8 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/prometheus/common/log"
 	appsv1 "k8s.io/api/apps/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -89,14 +87,8 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return r.ManageError(cr, err)
 	}
 
-	// Make sure Initialized
-	ok, err := r.MakeSureInitialized(cr)
-	if err != nil {
-		return r.ManageError(cr, err)
-	} else if !ok {
-		// object was initialized and updated - run another reconcile cycle
-		return r.ManageSuccess(cr, Requeue(time.Second))
-	}
+	// Make sure all fields are initialized
+	r.initializeEmptyFieldsOnCustomResource(cr)
 
 	//Validate CustomResource
 	err = r.IsValid(cr)
@@ -236,20 +228,16 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *NVMeshReconciler) IsInitialized(cr *nvmeshv1.NVMesh) bool {
-	var ok bool = true // was the object already initialized
+func (r *NVMeshReconciler) initializeEmptyFieldsOnCustomResource(cr *nvmeshv1.NVMesh) {
 	if cr.Spec.Core.ImageRegistry == "" {
-		ok = false
 		cr.Spec.Core.ImageRegistry = defaultRegistry
 	}
 
 	if cr.Spec.Management.ImageRegistry == "" {
-		ok = false
 		cr.Spec.Management.ImageRegistry = defaultRegistry
 	}
 
 	if cr.Spec.Management.ImageRegistry == "" {
-		ok = false
 		cr.Spec.Management.ImageRegistry = defaultRegistry
 	}
 
@@ -257,19 +245,7 @@ func (r *NVMeshReconciler) IsInitialized(cr *nvmeshv1.NVMesh) bool {
 		cr.Spec.Actions = make([]nvmeshv1.ClusterAction, 0)
 	}
 
-	return ok
-}
-
-func (r *NVMeshReconciler) MakeSureInitialized(cr *nvmeshv1.NVMesh) (bool, error) {
-	ok := r.IsInitialized(cr)
-	if !ok {
-		// object was not initialized - we'll update it and return ok = false so that we run another reconcile cycle
-		err := r.Client.Update(context.TODO(), cr)
-		if err != nil {
-			log.Error(err, "unable to update instance", "instance", cr)
-			return ok, err
-		}
+	if cr.Spec.Operator.FileServer == nil {
+		cr.Spec.Operator.FileServer = &v1.OperatorFileServerSpec{}
 	}
-
-	return ok, nil
 }

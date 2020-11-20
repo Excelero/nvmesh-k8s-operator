@@ -114,7 +114,7 @@ type NVMeshOperatorSpec struct {
 	// If SkipUninstall is true, The operator will not clear the mongo db or remove files the NVMesh software has saved locally on the nodes. This can lead to an unclean state left on the k8s cluster
 	SkipUninstall bool `json:"skipUninstall,omitempty"`
 
-	FileServer OperatorFileServerSpec `json:"fileServer,omitempty"`
+	FileServer *OperatorFileServerSpec `json:"fileServer,omitempty"`
 }
 
 type OperatorFileServerSpec struct {
