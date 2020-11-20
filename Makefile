@@ -156,12 +156,14 @@ bundle-dev-build: manifests docker-build
 bundle-dev-deploy: all manifests docker-build bundle-dev-build docker-push
 	kubectl apply -f operator-hub/dev/catalog_source.yaml
 
-.PHONY: simulate-bundle-test
+.PHONY: bundle-test
 bundle-test:
 	kubectl delete namespace test-operator || echo "namespace test-operator doesn't exists, proceeding with tests"
 	kubectl create namespace test-operator
 	kubectl create -f .secrets/openshift_scan_object.yaml -n test-operator
-	date && kubectl apply -f operator-hub/dev/cr_sample.yaml -n test-operator && sleep 1 && date && kubectl delete -f operator-hub/dev/cr_sample.yaml -n test-operator
+	date && kubectl apply -f operator-hub/dev/cr_sample.yaml -n test-operator
+	sleep 1
+	date && kubectl delete -f operator-hub/dev/cr_sample.yaml -n test-operator
 
 .PHONY: list
 list:

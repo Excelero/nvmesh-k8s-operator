@@ -71,7 +71,7 @@ def build_csv():
         'spec': operator['spec']
     }
     # update operator image version tag
-    operator_image = '{repo}/{image_name}:{version}-{release}'.format(**version_info)
+    operator_image = get_operator_image()
     operatorPodSpec = install_dep_item['spec']['template']['spec']
     operatorContainer = operatorPodSpec['containers'][0]
     operatorContainer['image'] = operator_image
@@ -101,13 +101,25 @@ def copy_and_format_crd():
     crd = load_yaml_file(crd_base)
     del crd['metadata']['creationTimestamp']
     write_yaml_file(crd, crd_base)
+def get_operator_image():
+    return '{repo}/{image_name}:{version}-{release}'.format(**version_info)
+
+def get_deployment_for_kubernetes():
+    deployment = load_yaml_file(operator_dep_file)
+
+    operatorPodSpec = deployment['spec']['template']['spec']
+    operatorContainer = operatorPodSpec['containers'][0]
+    operatorContainer['image'] = get_operator_image()
+    return deployment
 
 def build_deploy_dir():
     copyfile(crd_base, path.join(deploy, "010_nvmesh_crd.yaml"))
     copyfile(path.join(bases, "extra/service_account.yaml"), path.join(deploy, "020_service_account.yaml"))
     copyfile(path.join(bases, "rbac/role.yaml"), path.join(deploy, "030_role.yaml"))
     copyfile(path.join(bases, "rbac/role_binding.yaml"), path.join(deploy, "040_role_binding.yaml"))
-    copyfile(path.join(bases, "operator/deployment.yaml"), path.join(deploy, "050_operator-deployment.yaml"))
+
+    deployment = get_deployment_for_kubernetes()
+    write_yaml_file(deployment, path.join(deploy, "050_operator-deployment.yaml"))
 
     rmtree(path.join(deploy, "samples"))
     copytree(path.join(bases, "samples"), path.join(deploy, "samples"))

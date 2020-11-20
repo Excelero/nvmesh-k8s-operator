@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/prometheus/common/log"
@@ -105,6 +106,8 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	addToScheme(scheme)
+
+	setupLog.Info(fmt.Sprintf("operatorOptions.IsOpenShift: %t", operatorOptions.IsOpenShift))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
