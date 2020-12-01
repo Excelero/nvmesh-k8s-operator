@@ -308,47 +308,6 @@ func (r *NVMeshReconciler) waitForUninstallCompletion(namespace string, nodeList
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) checkUninstallCompletion(cr *nvmeshv1.NVMesh, node *corev1.Node) (bool, error) {
-	log := r.Log.WithValues("method", "checkUninstallCompletion", "component", "Finalizer")
-
-	job := &batchv1.Job{}
-
-	objKey := client.ObjectKey{Namespace: cr.GetNamespace(), Name: uninstallJobNamePrefix + node.GetName()}
-	err := r.Client.Get(context.TODO(), objKey, job)
-	if err != nil {
-		return false, errors.Wrap(err, "Failed to get nvmesh-uninstall job")
-	}
-
-	if job.Status.Failed+job.Status.Succeeded >= *job.Spec.Completions {
-		// all jobs finished
-		if job.Status.Succeeded == *job.Spec.Completions {
-			return true, nil
-		} else {
-			// some jobs failed
-			return false, fmt.Errorf("Uninstall failed on %d nodes. Check failed jobs for details", job.Status.Failed)
-		}
-	} else {
-		// still some jobs running
-		log.Info(fmt.Sprintf("Node Uninstall Jobs Status: out of %d total nodes, %d succeeded, %d failed and %d are still running\n", *job.Spec.Completions, job.Status.Succeeded, job.Status.Failed, job.Status.Active))
-		return false, nil
-	}
-}
-
-func (r *NVMeshReconciler) isSingleJobCompleted(job *batchv1.Job) (completed bool, err error) {
-	s := job.Status
-	if s.Active > 0 {
-		return false, nil
-	} else if s.Failed+s.Succeeded >= *job.Spec.Completions {
-		return true, nil
-	} else if s.Failed > 0 {
-		return true, fmt.Errorf("Job %s failed", job.GetName())
-	} else if len(s.Conditions) > 0 && s.Conditions[0].Type == "Failed" {
-		return true, fmt.Errorf(s.Conditions[0].Message)
-	}
-
-	return false, nil
-}
-
 func (r *NVMeshReconciler) deleteUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []corev1.Node) error {
 
 	for _, node := range nodeList {

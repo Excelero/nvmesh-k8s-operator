@@ -47,6 +47,22 @@ func (r *NVMeshReconciler) waitForJobToFinish(namespace string, jobName string) 
 	return DoNotRequeue(), nil
 }
 
+func (r *NVMeshReconciler) isSingleJobCompleted(job *batchv1.Job) (completed bool, err error) {
+	s := job.Status
+
+	if s.Failed > 0 {
+		return true, fmt.Errorf("Job %s failed", job.GetName())
+	} else if s.Succeeded == *job.Spec.Completions {
+		return true, nil
+	} else if s.Active > 0 {
+		return false, nil
+	} else if len(s.Conditions) > 0 && s.Conditions[0].Type == "Failed" {
+		return true, fmt.Errorf(s.Conditions[0].Message)
+	}
+
+	return false, nil
+}
+
 func (r *NVMeshReconciler) getJobPods(namespace string, jobName string) (*corev1.PodList, error) {
 	podList := &corev1.PodList{}
 	matchLabels := client.MatchingLabels{"job-name": jobName}
