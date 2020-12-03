@@ -1,0 +1,17 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mgmt-gui
+spec:
+  # change "nvmesh.excelero.com" to the domain available in your cluster
+  host: ui.mgmt.apps.nvmesh.excelero.com
+  port:
+    targetPort: gui
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: passthrough
+  to:
+    kind: Service
+    name: nvmesh-management-gui
+    weight: 100
+  wildcardPolicy: None
