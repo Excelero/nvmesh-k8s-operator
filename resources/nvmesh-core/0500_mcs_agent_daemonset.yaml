@@ -20,8 +20,8 @@ spec:
       hostNetwork: true
       # dnsPolicy: ClusterFirstWithHostNet allows the pod to have cluster DNS to be able to resolve service dns names. this is needed only when hostNetwork is true
       dnsPolicy: ClusterFirstWithHostNet
-      imagePullSecrets:
-        - name: excelero-registry-cred
+      # imagePullSecrets:
+      #   - name: excelero-registry-cred
       containers:
         - name: mcs
           image: nvmesh-mcs:placeholder

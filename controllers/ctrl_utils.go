@@ -88,10 +88,12 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	name, kind := getRunetimeObjectNameAndKind(newObj)
 	log := r.Log.WithValues("method", "makeSureObjectExists", "name", name, "kind", kind)
 
-	err := (*component).InitObject(cr, newObj)
-	if err != nil {
-		log.Info("Error running InitObject")
-		return err
+	if component != nil {
+		err := (*component).InitObject(cr, newObj)
+		if err != nil {
+			log.Info("Error running InitObject")
+			return err
+		}
 	}
 
 	// Set NVMesh instance as the owner and controller
@@ -113,7 +115,7 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	} else if err != nil {
 		log.Error(err, "Error while getting object")
 		return err
-	} else if (*component).ShouldUpdateObject(cr, newObj, foundObj) {
+	} else if component != nil && (*component).ShouldUpdateObject(cr, newObj, foundObj) {
 		log.Info("shouldUpdate returned true > Updating...")
 
 		// Update the resource version before an update
@@ -146,8 +148,14 @@ func (r *NVMeshReconciler) makeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *ru
 		//log.Info("Nothing to do")
 	} else if err != nil {
 		if _, ok := err.(*meta.NoKindMatchError); ok && kind == "SecurityContextConstraints" {
-			log.Info("Ignoring no kind SecurityContextConstraints error, This is probably not an openshift cluster")
+			if r.Options.IsOpenShift {
+				log.Info("Ignoring no kind SecurityContextConstraints error, As this is not an openshift cluster (check -openshift flag)")
+			} else {
+				log.Info("Got No kind SecurityContextConstraints error from Kubernetes API, Seems this is not an openshift cluster, But -openshift flag is set")
+			}
+
 			return nil
+
 		}
 
 		log.Error(err, "Error while trying to find out if object exists")
@@ -501,13 +509,49 @@ func (r *NVMeshBaseReconciler) getClusterServiceAccountName(cr *nvmeshv1.NVMesh)
 
 func (r *NVMeshBaseReconciler) getClusterServiceAccount(cr *nvmeshv1.NVMesh) *corev1.ServiceAccount {
 	sa := &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{Kind: "ServiceAccount"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.getClusterServiceAccountName(cr),
 			Namespace: cr.GetNamespace(),
 		},
+		ImagePullSecrets: []corev1.LocalObjectReference{
+			{Name: exceleroRegistrySecretName},
+		},
 	}
 
 	return sa
+}
+
+func (r *NVMeshBaseReconciler) getNVMeshClusterRoleAndRoleBinding(cr *nvmeshv1.NVMesh) (*rbac.Role, *rbac.RoleBinding) {
+	role := &rbac.Role{
+		TypeMeta:   metav1.TypeMeta{Kind: "Role"},
+		ObjectMeta: metav1.ObjectMeta{Name: "nvmesh-cluster-role"},
+		Rules: []rbac.PolicyRule{
+			{
+				APIGroups:     []string{"security.openshift.io"},
+				Resources:     []string{"securitycontextconstraints"},
+				ResourceNames: []string{operatorSCCName},
+				Verbs:         []string{"use"},
+			},
+		},
+	}
+
+	rb := &rbac.RoleBinding{
+		TypeMeta:   metav1.TypeMeta{Kind: "RoleBinding"},
+		ObjectMeta: metav1.ObjectMeta{Name: "nvmesh-cluster-rb"},
+		RoleRef: rbac.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     role.GetName(),
+		},
+		Subjects: []rbac.Subject{{
+			Kind:      "ServiceAccount",
+			Name:      clusterServiceAccountName,
+			Namespace: cr.GetNamespace(),
+		}},
+	}
+
+	return role, rb
 }
 
 func (r *NVMeshReconciler) getNVMeshSCC(cr *nvmeshv1.NVMesh) *securityv1.SecurityContextConstraints {
@@ -566,26 +610,47 @@ func (r *NVMeshReconciler) makeSureSCCExists(cr *nvmeshv1.NVMesh) error {
 }
 
 func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) error {
+	var objToCreate runtime.Object
 	sa := r.getClusterServiceAccount(cr)
 
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: sa.GetName(), Namespace: cr.GetNamespace()}, sa)
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			r.Log.Info(fmt.Sprintf("Creating ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-
-			err = r.Client.Create(context.TODO(), sa)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to create ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-			}
-		} else {
-			return errors.Wrap(err, fmt.Sprintf("failed to get ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-		}
+	objToCreate = sa
+	err1 := r.makeSureObjectExists(cr, &objToCreate, nil)
+	if err1 != nil {
+		return err1
 	}
 
+	role, rb := r.getNVMeshClusterRoleAndRoleBinding(cr)
+
+	objToCreate = role
+	err2 := r.makeSureObjectExists(cr, &objToCreate, nil)
+	if err2 != nil {
+		return err2
+	}
+
+	objToCreate = rb
+	err3 := r.makeSureObjectExists(cr, &objToCreate, nil)
+	if err3 != nil {
+		return err3
+	}
+
+	// err := r.Client.Get(context.TODO(), types.NamespacedName{Name: sa.GetName(), Namespace: cr.GetNamespace()}, sa)
+	// if err != nil {
+	// 	if k8serrors.IsNotFound(err) {
+	// 		r.Log.Info(fmt.Sprintf("Creating ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
+
+	// 		err = r.Client.Create(context.TODO(), sa)
+	// 		if err != nil {
+	// 			return errors.Wrap(err, fmt.Sprintf("failed to create ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
+	// 		}
+	// 	} else {
+	// 		return errors.Wrap(err, fmt.Sprintf("failed to get ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
+	// 	}
+	// }
+
 	if r.Options.IsOpenShift {
-		err = r.addClusterServiceAccountToSCC(cr)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Failed to add ServiceAccount to SCC. Error: %s", err))
+		err4 := r.addClusterServiceAccountToSCC(cr)
+		if err4 != nil {
+			return errors.Wrap(err4, fmt.Sprintf("Failed to add ServiceAccount to SCC. Error: %s", err4))
 		}
 	}
 

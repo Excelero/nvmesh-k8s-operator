@@ -21,7 +21,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-24
+        image: docker.io/excelero/nvmesh-operator:0.7.0-26
         name: controller
         resources:
           limits:

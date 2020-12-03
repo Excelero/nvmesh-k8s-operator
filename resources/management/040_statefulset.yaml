@@ -16,10 +16,15 @@ spec:
         app: nvmesh-management
         nvmesh.excelero.com/component: nvmesh-management
     spec:
+      serviceAccountName: nvmesh-cluster
       nodeSelector:
         nvmesh.excelero.com/nvmesh-management: ""
       imagePullSecrets:
         - name: excelero-registry-cred
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       containers:
         - name: nvmesh-management
           image: docker.excelero.com/nvmesh-management:placeholder

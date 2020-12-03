@@ -12,6 +12,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -234,7 +235,6 @@ func (r *NVMeshReconciler) getUninstallJob(cr *nvmeshv1.NVMesh, nodeName string)
 		{Name: "KEEP_DOWNLOAD_CACHE", Value: "false"},
 	}
 
-	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
 	setContainerAsPrivileged(container)
 
 	podSpec.NodeName = nodeName
@@ -400,11 +400,21 @@ func (r *NVMeshReconciler) uninstallNode(cr *nvmeshv1.NVMesh, nodeName string) e
 
 func (r *NVMeshReconciler) deleteClusterServiceAccount(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	sa := r.getClusterServiceAccount(cr)
-	r.Log.Info(fmt.Sprintf("Removing service account %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-	err := r.Client.Delete(context.TODO(), sa)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		r.Log.Info(fmt.Sprintf("Warning: failed to delete Cluster Service Account %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-		return ctrl.Result{}, err
+	role, rb := r.getNVMeshClusterRoleAndRoleBinding(cr)
+	saRuntime := runtime.Object(sa)
+	roleRuntime := runtime.Object(role)
+	rbRuntime := runtime.Object(rb)
+
+	if err := r.makeSureObjectRemoved(cr, &saRuntime, nil); err != nil {
+		return Requeue(time.Second), err
+	}
+
+	if err := r.makeSureObjectRemoved(cr, &roleRuntime, nil); err != nil {
+		return Requeue(time.Second), err
+	}
+
+	if err := r.makeSureObjectRemoved(cr, &rbRuntime, nil); err != nil {
+		return Requeue(time.Second), err
 	}
 
 	r.removeClusterServiceAccountFromSCC(cr)
