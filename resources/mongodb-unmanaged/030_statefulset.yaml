@@ -60,3 +60,6 @@ spec:
           requests:
             storage: 10G
         volumeMode: Filesystem
+        selector:
+          matchLabels:
+            role: mongo-for-nvmesh
