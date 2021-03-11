@@ -7,11 +7,11 @@ OPERATOR_REGISTRY_REPO=~/go/src/github.com/operator-registry
 MANIFESTS_DIR=./nvmesh_bundle/manifests
 
 CONFIG_FILE=../manifests/config.yaml
-OPER_VERSION=$(yq r $CONFIG_FILE "operator.version")
-BUNDLE_RELEASE=$(yq r $CONFIG_FILE "bundle.release")
-INDEX_BUILD=$(yq r $CONFIG_FILE "bundle.dev.index_build")
-BUNDLE_IMG=$(yq r $CONFIG_FILE "bundle.dev.bundle_image_name")
-INDEX_IMG=$(yq r $CONFIG_FILE "bundle.dev.index_image_name")
+OPER_VERSION=$(yq e ".operator.version" $CONFIG_FILE)
+BUNDLE_RELEASE=$(yq e ".bundle.release" $CONFIG_FILE)
+INDEX_BUILD=$(yq e ".bundle.dev.index_build" $CONFIG_FILE)
+BUNDLE_IMG=$(yq e ".bundle.dev.bundle_image_name" $CONFIG_FILE)
+INDEX_IMG=$(yq e ".bundle.dev.index_image_name" $CONFIG_FILE)
 BUNDLE_VERSION="${OPER_VERSION}-${BUNDLE_RELEASE}-${INDEX_BUILD}"
 BUNDLE_IMAGE_NAME="${BUNDLE_IMG}:${BUNDLE_VERSION}"
 INDEX_IMAGE_NAME="${INDEX_IMG}:${BUNDLE_VERSION}"
@@ -75,7 +75,6 @@ exit_if_err $? "Failed to push index image. command: podman push $INDEX_IMAGE_NA
 
 echo "Editing dev/catalog_source.yaml"
 cd $CURR_DIR
-echo "yq w -i dev/catalog_source.yaml 'spec.image' $INDEX_IMAGE_NAME"
-yq w -i dev/catalog_source.yaml 'spec.image' $INDEX_IMAGE_NAME
-
+echo "setting spec.image in dev/catalog_source.yaml to ${INDEX_IMAGE_NAME}"
+yq eval -i ".spec.image = \"${INDEX_IMAGE_NAME}\"" dev/catalog_source.yaml
 echo "Done."

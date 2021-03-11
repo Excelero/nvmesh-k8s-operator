@@ -1,11 +1,11 @@
 # Current Operator version
 
 CONFIG_FILE=manifests/config.yaml
-VERSION = $(shell yq r $(CONFIG_FILE) "operator.version")
-RELEASE = $(shell yq r $(CONFIG_FILE) "operator.release")
-BUNDLE_VERSION = $(shell yq r $(CONFIG_FILE) "bundle.version")
-BUNDLE_RELEASE = $(shell yq r $(CONFIG_FILE) "bundle.release")
-CHANNELS = $(shell yq r $(CONFIG_FILE) "operator.channel")
+VERSION = $(shell yq e ".operator.version" $(CONFIG_FILE))
+RELEASE = $(shell yq e ".operator.release" $(CONFIG_FILE))
+BUNDLE_VERSION = $(shell yq e ".bundle.version" $(CONFIG_FILE))
+BUNDLE_RELEASE = $(shell yq e ".bundle.release" $(CONFIG_FILE))
+CHANNELS = $(shell yq e ".operator.channel" $(CONFIG_FILE))
 DEFAULT_CHANNEL = $(CHANNELS)
 
 # Default bundle image tag
