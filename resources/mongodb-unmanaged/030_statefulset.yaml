@@ -15,6 +15,7 @@ spec:
       labels:
         app: mongo-svc
     spec:
+      serviceAccountName: nvmesh-cluster
       imagePullSecrets:
         - name: excelero-registry-cred
       terminationGracePeriodSeconds: 30
