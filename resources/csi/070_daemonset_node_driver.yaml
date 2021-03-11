@@ -5,21 +5,21 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: nvmesh-csi-node-driver
+      nvmesh.excelero.com/component: csi-node-driver
   template:
     metadata:
       labels:
-        app: nvmesh-csi-node-driver
         nvmesh.excelero.com/component: csi-node-driver
+        app.kubernetes.io/name: nvmesh-csi-driver
+        app.kubernetes.io/component: node-driver
     spec:
-      serviceAccountName: nvmesh-csi-driver
+      serviceAccount: nvmesh-csi
       hostNetwork: true
       nodeSelector:
         nvmesh.excelero.com/nvmesh-client: ''
       containers:
         # NVMesh Driver
-        - name: nvmesh-csi-node-driver
-          # if we use image tag :latest kubernetes will try to fetch from Docker Hub (hub.docker.com)
+        - name: nvmesh-csi-driver
           image: "placeholder"
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -30,6 +30,8 @@ spec:
           env:
             - name: DRIVER_TYPE
               value: "Node"
+            - name: DRIVER_NAME
+              value: "nvmesh-csi.excelero.com"
             - name: SOCKET_PATH
               value: unix:///csi/csi.sock
             - name: MANAGEMENT_SERVERS
@@ -45,16 +47,16 @@ spec:
             - name: MANAGEMENT_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: nvmesh-credentials
+                  name: nvmesh-csi-credentials
                   key: username
             - name: MANAGEMENT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: nvmesh-credentials
+                  name: nvmesh-csi-credentials
                   key: password
           volumeMounts:
             - name: config-volume
-              mountPath: /etc/config
+              mountPath: /config
             - name: plugin-socket-dir
               mountPath: /csi
             - name: pods-mount-dir
@@ -74,7 +76,8 @@ spec:
               mountPath: /etc/opt/NVMesh
         # Registrar
         - name: csi-driver-registrar
-          image: quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
+          image: "quay.io/k8scsi/csi-node-driver-registrar:v2.1.0"
+          imagePullPolicy: "IfNotPresent"
           args:
             - "--csi-address=/csi/csi.sock"
             - "--kubelet-registration-path=/var/lib/kubelet/plugins/nvmesh-csi.excelero.com/csi.sock"
