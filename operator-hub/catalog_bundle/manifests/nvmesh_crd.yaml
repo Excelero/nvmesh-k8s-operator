@@ -60,6 +60,9 @@ spec:
                   description: The address of the image registry where the nvmesh
                     core images are stored
                   type: string
+                tcpOnly:
+                  description: TCP Only - Set to true if cluster support only TCP
+                  type: boolean
                 version:
                   description: The version of NVMesh Core to be deployed. to perform
                     an upgrade simply update this value to the required version.

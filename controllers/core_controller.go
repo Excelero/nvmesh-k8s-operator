@@ -156,6 +156,10 @@ func (r *NVMeshCoreReconciler) getMgmtServersConnectionString(cr *nvmeshv1.NVMes
 	return strings.Join(servers, ",")
 }
 
+func nvmeshConfWrapWithQuotes(value string) string {
+	return fmt.Sprintf("\"%s\"", value)
+}
+
 func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.ConfigMap) error {
 	if cr.Spec.Operator.FileServer.Address != "" {
 		cm.Data["fileServer.address"] = cr.Spec.Operator.FileServer.Address
@@ -170,7 +174,15 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 
 	managementServers := r.getMgmtServersConnectionString(cr)
 	// Wrap value with double quotes
-	configDict["MANAGEMENT_SERVERS"] = fmt.Sprintf("\"%s\"", managementServers)
+	configDict["MANAGEMENT_SERVERS"] = nvmeshConfWrapWithQuotes(managementServers)
+
+	if cr.Spec.Core.TCPOnly {
+		configDict["IPV4_ONLY"] = nvmeshConfWrapWithQuotes("Yes")
+		configDict["TCP_ENABLED"] = nvmeshConfWrapWithQuotes("Yes")
+
+		// TODO: we should allow customization of this field
+		configDict["CONFIGURED_NICS"] = nvmeshConfWrapWithQuotes("eth0")
+	}
 
 	cm.Data["nvmesh.conf"] = r.configDictToString(configDict)
 	return nil

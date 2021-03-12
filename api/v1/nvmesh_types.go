@@ -35,6 +35,9 @@ type NVMeshCore struct {
 	// Disabled - if true NVMesh Core will not be deployed
 	// +optional
 	Disabled bool `json:"disabled,omitempty"`
+
+	// TCP Only - Set to true if cluster support only TCP
+	TCPOnly bool `json:"tcpOnly,omitempty"`
 }
 
 type MongoDBCluster struct {
