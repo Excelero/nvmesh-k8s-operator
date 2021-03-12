@@ -24,7 +24,11 @@ bin
 *.swo
 *~
 
-.secrets
-.log
 testbin
 __debug_bin
+
+# all hiden directories and files in the project root
+/.*
+
+# include this file
+!/.gitignore
