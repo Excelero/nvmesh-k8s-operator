@@ -58,6 +58,10 @@ spec:
                   name: nvmesh-file-server-cred
                   key: password
           volumeMounts:
+            - name: nvmesh-conf
+              mountPath: "/etc/opt/NVMesh"
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
             - name: device-dir
               mountPath: /dev
             - name: lib-modules-dir
@@ -72,8 +76,6 @@ spec:
               mountPath: /host/bin/
             - name: host-sbin
               mountPath: /host/sbin/
-            - name: opt-nvmesh-operator
-              mountPath: /opt/nvmesh-operator
           terminationGracePeriodSeconds: 3600
         - name: toma
           image: nvmesh-toma:placeholder
@@ -108,18 +110,20 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
+            - name: nvmesh-conf
+              mountPath: "/etc/opt/NVMesh"
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
-            - name: etc-opt-nvmesh
-              mountPath: /etc/opt/NVMesh/
             - name: var-opt-nvmesh
               mountPath: /var/opt/NVMesh/
             - name: etc-libibverbs
               mountPath: /etc/libibverbs.d/
             - name: lib-libibverbs
               mountPath: /usr/lib64/libibverbs/
-            - name: libibverbs-mlx5
-              mountPath: /usr/lib64/libmlx5.so.1.11.26.0
+            # - name: libibverbs-mlx5
+            #   mountPath: /usr/lib64/libmlx5.so.1.11.26.0
             - name: sys
               mountPath: /sys/
             - name: dev
@@ -130,8 +134,6 @@ spec:
               mountPath: /host/sbin/
             - name: opt-nvmesh
               mountPath: /opt/NVMesh
-            - name: opt-nvmesh-operator
-              mountPath: /opt/nvmesh-operator
         - name: tracer
           image: nvmesh-tracer:placeholder
           imagePullPolicy: IfNotPresent
@@ -178,6 +180,12 @@ spec:
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
       volumes:
+        - name: nvmesh-conf
+          configMap:
+            name: nvmesh-core-config
+            items:
+            - key: "nvmesh.conf"
+              path: ".nvmesh.conf"
         - name: device-dir
           hostPath:
             path: /dev
@@ -205,9 +213,10 @@ spec:
         - name: lib-libibverbs
           hostPath:
             path: /usr/lib64/libibverbs/
-        - name: libibverbs-mlx5
-          hostPath:
-            path: /usr/lib64/libmlx5.so.1.11.26.0
+        # Not Needed for TCP
+        # - name: libibverbs-mlx5
+        #   hostPath:
+        #     path: /usr/lib64/libmlx5.so.1.11.26.0
         - name: sys
           hostPath:
             path: /sys/

@@ -55,6 +55,8 @@ spec:
                   name: nvmesh-file-server-cred
                   key: password
           volumeMounts:
+            - name: nvmesh-conf
+              mountPath: "/etc/opt/NVMesh"
             - name: device-dir
               mountPath: /dev
             - name: lib-modules-dir
@@ -72,6 +74,12 @@ spec:
           # terminationGracePeriodSeconds - one hour
           terminationGracePeriodSeconds: 99999999
       volumes:
+        - name: nvmesh-conf
+          configMap:
+            name: nvmesh-core-config
+            items:
+            - key: "nvmesh.conf"
+              path: ".nvmesh.conf"
         - name: device-dir
           hostPath:
             path: /dev

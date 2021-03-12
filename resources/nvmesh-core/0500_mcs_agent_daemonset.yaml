@@ -59,14 +59,14 @@ spec:
                 name: nvmesh-file-server-cred
                 key: password
           volumeMounts:
+            - name: nvmesh-conf
+              mountPath: "/etc/opt/NVMesh"
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
             - name: var-bin-nvmesh
               mountPath: /var/bin/nvmesh
             - name: opt-nvmesh
               mountPath: /host/opt/NVMesh
-            - name: etc-opt-nvmesh
-              mountPath: /etc/opt/NVMesh
             - name: var-opt-nvmesh
               mountPath: /var/opt/NVMesh
             - name: opt-nvmesh-operator
@@ -109,6 +109,8 @@ spec:
                 name: nvmesh-file-server-cred
                 key: password
           volumeMounts:
+            - name: nvmesh-conf
+              mountPath: "/etc/opt/NVMesh"
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
             - name: dev
@@ -118,15 +120,18 @@ spec:
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
       volumes:
+        - name: nvmesh-conf
+          configMap:
+            name: nvmesh-core-config
+            items:
+            - key: "nvmesh.conf"
+              path: ".nvmesh.conf"
         - name: var-run-nvmesh
           hostPath:
             path: /var/run/NVMesh/
         - name: var-bin-nvmesh
           hostPath:
             path: /var/bin/nvmesh
-        - name: etc-opt-nvmesh
-          hostPath:
-            path: /etc/opt/NVMesh/
         - name: dev
           hostPath:
             path: /dev/
