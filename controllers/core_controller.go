@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -137,7 +138,17 @@ func (r *NVMeshCoreReconciler) configStringToDict(conf string) map[string]string
 func (r *NVMeshCoreReconciler) configDictToString(configDict map[string]string) string {
 	var lines []string = make([]string, 0)
 
-	for key, value := range configDict {
+	// get sorted list of keys
+	sortedKeys := make([]string, 0, len(configDict))
+	for k := range configDict {
+		sortedKeys = append(sortedKeys, k)
+	}
+
+	sort.Strings(sortedKeys)
+
+	// create conf string
+	for _, key := range sortedKeys {
+		value := configDict[key]
 		lines = append(lines, fmt.Sprintf("%s=%s", key, value))
 	}
 
