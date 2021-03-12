@@ -19,7 +19,7 @@ const (
 	clientDriverDaemonSetName  = "nvmesh-client-driver-container"
 	driverContainerImageName   = "nvmesh-driver-container"
 	fileServerAddress          = "https://repo.excelero.com/nvmesh/operator_binaries"
-	coreImageVersionTag        = "0.7.0-2"
+	coreImageVersionTag        = "0.7.0-3"
 )
 
 //NVMeshCoreReconciler - Reconciles NVMesh Core Component
