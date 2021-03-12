@@ -17,13 +17,13 @@ spec:
         nvmesh.excelero.com/component: target
     spec:
       serviceAccountName: nvmesh-cluster
+      imagePullSecrets:
+        - name: excelero-registry-cred
       nodeSelector:
         nvmesh.excelero.com/nvmesh-target: ""
         nvmesh.excelero.com/nvmesh-client: ""
       hostPID: true
       hostNetwork: true
-      imagePullSecrets:
-        - name: excelero-registry-cred
       containers:
         - name: driver-container
           image: nvmesh-driver-container:placeholder

@@ -13,15 +13,15 @@ spec:
         app: nvmesh-mcs-agent
         nvmesh.excelero.com/component: mcs-agent
     spec:
+      serviceAccountName: nvmesh-cluster
+      imagePullSecrets:
+        - name: excelero-registry-cred
       nodeSelector:
        nvmesh.excelero.com/nvmesh-client: ""
-      serviceAccountName: nvmesh-cluster
       # hostNetwork: true allows the pod to have the hostname of the node where the pod is run
       hostNetwork: true
       # dnsPolicy: ClusterFirstWithHostNet allows the pod to have cluster DNS to be able to resolve service dns names. this is needed only when hostNetwork is true
       dnsPolicy: ClusterFirstWithHostNet
-      # imagePullSecrets:
-      #   - name: excelero-registry-cred
       containers:
         - name: mcs
           image: nvmesh-mcs:placeholder
