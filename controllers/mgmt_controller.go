@@ -227,13 +227,23 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 		"mongoConnection": {
 		  "hosts": "%s"
 		},
+		"nvmeshMetadataMongoConnection": {
+			"hosts": "%s"
+		},
 		"statisticsMongoConnection": {
 		  "hosts": "%s"
 		},
 		"statisticsCores": %d
 	  }`
 
-	o.Data["config"] = fmt.Sprintf(jsonTemplate, loggingLevel, useSSL, mongoConnectionString, mongoConnectionString, statisticsCores)
+	o.Data["config"] = fmt.Sprintf(
+		jsonTemplate,
+		loggingLevel,
+		useSSL,
+		mongoConnectionString,
+		mongoConnectionString,
+		mongoConnectionString,
+		statisticsCores)
 	return nil
 }
 
