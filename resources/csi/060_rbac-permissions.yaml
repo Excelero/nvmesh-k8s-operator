@@ -90,7 +90,7 @@ metadata:
   name: csi-provisioner-role
 subjects:
   - kind: ServiceAccount
-    name: nvmesh-csi-driver
+    name: nvmesh-csi
     namespace: to-be-updated-by-operator
 roleRef:
   kind: ClusterRole
@@ -104,7 +104,7 @@ metadata:
   name: csi-attacher-role
 subjects:
   - kind: ServiceAccount
-    name: nvmesh-csi-driver
+    name: nvmesh-csi
     namespace: to-be-updated-by-operator
 roleRef:
   kind: ClusterRole
@@ -118,7 +118,7 @@ metadata:
   name: csi-resizer-role
 subjects:
   - kind: ServiceAccount
-    name: nvmesh-csi-driver
+    name: nvmesh-csi
     namespace: to-be-updated-by-operator
 roleRef:
   kind: ClusterRole
@@ -178,7 +178,7 @@ metadata:
   name: csi-provisioner-role-cfg
 subjects:
   - kind: ServiceAccount
-    name: nvmesh-csi-driver
+    name: nvmesh-csi
     namespace: to-be-updated-by-operator
 roleRef:
   kind: Role
@@ -197,7 +197,7 @@ metadata:
   name: csi-attacher-role-cfg
 subjects:
   - kind: ServiceAccount
-    name: nvmesh-csi-driver
+    name: nvmesh-csi
     namespace: to-be-updated-by-operator
 roleRef:
   kind: Role
@@ -224,7 +224,7 @@ metadata:
   name: csi-resizer-role-cfg
 subjects:
   - kind: ServiceAccount
-    name: nvmesh-csi-driver
+    name: nvmesh-csi
     namespace: to-be-updated-by-operator
 roleRef:
   kind: Role

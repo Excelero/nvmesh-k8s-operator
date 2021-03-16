@@ -34,6 +34,8 @@ spec:
               value: "nvmesh-csi.excelero.com"
             - name: SOCKET_PATH
               value: unix:///csi/csi.sock
+            - name: NVMESH_BIN_PATH
+              value: /host/nvmesh-script
             - name: MANAGEMENT_SERVERS
               valueFrom:
                 configMapKeyRef:
@@ -68,6 +70,8 @@ spec:
               mountPath: /dev
             - name: host-bin
               mountPath: /host/bin
+            - name: nvmesh-scripts
+              mountPath: /host/nvmesh-script
             - name: var-opt-nvmesh
               mountPath: /var/opt/NVMesh
             - name: opt-nvmesh
@@ -110,6 +114,9 @@ spec:
           hostPath:
             path: /dev
         - name: host-bin
+          hostPath:
+            path: /bin
+        - name: nvmesh-scripts
           hostPath:
             path: /var/bin/nvmesh
         - name: var-opt-nvmesh
