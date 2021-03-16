@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	uninstallJobNamePrefix          = "nvmesh-uninstall-"
+	uninstallJobNamePrefix          = "n-uninstall-"
 	clearDbJobName                  = "nvmesh-clear-db-job"
 	uninstallJobImage               = "registry.excelero.com/nvmesh-uninstall-job:0.7.0-2"
 	nvmeshClusterServiceAccountName = "nvmesh-cluster"
