@@ -21,7 +21,11 @@ const (
 	registryCredSecretName = "excelero-registry-cred"
 )
 
-func (r *NVMeshReconciler) waitForJobToFinish(namespace string, jobName string) (ctrl.Result, error) {
+func (r *NVMeshReconciler) waitForJobToFinish(cr *nvmeshv1.NVMesh, jobName string) (ctrl.Result, error) {
+	return r.waitForJobToFinishWithoutCR(cr.GetNamespace(), jobName, cr.Spec.Debug.DebugJobs)
+}
+
+func (r *NVMeshReconciler) waitForJobToFinishWithoutCR(namespace string, jobName string, debug bool) (ctrl.Result, error) {
 	job := &batchv1.Job{}
 
 	objKey := client.ObjectKey{Name: jobName, Namespace: namespace}
@@ -40,7 +44,7 @@ func (r *NVMeshReconciler) waitForJobToFinish(namespace string, jobName string) 
 	// no error
 	if !completed {
 		r.Log.Info(fmt.Sprintf("Waiting for %s to finish", job.ObjectMeta.GetName()))
-		r.monitorJob(jobName, namespace)
+		r.monitorJob(jobName, namespace, debug)
 		return Requeue(time.Second), nil
 	}
 
@@ -128,7 +132,7 @@ func (r *NVMeshReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image 
 						{
 							Name:            jobName,
 							Image:           image,
-							ImagePullPolicy: r.getGlobalImagePullPolicy(),
+							ImagePullPolicy: r.getImagePullPolicy(cr),
 						},
 					},
 				},
@@ -187,7 +191,7 @@ func (r *NVMeshReconciler) printJob(jobName string, namespace string) {
 	}
 }
 
-func (r *NVMeshReconciler) monitorJob(jobName string, namespace string) {
+func (r *NVMeshReconciler) monitorJob(jobName string, namespace string, debugJobs bool) {
 	log := r.Log.WithValues("method", "debug_cluster")
 	// 1. check the job pods and it's status
 	podList, err := r.getJobPods(namespace, jobName)
@@ -201,7 +205,7 @@ func (r *NVMeshReconciler) monitorJob(jobName string, namespace string) {
 		log.Info(fmt.Sprintf("Found no pods from job %s", jobName))
 	}
 
-	if r.Options.Debug.DebugJobs {
+	if debugJobs {
 		log.Info("debugJobs -->")
 
 		for _, pod := range podList.Items {

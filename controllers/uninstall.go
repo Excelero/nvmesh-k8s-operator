@@ -167,7 +167,7 @@ func (r *NVMeshReconciler) getJobAsJSON(jobName string, namespace string) ([]byt
 
 func (r *NVMeshReconciler) waitForClearDBToFinish(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	log := r.Log.WithValues("method", "clearDB", "component", "Finalizer")
-	result, err := r.waitForJobToFinish(cr.GetNamespace(), clearDbJobName)
+	result, err := r.waitForJobToFinish(cr, clearDbJobName)
 
 	if result.Requeue {
 		return result, nil
@@ -294,10 +294,10 @@ func (r *NVMeshReconciler) getUninstallJobName(nodeName string) string {
 	return uninstallJobNamePrefix + sanitizeString(nodeName)
 }
 
-func (r *NVMeshReconciler) waitForUninstallCompletion(namespace string, nodeList []corev1.Node) (ctrl.Result, error) {
+func (r *NVMeshReconciler) waitForUninstallCompletion(cr *nvmeshv1.NVMesh, nodeList []corev1.Node) (ctrl.Result, error) {
 	for _, node := range nodeList {
 		jobName := r.getUninstallJobName(node.GetName())
-		result, err := r.waitForJobToFinish(namespace, jobName)
+		result, err := r.waitForJobToFinish(cr, jobName)
 		if result.Requeue || err != nil {
 			return result, err
 		}
@@ -369,7 +369,7 @@ func (r *NVMeshReconciler) uninstallClusterNodes(nvmeshCluster *nvmeshv1.NVMesh)
 		return DoNotRequeue(), err
 	}
 
-	result, err := r.waitForUninstallCompletion(nvmeshCluster.GetNamespace(), nodeList)
+	result, err := r.waitForUninstallCompletion(nvmeshCluster, nodeList)
 	if err != nil || result.Requeue {
 		return result, err
 	}

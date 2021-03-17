@@ -109,7 +109,7 @@ func (r *NVMeshCSIReconciler) initCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds
 	}
 
 	ds.Spec.Template.Spec.Containers[0].Image = getCSIFullImageName(cr)
-	ds.Spec.Template.Spec.Containers[0].ImagePullPolicy = r.getGlobalImagePullPolicy()
+	ds.Spec.Template.Spec.Containers[0].ImagePullPolicy = r.getImagePullPolicy(cr)
 
 	return nil
 }
@@ -120,7 +120,7 @@ func (r *NVMeshCSIReconciler) initCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, 
 	}
 
 	ss.Spec.Template.Spec.Containers[0].Image = getCSIFullImageName(cr)
-	ss.Spec.Template.Spec.Containers[0].ImagePullPolicy = r.getGlobalImagePullPolicy()
+	ss.Spec.Template.Spec.Containers[0].ImagePullPolicy = r.getImagePullPolicy(cr)
 
 	// set replicas from CustomResource
 	ss.Spec.Replicas = &cr.Spec.CSI.ControllerReplicas

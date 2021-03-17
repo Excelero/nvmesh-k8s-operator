@@ -487,8 +487,8 @@ func DoNotRequeue() ctrl.Result {
 	return ctrl.Result{}
 }
 
-func (r *NVMeshBaseReconciler) getGlobalImagePullPolicy() corev1.PullPolicy {
-	if r.Options.Debug.ImagePullPolicyAlways {
+func (r *NVMeshBaseReconciler) getImagePullPolicy(cr *nvmeshv1.NVMesh) corev1.PullPolicy {
+	if cr.Spec.Debug.ImagePullPolicyAlways {
 		return corev1.PullAlways
 	}
 

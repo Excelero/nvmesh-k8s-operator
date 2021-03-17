@@ -157,8 +157,14 @@ spec:
             - 'urn:alm:descriptor:com.tectonic.ui:hidden'
         - displayName: HIDDEN FIELDS - Operator Controls
           description: >-
-              HIDDEN FIELDS - Operator Controls - flags to control the behavior of the operator on this Cluster
-          path: operator
+              HIDDEN FIELDS - Debug Options - A set of debug options
+          path: debug
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
+        - displayName: HIDDEN FIELDS - Management ImageRegistry
+          description: >-
+              HIDDEN FIELDS - Override the default image registry for the management image
+          path: management.imageRegistry
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:hidden'
       statusDescriptors:

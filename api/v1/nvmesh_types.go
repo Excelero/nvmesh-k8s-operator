@@ -133,6 +133,14 @@ type ClusterAction struct {
 	Args map[string]string `json:"args,omitempty"`
 }
 
+// NVMeshDebugOptions - Operator Debug Options
+type DebugOptions struct {
+	ImagePullPolicyAlways             bool `json:"imagePullPolicyAlways,omitempty"`
+	ContainersKeepRunningAfterFailure bool `json:"containersKeepRunningAfterFailure,omitempty"`
+	CollectLogsJobsRunForever         bool `json:"collectLogsJobsRunForever,omitempty"`
+	DebugJobs                         bool `json:"debugJobs,omitempty"`
+}
+
 // NVMeshSpec defines the desired state of NVMesh
 type NVMeshSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -150,6 +158,9 @@ type NVMeshSpec struct {
 	// Control the behavior of the NVMesh operator for this NVMesh Cluster
 	// +optional
 	Operator NVMeshOperatorSpec `json:"operator,omitempty"`
+
+	// Debug - debug options
+	Debug DebugOptions `json:"debug,omitempty"`
 
 	// Actions allow the user to intiate tasks for the operator to perform
 	Actions []ClusterAction `json:"actions,omitempty"`

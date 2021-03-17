@@ -92,7 +92,8 @@ func (r *NVMeshReconciler) uninstallAndWaitToFinish(nodeName string) {
 
 	completed := false
 	for !completed {
-		result, err := r.waitForJobToFinish(namespace, jobName)
+		debugJobs := false
+		result, err := r.waitForJobToFinishWithoutCR(namespace, jobName, debugJobs)
 		if !result.Requeue && err == nil {
 			break
 		}

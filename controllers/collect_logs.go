@@ -94,7 +94,7 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 		r.setTaskStarted(cr, a, waitForJobsToFinish)
 
 		// wait for db dump job to finish
-		res, err := r.waitForJobToFinish(cr.GetNamespace(), collectDbJobName)
+		res, err := r.waitForJobToFinish(cr, collectDbJobName)
 		if err != nil {
 			return false, res, err
 		}
@@ -105,7 +105,7 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 		}
 
 		// wait for collect config-maps job to finish
-		res, err = r.waitForJobToFinish(cr.GetNamespace(), collectConfigMapsJobName)
+		res, err = r.waitForJobToFinish(cr, collectConfigMapsJobName)
 		if err != nil {
 			return false, res, err
 		}
@@ -118,7 +118,7 @@ func (r *NVMeshReconciler) handleCollectLogs(cr *nvmeshv1.NVMesh, a nvmeshv1.Clu
 		// wait for logs collector jobs to finish
 		for _, node := range nodeList {
 			jobName := collectLogsJobName + "-" + sanitizeString(node.GetName())
-			res, err = r.waitForJobToFinish(cr.GetNamespace(), jobName)
+			res, err = r.waitForJobToFinish(cr, jobName)
 			if res.Requeue || err != nil {
 				res.RequeueAfter = time.Second * 3
 				return false, res, err
@@ -254,7 +254,7 @@ func (r *NVMeshReconciler) runCollectDBJob(cr *nvmeshv1.NVMesh, action nvmeshv1.
 		r.addS3CredentialsEnvVar(container, bucketName)
 	}
 
-	if r.Options.Debug.CollectLogsJobsRunForever {
+	if cr.Spec.Debug.CollectLogsJobsRunForever {
 		container.Args = append(container.Args, "--debug")
 	}
 
@@ -288,7 +288,7 @@ func (r *NVMeshReconciler) runCollectConfigMapsJob(cr *nvmeshv1.NVMesh, action n
 		r.addS3CredentialsEnvVar(container, bucketName)
 	}
 
-	if r.Options.Debug.CollectLogsJobsRunForever {
+	if cr.Spec.Debug.CollectLogsJobsRunForever {
 		container.Args = append(container.Args, "--debug")
 	}
 
@@ -332,7 +332,7 @@ func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvme
 		r.addS3CredentialsEnvVar(container, bucketName)
 	}
 
-	if r.Options.Debug.CollectLogsJobsRunForever {
+	if cr.Spec.Debug.CollectLogsJobsRunForever {
 		container.Args = append(container.Args, "--debug")
 	}
 

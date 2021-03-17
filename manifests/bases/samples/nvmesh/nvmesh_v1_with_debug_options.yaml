@@ -1,0 +1,20 @@
+apiVersion: nvmesh.excelero.com/v1
+kind: NVMesh
+metadata:
+  name: cluster1
+spec:
+  core:
+    version: 2.2.0-473
+    tcpOnly: true
+  csi:
+    controllerReplicas: 1
+    version: v1.1.2
+  management:
+    mongoDB:
+      replicas: 1
+    replicas: 1
+    version: 2.0.5-11
+  debug:
+    imagePullPolicyAlways: true
+    containersKeepRunningAfterFailure: true
+    debugJobs: false
