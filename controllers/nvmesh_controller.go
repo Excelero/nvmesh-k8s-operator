@@ -255,3 +255,16 @@ func (r *NVMeshReconciler) initializeEmptyFieldsOnCustomResource(cr *nvmeshv1.NV
 		cr.Spec.Operator.FileServer = &v1.OperatorFileServerSpec{}
 	}
 }
+
+func (r *NVMeshBaseReconciler) addKeepRunningAfterFailureEnvVar(cr *nvmeshv1.NVMesh, container *corev1.Container) {
+	if !cr.Spec.Debug.ContainersKeepRunningAfterFailure {
+		return
+	}
+
+	env := corev1.EnvVar{
+		Name:  "KEEP_RUNNING_WHEN_FINISHED",
+		Value: "true",
+	}
+
+	container.Env = append(container.Env, env)
+}

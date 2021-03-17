@@ -255,6 +255,7 @@ func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *a
 
 	o.Spec.Template.Spec.Containers[0].Image = getMgmtImageFromResource(cr)
 	o.Spec.Replicas = &cr.Spec.Management.Replicas
+	r.addKeepRunningAfterFailureEnvVar(cr, &o.Spec.Template.Spec.Containers[0])
 
 	return nil
 }
