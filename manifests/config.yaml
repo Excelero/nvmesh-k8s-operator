@@ -1,13 +1,13 @@
 operator:
   version: 0.7.0
-  release: 31
+  release: 38
   channel: beta
   image_name: nvmesh-operator
   #repo: registry.connect.redhat.com/excelero
   repo: docker.io/excelero
 bundle:
   version: 0.7.0
-  release: 47
+  release: 54
   dev:
     bundle_image_name: "docker.io/excelero/dev-os-bundle"
     index_build: 1

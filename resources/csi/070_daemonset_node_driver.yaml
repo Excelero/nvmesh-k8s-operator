@@ -35,7 +35,7 @@ spec:
             - name: SOCKET_PATH
               value: unix:///csi/csi.sock
             - name: NVMESH_BIN_PATH
-              value: /host/nvmesh-script
+              value: /host/nvmesh-scripts
             - name: MANAGEMENT_SERVERS
               valueFrom:
                 configMapKeyRef:
@@ -71,7 +71,7 @@ spec:
             - name: host-bin
               mountPath: /host/bin
             - name: nvmesh-scripts
-              mountPath: /host/nvmesh-script
+              mountPath: /host/nvmesh-scripts
             - name: var-opt-nvmesh
               mountPath: /var/opt/NVMesh
             - name: opt-nvmesh

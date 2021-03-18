@@ -7,6 +7,7 @@ data:
   fileServer.skipCheckCertificate: "false"
   nvmesh.version: "placeholder"
   nvmesh.conf: |-
+    K8S_ENV="True"
     MANAGEMENT_PROTOCOL="https"
     MANAGEMENT_SERVERS="nvmesh-management-0.nvmesh-management-ws.<ns>.svc.cluster.local:4001"
     MCS_LOG_TO_STDOUT="True"

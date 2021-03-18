@@ -96,6 +96,18 @@ spec:
                     to the required version.
                   type: string
               type: object
+            debug:
+              description: Debug - debug options
+              properties:
+                collectLogsJobsRunForever:
+                  type: boolean
+                containersKeepRunningAfterFailure:
+                  type: boolean
+                debugJobs:
+                  type: boolean
+                imagePullPolicyAlways:
+                  type: boolean
+              type: object
             management:
               description: Management is an object describing the nvmesh-management
                 deployment

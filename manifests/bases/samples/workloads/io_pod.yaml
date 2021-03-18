@@ -5,7 +5,6 @@ metadata:
   labels:
     app: block-device-io-test
 spec:
-  nodeName: nvme117.excelero.com
   containers:
     - name: block-device-io-test
       image: excelero/nvmesh-io-test:dev

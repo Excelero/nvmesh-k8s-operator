@@ -6,15 +6,17 @@ metadata:
   name: cluster1
 spec:
   core:
-    version: 2.0.3-4
+    configuredNICs: eth0
+    tcpOnly: true
+    version: 2.2.0
   csi:
     controllerReplicas: 1
-    version: v1.1.1
+    version: v1.1.2
   management:
     mongoDB:
       replicas: 1
     replicas: 1
-    version: 2.0.3-6
+    version: 2.2.0
 status:
   actionsStatus: {}
   reconcileStatus: {}

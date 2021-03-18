@@ -110,7 +110,7 @@ spec:
                 key: password
           volumeMounts:
             - name: nvmesh-conf
-              mountPath: "/etc/opt/NVMesh"
+              mountPath: /etc/opt/NVMesh
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
             - name: dev
@@ -144,3 +144,6 @@ spec:
         - name: var-opt-nvmesh
           hostPath:
             path: /var/opt/NVMesh/
+        - name: etc-opt-nvmesh
+          hostPath:
+            path: /etc/opt/NVMesh/
