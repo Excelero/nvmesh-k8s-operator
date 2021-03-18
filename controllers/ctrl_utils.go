@@ -590,7 +590,7 @@ func (r *NVMeshReconciler) getNVMeshSCC(cr *nvmeshv1.NVMesh) *securityv1.Securit
 	return scc
 }
 
-func (r *NVMeshReconciler) makeSureSCCExists(cr *nvmeshv1.NVMesh) error {
+func (r *NVMeshReconciler) makeSureSCCExists(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	scc := r.getNVMeshSCC(cr)
 
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: scc.GetName()}, scc)
@@ -599,14 +599,16 @@ func (r *NVMeshReconciler) makeSureSCCExists(cr *nvmeshv1.NVMesh) error {
 			r.Log.Info(fmt.Sprintf("Creating SCC %s", scc.GetName()))
 
 			err = r.Client.Create(context.TODO(), scc)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to create SCC %s. Error: %s", scc.GetName(), err))
+			if err != nil && !k8serrors.IsAlreadyExists(err) {
+				return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("failed to create SCC %s. Error: %s", scc.GetName(), err))
 			}
+
+			return Requeue(time.Millisecond * 100), nil
 		} else {
-			return errors.Wrap(err, fmt.Sprintf("failed to get SCC %s", scc.GetName()))
+			return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("failed to get SCC %s", scc.GetName()))
 		}
 	}
-	return nil
+	return DoNotRequeue(), nil
 }
 
 func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) error {
@@ -632,20 +634,6 @@ func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) err
 	if err3 != nil {
 		return err3
 	}
-
-	// err := r.Client.Get(context.TODO(), types.NamespacedName{Name: sa.GetName(), Namespace: cr.GetNamespace()}, sa)
-	// if err != nil {
-	// 	if k8serrors.IsNotFound(err) {
-	// 		r.Log.Info(fmt.Sprintf("Creating ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-
-	// 		err = r.Client.Create(context.TODO(), sa)
-	// 		if err != nil {
-	// 			return errors.Wrap(err, fmt.Sprintf("failed to create ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-	// 		}
-	// 	} else {
-	// 		return errors.Wrap(err, fmt.Sprintf("failed to get ServiceAccount %s in namespace %s", sa.GetName(), sa.GetNamespace()))
-	// 	}
-	// }
 
 	if r.Options.IsOpenShift {
 		err4 := r.addClusterServiceAccountToSCC(cr)

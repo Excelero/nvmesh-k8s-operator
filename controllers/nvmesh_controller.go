@@ -105,8 +105,13 @@ func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if r.Options.IsOpenShift {
 		// Make sure SCC exists
-		if err := r.makeSureSCCExists(cr); err != nil {
+		sccCheckResult, err := r.makeSureSCCExists(cr)
+		if err != nil {
 			return r.ManageError(cr, err)
+		}
+
+		if sccCheckResult.Requeue {
+			return r.ManageSuccess(cr, sccCheckResult)
 		}
 	}
 
