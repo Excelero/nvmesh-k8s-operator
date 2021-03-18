@@ -154,7 +154,7 @@ bundle-dev-build: manifests docker-build
 
 # Deploy the customn source in the cluster
 .PHONY: bundle-dev-deploy
-bundle-dev-deploy: all manifests docker-build bundle-dev-build docker-push
+bundle-dev-deploy:
 	kubectl apply -f operator-hub/dev/catalog_source.yaml
 
 .PHONY: bundle-test
