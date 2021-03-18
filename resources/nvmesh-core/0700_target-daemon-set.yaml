@@ -68,8 +68,6 @@ spec:
               mountPath: /host/lib/modules
             - name: var
               mountPath: /host/var/
-            - name: etc-infiniband
-              mountPath: /etc/infiniband
             - name: opt-nvmesh
               mountPath: /opt/NVMesh
             - name: host-bin
@@ -118,12 +116,6 @@ spec:
               mountPath: /var/run/NVMesh/
             - name: var-opt-nvmesh
               mountPath: /var/opt/NVMesh/
-            - name: etc-libibverbs
-              mountPath: /etc/libibverbs.d/
-            - name: lib-libibverbs
-              mountPath: /usr/lib64/libibverbs/
-            # - name: libibverbs-mlx5
-            #   mountPath: /usr/lib64/libmlx5.so.1.11.26.0
             - name: sys
               mountPath: /sys/
             - name: dev
@@ -207,16 +199,6 @@ spec:
         - name: etc-opt-nvmesh
           hostPath:
             path: /etc/opt/NVMesh/
-        - name: etc-libibverbs
-          hostPath:
-            path: /etc/libibverbs.d/
-        - name: lib-libibverbs
-          hostPath:
-            path: /usr/lib64/libibverbs/
-        # Not Needed for TCP
-        # - name: libibverbs-mlx5
-        #   hostPath:
-        #     path: /usr/lib64/libmlx5.so.1.11.26.0
         - name: sys
           hostPath:
             path: /sys/
@@ -226,9 +208,6 @@ spec:
         - name: tracer-logs
           hostPath:
             path: /var/log/NVMesh/
-        - name: etc-infiniband
-          hostPath:
-            path: /etc/infiniband
         - name: opt-nvmesh
           hostPath:
             path: /opt/NVMesh

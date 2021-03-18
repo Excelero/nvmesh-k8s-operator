@@ -96,9 +96,41 @@ func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expect
 	return false
 }
 
+func (r *NVMeshCoreReconciler) addVolumeAndMountToContainer(volumeName string, mountPath string, podSpec *v1.PodSpec, container *v1.Container) {
+	volume := v1.Volume{
+		Name: volumeName,
+		VolumeSource: v1.VolumeSource{
+			HostPath: &v1.HostPathVolumeSource{
+				Path: mountPath,
+			},
+		},
+	}
+	podSpec.Volumes = append(podSpec.Volumes, volume)
+
+	mount := v1.VolumeMount{
+		Name:      volumeName,
+		MountPath: mountPath,
+	}
+	container.VolumeMounts = append(container.VolumeMounts, mount)
+}
+
+func (r *NVMeshCoreReconciler) addTomaIBLibMounts(podSpec *v1.PodSpec, tomaContainer *v1.Container) {
+	volumeMounts := map[string]string{
+		"lib-mlx5":       "/usr/lib64/libmlx5.so.1.11.26.0",
+		"etc-libibverbs": "/etc/libibverbs.d/",
+		"lib-libibverbs": "/usr/lib64/libibverbs/",
+	}
+
+	for volumeName, volumePath := range volumeMounts {
+		r.addVolumeAndMountToContainer(volumeName, volumePath, podSpec, tomaContainer)
+	}
+}
+
 func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
 	var imageName string
-	for i, c := range ds.Spec.Template.Spec.Containers {
+	podSpec := &ds.Spec.Template.Spec
+
+	for i, c := range podSpec.Containers {
 		switch c.Name {
 		case "mcs":
 			imageName = "nvmesh-mcs"
@@ -106,15 +138,22 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 			imageName = "nvmesh-mcs"
 		case "toma":
 			imageName = "nvmesh-toma"
+
+			if !cr.Spec.Core.TCPOnly {
+				r.addTomaIBLibMounts(podSpec, &podSpec.Containers[i])
+			}
 		case "tracer":
 			imageName = "nvmesh-tracer"
 		case "driver-container":
 			imageName = "nvmesh-driver-container"
+			if !cr.Spec.Core.TCPOnly {
+				r.addVolumeAndMountToContainer("etc-infiniband", "/etc/infiniband", podSpec, &podSpec.Containers[i])
+			}
 		}
 
-		ds.Spec.Template.Spec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + coreImageVersionTag
-		ds.Spec.Template.Spec.Containers[i].ImagePullPolicy = r.getImagePullPolicy(cr)
-		r.addKeepRunningAfterFailureEnvVar(cr, &ds.Spec.Template.Spec.Containers[i])
+		podSpec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + coreImageVersionTag
+		podSpec.Containers[i].ImagePullPolicy = r.getImagePullPolicy(cr)
+		r.addKeepRunningAfterFailureEnvVar(cr, &podSpec.Containers[i])
 	}
 
 	return nil
