@@ -230,9 +230,7 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 	if cr.Spec.Core.TCPOnly {
 		configDict["IPV4_ONLY"] = nvmeshConfWrapWithQuotes("Yes")
 		configDict["TCP_ENABLED"] = nvmeshConfWrapWithQuotes("Yes")
-
-		// TODO: we should allow customization of this field
-		configDict["CONFIGURED_NICS"] = nvmeshConfWrapWithQuotes("eth0")
+		configDict["CONFIGURED_NICS"] = nvmeshConfWrapWithQuotes(cr.Spec.Core.ConfiguredNICs)
 	}
 
 	cm.Data["nvmesh.conf"] = r.configDictToString(configDict)

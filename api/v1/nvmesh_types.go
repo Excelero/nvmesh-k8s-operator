@@ -36,6 +36,10 @@ type NVMeshCore struct {
 	// +optional
 	Disabled bool `json:"disabled,omitempty"`
 
+	// ConfiguredNICs - a comma seperated list of nics to use with NVMesh
+	// +optional
+	ConfiguredNICs string `json:"configuredNICs,omitempty"`
+
 	// TCP Only - Set to true if cluster support only TCP
 	TCPOnly bool `json:"tcpOnly,omitempty"`
 }

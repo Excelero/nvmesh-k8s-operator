@@ -49,6 +49,9 @@ spec:
             core:
               description: Core is an object describing the nvmesh-core deployment
               properties:
+                configuredNICs:
+                  description: ConfiguredNICs - a comma seperated list of nics to use with NVMesh
+                  type: string
                 disabled:
                   description: Disabled - if true NVMesh Core will not be deployed
                   type: boolean
