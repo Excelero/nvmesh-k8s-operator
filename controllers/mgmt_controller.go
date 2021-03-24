@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	goerrors "errors"
 	"fmt"
 	"strconv"
@@ -209,9 +210,6 @@ func getMongoConnectionString(cr *nvmeshv1.NVMesh) string {
 func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.ConfigMap) error {
 	o.Data["configVersion"] = cr.Spec.Management.Version
 
-	loggingLevel := "DEBUG"
-	useSSL := strconv.FormatBool(!cr.Spec.Management.NoSSL)
-
 	var mongoConnectionString string
 	if cr.Spec.Management.MongoDB.External {
 		mongoConnectionString = cr.Spec.Management.MongoDB.Address
@@ -219,32 +217,47 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 		mongoConnectionString = getMongoConnectionString(cr)
 	}
 
-	statisticsCores := 5
+	mongoConnection := map[string]string{
+		"hosts": mongoConnectionString,
+	}
 
-	jsonTemplate := `{
-		"loggingLevel": "%s",
-		"useSSL": %s,
-		"mongoConnection": {
-		  "hosts": "%s"
-		},
-		"nvmeshMetadataMongoConnection": {
-			"hosts": "%s"
-		},
-		"statisticsMongoConnection": {
-		  "hosts": "%s"
-		},
-		"statisticsCores": %d
-	  }`
+	useSSL := strconv.FormatBool(!cr.Spec.Management.NoSSL)
 
-	o.Data["config"] = fmt.Sprintf(
-		jsonTemplate,
-		loggingLevel,
-		useSSL,
-		mongoConnectionString,
-		mongoConnectionString,
-		mongoConnectionString,
-		statisticsCores)
+	conf := make(map[string]interface{})
+	conf["loggingLevel"] = "DEBUG"
+	conf["statisticsCores"] = 5
+	conf["useSSL"] = useSSL
+	conf["mongoConnection"] = mongoConnection
+	conf["nvmeshMetadataMongoConnection"] = mongoConnection
+	conf["statisticsMongoConnection"] = mongoConnection
+
+	conf["exceleroEmail"] = "customer.stats+OpenShift@excelero.com"
+	conf["SMTP"] = r.getSMTPConfig(cr)
+
+	jsonString, err := json.MarshalIndent(conf, "", "    ")
+	if err != nil {
+		return err
+	}
+	o.Data["config"] = string(jsonString)
+	fmt.Println(string(jsonString))
+
 	return nil
+}
+
+func (r *NVMeshMgmtReconciler) getSMTPConfig(cr *nvmeshv1.NVMesh) map[string]interface{} {
+	smtpJson := []byte(`{
+		"host": "smtp.gmail.com",
+		"port": 587,
+		"secure": true,
+		"authRequired": true,
+		"username": "app@excelero.com",
+		"password": "Tom@2021",
+		"useDefault": true
+	}`)
+
+	var smtpConf map[string]interface{}
+	json.Unmarshal(smtpJson, &smtpConf)
+	return smtpConf
 }
 
 func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
