@@ -42,6 +42,9 @@ type NVMeshCore struct {
 
 	// TCP Only - Set to true if cluster support only TCP
 	TCPOnly bool `json:"tcpOnly,omitempty"`
+
+	// Azure Optimized - Make optimizations for running on Azure cloud
+	AzureOptimized bool `json:"azureOptimized,omitempty"`
 }
 
 type MongoDBCluster struct {

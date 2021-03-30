@@ -6,6 +6,7 @@ metadata:
   name: cluster1
 spec:
   core:
+    azureOptimized: true
     configuredNICs: eth0
     tcpOnly: true
     version: 2.2.0

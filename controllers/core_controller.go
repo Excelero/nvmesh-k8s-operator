@@ -233,6 +233,14 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 		configDict["CONFIGURED_NICS"] = nvmeshConfWrapWithQuotes(cr.Spec.Core.ConfiguredNICs)
 	}
 
+	if cr.Spec.Core.AzureOptimized {
+		configDict["CLOUD_OPTIMIZED"] = nvmeshConfWrapWithQuotes("Yes")
+
+		// Reduces calls to S.M.A.R.T because of poor performance of NVMe SMART
+		configDict["TOMA_CLOUD_MODE"] = nvmeshConfWrapWithQuotes("Yes")
+		configDict["AGENT_CLOUD_MODE"] = nvmeshConfWrapWithQuotes("Yes")
+	}
+
 	cm.Data["nvmesh.conf"] = r.configDictToString(configDict)
 	return nil
 }

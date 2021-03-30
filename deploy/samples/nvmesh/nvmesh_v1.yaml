@@ -7,6 +7,7 @@ spec:
     version: 2.2.0
     tcpOnly: true
     configuredNICs: eth0
+    azureOptimized: true
   csi:
     controllerReplicas: 1
     version: v1.1.2

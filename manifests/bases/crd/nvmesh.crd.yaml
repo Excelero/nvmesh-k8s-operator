@@ -53,6 +53,10 @@ spec:
             core:
               description: Core is an object describing the nvmesh-core deployment
               properties:
+                azureOptimized:
+                  description: Azure Optimized - Make optimizations for running on
+                    Azure cloud
+                  type: boolean
                 configuredNICs:
                   description: ConfiguredNICs - a comma seperated list of nics to
                     use with NVMesh
