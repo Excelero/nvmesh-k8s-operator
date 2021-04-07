@@ -30,10 +30,7 @@ spec:
             privileged: true
           env:
             - name: NVMESH_VERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: nvmesh-core-config
-                  key: nvmesh.version
+              value: placeholder
             - name: KMOD_SERVER_ADDRESS
               valueFrom:
                 configMapKeyRef:

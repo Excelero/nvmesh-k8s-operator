@@ -8,6 +8,7 @@ import (
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -20,6 +21,7 @@ const (
 	driverContainerImageName   = "nvmesh-driver-container"
 	fileServerAddress          = "https://repo.excelero.com/nvmesh/operator_binaries"
 	coreImageVersionTag        = "0.7.0-3"
+	envVarNVMeshVersion        = "NVMESH_VERSION"
 )
 
 //NVMeshCoreReconciler - Reconciles NVMesh Core Component
@@ -71,7 +73,7 @@ func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 			fallthrough
 		case targetDriverDaemonSetName:
 			fallthrough
-		case "nvmesh-client-driver-container":
+		case clientDriverDaemonSetName:
 			return r.shouldUpdateDaemonSet(cr, expDS, o)
 		}
 	case *v1.ConfigMap:
@@ -90,6 +92,16 @@ func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expect
 		if c.Image != expectedImage {
 			log.Info(fmt.Sprintf("Image missmatch on DaemonSet %s Container %s expected: %s found: %s", ds.ObjectMeta.Name, c.Name, expectedImage, c.Image))
 			return true
+		}
+
+		for _, env := range c.Env {
+			if env.Name == envVarNVMeshVersion {
+
+				if env.Value != cr.Spec.Core.Version {
+					log.Info(fmt.Sprintf("Core version requires update on DaemonSet %s Container %s expected: %s found: %s", ds.ObjectMeta.Name, c.Name, cr.Spec.Core.Version, env.Value))
+					return true
+				}
+			}
 		}
 	}
 
@@ -130,8 +142,9 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 	var imageName string
 	podSpec := &ds.Spec.Template.Spec
 
-	for i, c := range podSpec.Containers {
-		switch c.Name {
+	for i, _ := range podSpec.Containers {
+		container := &podSpec.Containers[i]
+		switch container.Name {
 		case "mcs":
 			imageName = "nvmesh-mcs"
 		case "agent":
@@ -140,23 +153,34 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 			imageName = "nvmesh-toma"
 
 			if !cr.Spec.Core.TCPOnly {
-				r.addTomaIBLibMounts(podSpec, &podSpec.Containers[i])
+				r.addTomaIBLibMounts(podSpec, container)
 			}
 		case "tracer":
 			imageName = "nvmesh-tracer"
 		case "driver-container":
 			imageName = "nvmesh-driver-container"
 			if !cr.Spec.Core.TCPOnly {
-				r.addVolumeAndMountToContainer("etc-infiniband", "/etc/infiniband", podSpec, &podSpec.Containers[i])
+				r.addVolumeAndMountToContainer("etc-infiniband", "/etc/infiniband", podSpec, container)
 			}
 		}
 
 		podSpec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + coreImageVersionTag
 		podSpec.Containers[i].ImagePullPolicy = r.getImagePullPolicy(cr)
-		r.addKeepRunningAfterFailureEnvVar(cr, &podSpec.Containers[i])
+		r.setEnvVariableValues(cr, container)
 	}
 
 	return nil
+}
+
+func (r *NVMeshCoreReconciler) setEnvVariableValues(cr *nvmeshv1.NVMesh, container *corev1.Container) {
+	for i, _ := range container.Env {
+		env := &container.Env[i]
+		if env.Name == "NVMESH_VERSION" {
+			env.Value = cr.Spec.Core.Version
+		}
+	}
+
+	r.addKeepRunningAfterFailureEnvVar(cr, container)
 }
 
 func (r *NVMeshCoreReconciler) configStringToDict(conf string) map[string]string {
@@ -219,7 +243,6 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 	}
 
 	cm.Data["fileServer.skipCheckCertificate"] = strconv.FormatBool(cr.Spec.Operator.FileServer.SkipCheckCertificate)
-	cm.Data["nvmesh.version"] = cr.Spec.Core.Version
 
 	configDict := r.configStringToDict(cm.Data["nvmesh.conf"])
 

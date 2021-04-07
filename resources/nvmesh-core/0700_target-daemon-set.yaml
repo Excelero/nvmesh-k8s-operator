@@ -33,10 +33,7 @@ spec:
             privileged: true
           env:
             - name: NVMESH_VERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: nvmesh-core-config
-                  key: nvmesh.version
+              value: placeholder
             - name: KMOD_SERVER_ADDRESS
               valueFrom:
                 configMapKeyRef:
@@ -81,10 +78,7 @@ spec:
           command: ["/bin/bash", "-c", "/init.sh"]
           env:
             - name: NVMESH_VERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: nvmesh-core-config
-                  key: nvmesh.version
+              value: placeholder
             - name: KMOD_SERVER_ADDRESS
               valueFrom:
                 configMapKeyRef:
@@ -134,10 +128,7 @@ spec:
             privileged: true
           env:
             - name: NVMESH_VERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: nvmesh-core-config
-                  key: nvmesh.version
+              value: placeholder
             - name: KMOD_SERVER_ADDRESS
               valueFrom:
                 configMapKeyRef:

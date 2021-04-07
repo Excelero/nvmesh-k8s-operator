@@ -34,10 +34,7 @@ spec:
                 name: nvmesh-core-config
                 key: nvmesh.conf
           - name: NVMESH_VERSION
-            valueFrom:
-              configMapKeyRef:
-                name: nvmesh-core-config
-                key: nvmesh.version
+            value: placeholder
           - name: KMOD_SERVER_ADDRESS
             valueFrom:
               configMapKeyRef:
@@ -84,10 +81,7 @@ spec:
                 name: nvmesh-core-config
                 key: nvmesh.conf
           - name: NVMESH_VERSION
-            valueFrom:
-              configMapKeyRef:
-                name: nvmesh-core-config
-                key: nvmesh.version
+            value: placeholder
           - name: KMOD_SERVER_ADDRESS
             valueFrom:
               configMapKeyRef:
