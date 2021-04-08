@@ -21,14 +21,14 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: docker.io/excelero/nvmesh-operator:0.7.0-38
+        image: docker.io/excelero/nvmesh-operator:0.7.0-42
         name: controller
         resources:
           limits:
             cpu: 100m
-            memory: 30Mi
+            memory: 500Mi
           requests:
             cpu: 100m
-            memory: 20Mi
+            memory: 100Mi
       serviceAccountName: nvmesh-operator
       terminationGracePeriodSeconds: 10
