@@ -25,7 +25,7 @@ import (
 const (
 	uninstallJobNamePrefix          = "n-uninstall-"
 	clearDbJobName                  = "nvmesh-clear-db-job"
-	uninstallJobImage               = "registry.excelero.com/nvmesh-uninstall-job:0.7.0-2"
+	uninstallJobImageName           = "nvmesh-uninstall-job"
 	nvmeshClusterServiceAccountName = "nvmesh-cluster"
 )
 
@@ -223,7 +223,7 @@ func (r *NVMeshReconciler) runUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []core
 
 func (r *NVMeshReconciler) getUninstallJob(cr *nvmeshv1.NVMesh, nodeName string) *batchv1.Job {
 	jobName := r.getUninstallJobName(nodeName)
-	job := r.getNewJob(cr, jobName, uninstallJobImage)
+	job := r.getNewJob(cr, jobName, r.getUninstallJobImageName(cr))
 
 	podSpec := &job.Spec.Template.Spec
 	r.addHostPathMount(podSpec, 0, "/opt")
@@ -323,7 +323,7 @@ func (r *NVMeshReconciler) deleteUninstallJobs(cr *nvmeshv1.NVMesh, nodeList []c
 }
 
 func (r *NVMeshReconciler) runClearDbJob(cr *nvmeshv1.NVMesh) error {
-	mongoImage := getMongoForNVMeshImageName()
+	mongoImage := r.getCoreFullImageName(cr, mongoInstanceImageName)
 	job := r.getNewJob(cr, clearDbJobName, mongoImage)
 	backoffLimit := int32(1)
 	job.Spec.BackoffLimit = &backoffLimit
@@ -419,4 +419,8 @@ func (r *NVMeshReconciler) deleteClusterServiceAccount(cr *nvmeshv1.NVMesh) (ctr
 
 	r.removeClusterServiceAccountFromSCC(cr)
 	return ctrl.Result{}, nil
+}
+
+func (r *NVMeshReconciler) getUninstallJobImageName(cr *nvmeshv1.NVMesh) string {
+	return r.getCoreFullImageName(cr, uninstallJobImageName)
 }

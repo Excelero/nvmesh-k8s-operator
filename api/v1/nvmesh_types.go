@@ -32,6 +32,10 @@ type NVMeshCore struct {
 	// +optional
 	ImageRegistry string `json:"imageRegistry"`
 
+	//The version tag of the nvmesh core docker images
+	// +optional
+	ImageVersionTag string `json:"imageVersionTag"`
+
 	// Disabled - if true NVMesh Core will not be deployed
 	// +optional
 	Disabled bool `json:"disabled,omitempty"`
@@ -167,6 +171,7 @@ type NVMeshSpec struct {
 	Operator NVMeshOperatorSpec `json:"operator,omitempty"`
 
 	// Debug - debug options
+	// +optional
 	Debug DebugOptions `json:"debug,omitempty"`
 
 	// Actions allow the user to intiate tasks for the operator to perform

@@ -5,14 +5,7 @@ metadata:
 spec:
   core:
     version: 2.2.0
-    tcpOnly: true
-    configuredNICs: eth0
-    azureOptimized: true
   csi:
-    controllerReplicas: 1
     version: v1.1.3
   management:
-    mongoDB:
-      replicas: 1
-    replicas: 1
     version: 2.2.0

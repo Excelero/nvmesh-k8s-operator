@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	collectLogsImageName     = "registry.excelero.com/nvmesh-logs-collector:" + coreImageVersionTag
+	collectLogsImageName     = "nvmesh-logs-collector"
 	collectDbJobName         = "collect-db"
 	collectConfigMapsJobName = "collect-config-maps"
 	collectLogsJobName       = "collect-logs"
@@ -229,7 +229,7 @@ func setContainerAsPrivileged(container *corev1.Container) {
 }
 
 func (r *NVMeshReconciler) runCollectDBJob(cr *nvmeshv1.NVMesh, action nvmeshv1.ClusterAction) error {
-	job := r.getNewJob(cr, collectDbJobName, collectLogsImageName)
+	job := r.getNewJob(cr, collectDbJobName, r.getCollectJogImageName(cr))
 	grace := int64(1)
 	podSpec := &job.Spec.Template.Spec
 
@@ -269,7 +269,7 @@ func (r *NVMeshReconciler) runCollectDBJob(cr *nvmeshv1.NVMesh, action nvmeshv1.
 }
 
 func (r *NVMeshReconciler) runCollectConfigMapsJob(cr *nvmeshv1.NVMesh, action nvmeshv1.ClusterAction) error {
-	job := r.getNewJob(cr, collectConfigMapsJobName, collectLogsImageName)
+	job := r.getNewJob(cr, collectConfigMapsJobName, r.getCollectJogImageName(cr))
 	grace := int64(1)
 	podSpec := &job.Spec.Template.Spec
 
@@ -308,7 +308,7 @@ func (r *NVMeshReconciler) runCollectConfigMapsJob(cr *nvmeshv1.NVMesh, action n
 
 func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvmeshv1.ClusterAction, nodeName string) error {
 	jobName := collectLogsJobName + "-" + sanitizeString(nodeName)
-	job := r.getNewJob(cr, jobName, collectLogsImageName)
+	job := r.getNewJob(cr, jobName, r.getCollectJogImageName(cr))
 
 	podSpec := &job.Spec.Template.Spec
 
@@ -356,4 +356,8 @@ func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvme
 
 	r.Log.Info(fmt.Sprintf("Created collect log job for node %s\n", nodeName))
 	return nil
+}
+
+func (r *NVMeshReconciler) getCollectJogImageName(cr *nvmeshv1.NVMesh) string {
+	return r.getCoreFullImageName(cr, collectLogsImageName)
 }

@@ -28,6 +28,7 @@ const (
 	mongoDBUnManagedAssetsLocation = "resources/mongodb-unmanaged"
 	mgmtStatefulSetName            = "nvmesh-management"
 	mgmtImageName                  = "nvmesh-management"
+	mongoInstanceImageName         = "nvmesh-mongo-instance"
 	mgmtGuiServiceName             = "nvmesh-management-gui"
 	mgmtProtocol                   = "https"
 	recursive                      = true
@@ -273,12 +274,8 @@ func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *a
 	return nil
 }
 
-func getMongoForNVMeshImageName() string {
-	return "registry.excelero.com/nvmesh-mongo-instance:" + coreImageVersionTag
-}
-
 func (r *NVMeshMgmtReconciler) initiateMongoStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
-	o.Spec.Template.Spec.Containers[0].Image = getMongoForNVMeshImageName()
+	o.Spec.Template.Spec.Containers[0].Image = r.getCoreFullImageName(cr, mongoInstanceImageName)
 	return nil
 }
 

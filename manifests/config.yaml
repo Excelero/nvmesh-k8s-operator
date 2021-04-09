@@ -3,8 +3,8 @@ operator:
   release: 42
   channel: beta
   image_name: nvmesh-operator
-  #repo: registry.connect.redhat.com/excelero
-  repo: docker.io/excelero
+  repo: registry.connect.redhat.com/excelero
+  #repo: docker.io/excelero
 bundle:
   version: 0.7.0
   release: 61

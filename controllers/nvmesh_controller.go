@@ -40,8 +40,9 @@ var (
 )
 
 const (
-	defaultRegistry           string = "registry.excelero.com"
-	clusterServiceAccountName        = "nvmesh-cluster"
+	clusterServiceAccountName  = "nvmesh-cluster"
+	defaultRegistry            = "registry.excelero.com"
+	defaultCoreImageVersionTag = "0.7.0-3"
 )
 
 // NVMeshBaseReconciler - a base for NVMesh Component reconcilers
@@ -244,21 +245,33 @@ func (r *NVMeshReconciler) initializeEmptyFieldsOnCustomResource(cr *nvmeshv1.NV
 		cr.Spec.Core.ImageRegistry = defaultRegistry
 	}
 
-	if cr.Spec.Management.ImageRegistry == "" {
-		cr.Spec.Management.ImageRegistry = defaultRegistry
+	if cr.Spec.Core.ImageVersionTag == "" {
+		cr.Spec.Core.ImageVersionTag = defaultCoreImageVersionTag
 	}
 
 	if cr.Spec.Management.ImageRegistry == "" {
 		cr.Spec.Management.ImageRegistry = defaultRegistry
+	}
+
+	if cr.Spec.CSI.ControllerReplicas == 0 {
+		cr.Spec.CSI.ControllerReplicas = 1
+	}
+
+	if cr.Spec.Management.Replicas == 0 {
+		cr.Spec.Management.Replicas = 1
+	}
+
+	if cr.Spec.Management.MongoDB.Replicas == 0 {
+		cr.Spec.Management.MongoDB.Replicas = 1
 	}
 
 	if cr.Spec.Actions == nil {
 		cr.Spec.Actions = make([]nvmeshv1.ClusterAction, 0)
 	}
 
-	if cr.Spec.Operator.FileServer == nil {
-		cr.Spec.Operator.FileServer = &v1.OperatorFileServerSpec{}
-	}
+	// if cr.Spec.Operator.FileServer == nil {
+	// 	cr.Spec.Operator.FileServer = &v1.OperatorFileServerSpec{}
+	// }
 }
 
 func (r *NVMeshBaseReconciler) addKeepRunningAfterFailureEnvVar(cr *nvmeshv1.NVMesh, container *corev1.Container) {
@@ -272,4 +285,8 @@ func (r *NVMeshBaseReconciler) addKeepRunningAfterFailureEnvVar(cr *nvmeshv1.NVM
 	}
 
 	container.Env = append(container.Env, env)
+}
+
+func (r *NVMeshBaseReconciler) getCoreFullImageName(cr *nvmeshv1.NVMesh, imageName string) string {
+	return cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + defaultCoreImageVersionTag
 }

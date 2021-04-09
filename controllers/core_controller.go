@@ -19,8 +19,7 @@ const (
 	targetDriverDaemonSetName  = "nvmesh-target-driver-container"
 	clientDriverDaemonSetName  = "nvmesh-client-driver-container"
 	driverContainerImageName   = "nvmesh-driver-container"
-	fileServerAddress          = "https://repo.excelero.com/nvmesh/operator_binaries"
-	coreImageVersionTag        = "0.7.0-3"
+	defaultFileServerAddress   = "https://repo.excelero.com/nvmesh/operator_binaries"
 	envVarNVMeshVersion        = "NVMESH_VERSION"
 )
 
@@ -164,7 +163,7 @@ func (r *NVMeshCoreReconciler) initDaemonSets(cr *nvmeshv1.NVMesh, ds *appsv1.Da
 			}
 		}
 
-		podSpec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + coreImageVersionTag
+		podSpec.Containers[i].Image = cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + cr.Spec.Core.ImageVersionTag
 		podSpec.Containers[i].ImagePullPolicy = r.getImagePullPolicy(cr)
 		r.setEnvVariableValues(cr, container)
 	}
@@ -236,13 +235,18 @@ func nvmeshConfWrapWithQuotes(value string) string {
 }
 
 func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.ConfigMap) error {
-	if cr.Spec.Operator.FileServer.Address != "" {
-		cm.Data["fileServer.address"] = cr.Spec.Operator.FileServer.Address
-	} else {
-		cm.Data["fileServer.address"] = fileServerAddress
+	fileServerOptions := nvmeshv1.OperatorFileServerSpec{}
+	if cr.Spec.Operator.FileServer != nil {
+		fileServerOptions = *cr.Spec.Operator.FileServer
 	}
 
-	cm.Data["fileServer.skipCheckCertificate"] = strconv.FormatBool(cr.Spec.Operator.FileServer.SkipCheckCertificate)
+	if fileServerOptions.Address != "" {
+		cm.Data["fileServer.address"] = fileServerOptions.Address
+	} else {
+		cm.Data["fileServer.address"] = defaultFileServerAddress
+	}
+
+	cm.Data["fileServer.skipCheckCertificate"] = strconv.FormatBool(fileServerOptions.SkipCheckCertificate)
 
 	configDict := r.configStringToDict(cm.Data["nvmesh.conf"])
 
