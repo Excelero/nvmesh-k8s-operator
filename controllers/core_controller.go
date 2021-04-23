@@ -127,9 +127,7 @@ func (r *NVMeshCoreReconciler) addVolumeAndMountToContainer(volumeName string, m
 
 func (r *NVMeshCoreReconciler) addTomaIBLibMounts(podSpec *v1.PodSpec, tomaContainer *v1.Container) {
 	volumeMounts := map[string]string{
-		"lib-mlx5":       "/usr/lib64/libmlx5.so.1.11.26.0",
 		"etc-libibverbs": "/etc/libibverbs.d/",
-		"lib-libibverbs": "/usr/lib64/libibverbs/",
 	}
 
 	for volumeName, volumePath := range volumeMounts {
