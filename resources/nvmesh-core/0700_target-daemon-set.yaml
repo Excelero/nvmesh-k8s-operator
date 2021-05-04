@@ -59,7 +59,7 @@ spec:
               mountPath: "/etc/opt/NVMesh"
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
-            - name: device-dir
+            - name: dev
               mountPath: /dev
             - name: lib-modules-dir
               mountPath: /host/lib/modules
@@ -102,8 +102,10 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
+            - name: run-udev
+              mountPath: /run/udev
             - name: nvmesh-conf
-              mountPath: "/etc/opt/NVMesh"
+              mountPath: /etc/opt/NVMesh
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
             - name: var-run-nvmesh
@@ -169,9 +171,6 @@ spec:
             items:
             - key: "nvmesh.conf"
               path: ".nvmesh.conf"
-        - name: device-dir
-          hostPath:
-            path: /dev
         - name: lib-modules-dir
           hostPath:
             path: /lib/modules
@@ -208,3 +207,6 @@ spec:
         - name: host-sbin
           hostPath:
             path: /sbin
+        - name: run-udev
+          hostPath:
+            path: /run/udev/
