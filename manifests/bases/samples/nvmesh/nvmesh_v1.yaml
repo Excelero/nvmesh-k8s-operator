@@ -4,13 +4,14 @@ metadata:
   name: cluster1
 spec:
   core:
-    version: 2.2.0
-    tcpOnly: true
-    configuredNICs: eth0
     azureOptimized: true
+    version: 2.2.1
   csi:
     controllerReplicas: 1
-    version: v1.1.3
+    version: v1.1.4-3
+  debug:
+    containersKeepRunningAfterFailure: true
+    imagePullPolicyAlways: true
   management:
     mongoDB:
       replicas: 1
