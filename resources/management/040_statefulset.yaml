@@ -36,6 +36,11 @@ spec:
               configMapKeyRef:
                 name: nvmesh-mgmt-config
                 key: config
+          - name: CUSTOMER_ID
+            valueFrom:
+              secretKeyRef:
+                name: nvmesh-file-server-cred
+                key: username
           ports:
             - name: gui
               containerPort: 4000
@@ -58,7 +63,6 @@ spec:
             - name: stats-4
               containerPort: 4006
               protocol: TCP
-
           volumeMounts:
             - name: backups
               mountPath: /var/opt/NVMesh/backups
