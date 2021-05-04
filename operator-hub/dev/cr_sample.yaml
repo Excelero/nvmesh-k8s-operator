@@ -7,12 +7,13 @@ metadata:
 spec:
   core:
     azureOptimized: true
-    configuredNICs: eth0
-    tcpOnly: true
-    version: 2.2.0
+    version: 2.2.1
   csi:
     controllerReplicas: 1
-    version: v1.1.2
+    version: v1.1.4-3
+  debug:
+    containersKeepRunningAfterFailure: true
+    imagePullPolicyAlways: true
   management:
     mongoDB:
       replicas: 1

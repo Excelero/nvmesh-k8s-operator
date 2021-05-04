@@ -4,10 +4,10 @@ apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"configuredNICs":"eth0","tcpOnly":true,"version":"2.2.0"},"management":{"mongoDB":{"replicas":1},"version":"2.2.0","replicas":1},"csi":{"version":"v1.1.2","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
+    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"debug":{"imagePullPolicyAlways":true,"containersKeepRunningAfterFailure":true},"core":{"azureOptimized":true,"version":"2.2.1"},"management":{"mongoDB":{"replicas":1},"version":"2.2.0","replicas":1},"csi":{"version":"v1.1.4-3","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
-    containerImage: docker.io/excelero/nvmesh-operator:0.7.0-42
+    containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-47
     createdAt: '2020-10-28T00:00:00Z'
     description: NVMesh Operator enables users to install Excelero NVMesh on Kubernetes
       and OpenShift clusters
@@ -460,7 +460,7 @@ spec:
                 - --openshift
                 command:
                 - /manager
-                image: docker.io/excelero/nvmesh-operator:0.7.0-42
+                image: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-47
                 name: controller
                 resources:
                   limits:
@@ -499,4 +499,4 @@ spec:
   maturity: beta
   provider:
     name: Excelero
-  version: 0.7.0-42
+  version: 0.7.0-47
