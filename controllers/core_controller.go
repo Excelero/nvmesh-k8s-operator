@@ -16,8 +16,8 @@ import (
 const (
 	nvmeshCoreAssestLocation   = "resources/nvmesh-core"
 	coreUserspaceDaemonSetName = "nvmesh-mcs-agent"
-	targetDriverDaemonSetName  = "nvmesh-target-driver-container"
-	clientDriverDaemonSetName  = "nvmesh-client-driver-container"
+	targetDriverDaemonSetName  = "nvmesh-target"
+	clientDriverDaemonSetName  = "nvmesh-client"
 	driverContainerImageName   = "nvmesh-driver-container"
 	defaultFileServerAddress   = "https://repo.excelero.com/nvmesh/operator_binaries"
 	envVarNVMeshVersion        = "NVMESH_VERSION"

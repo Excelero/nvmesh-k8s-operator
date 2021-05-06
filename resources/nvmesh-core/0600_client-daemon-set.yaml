@@ -1,18 +1,18 @@
 ﻿apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: nvmesh-client-driver-container
+  name: nvmesh-client
   labels:
-    k8s-app: nvmesh-client-driver-container
+    k8s-app: nvmesh-client
 spec:
   selector:
     matchLabels:
-      name: nvmesh-client-driver-container
+      name: nvmesh-client
       nvmesh.driver-container-type: client
   template:
     metadata:
       labels:
-        name: nvmesh-client-driver-container
+        name: nvmesh-client
         nvmesh.driver-container-type: client
         nvmesh.excelero.com/component: client
     spec:
