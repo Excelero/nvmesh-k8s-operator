@@ -94,6 +94,8 @@ func main() {
 	flag.StringVar(&metricsAddr, "metrics-addr", "0", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&operatorOptions.IsOpenShift, "openshift", false, "Set this flag if you are running on an openshift cluster")
+	flag.StringVar(&operatorOptions.DefaultCoreImageTag, "core-image-tag", "tag-not-set", "The tag to use for the nvmesh core and utils images e.g. 0.7.0-4")
+
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))

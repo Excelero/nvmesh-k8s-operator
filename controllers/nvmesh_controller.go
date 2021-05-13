@@ -40,9 +40,8 @@ var (
 )
 
 const (
-	clusterServiceAccountName  = "nvmesh-cluster"
-	defaultRegistry            = "registry.excelero.com"
-	defaultCoreImageVersionTag = "0.7.0-3"
+	clusterServiceAccountName = "nvmesh-cluster"
+	defaultRegistry           = "registry.excelero.com"
 )
 
 // NVMeshBaseReconciler - a base for NVMesh Component reconcilers
@@ -246,7 +245,7 @@ func (r *NVMeshReconciler) initializeEmptyFieldsOnCustomResource(cr *nvmeshv1.NV
 	}
 
 	if cr.Spec.Core.ImageVersionTag == "" {
-		cr.Spec.Core.ImageVersionTag = defaultCoreImageVersionTag
+		cr.Spec.Core.ImageVersionTag = r.Options.DefaultCoreImageTag
 	}
 
 	if cr.Spec.Management.ImageRegistry == "" {
@@ -288,5 +287,5 @@ func (r *NVMeshBaseReconciler) addKeepRunningAfterFailureEnvVar(cr *nvmeshv1.NVM
 }
 
 func (r *NVMeshBaseReconciler) getCoreFullImageName(cr *nvmeshv1.NVMesh, imageName string) string {
-	return cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + defaultCoreImageVersionTag
+	return cr.Spec.Core.ImageRegistry + "/" + imageName + ":" + cr.Spec.Core.ImageVersionTag
 }

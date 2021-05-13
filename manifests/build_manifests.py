@@ -76,6 +76,8 @@ def build_csv():
     operatorContainer = operatorPodSpec['containers'][0]
     operatorContainer['image'] = operator_image
     operatorContainer['args'].append("--openshift")
+    operatorContainer['args'].append("--core-image-tag")
+    operatorContainer['args'].append(version_info["core_image_tag"])
 
     cluster_permissions = {
         'serviceAccountName': get_name(service_account),
