@@ -8,7 +8,7 @@ operator:
 # repo: docker.io/excelero
 bundle:
   version: 0.7.0
-  release: 67
+  release: 68
   dev:
     bundle_image_name: "docker.io/excelero/dev-os-bundle"
     index_build: 1

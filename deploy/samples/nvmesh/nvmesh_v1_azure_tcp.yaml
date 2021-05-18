@@ -8,7 +8,7 @@ spec:
     version: 2.2.1
   csi:
     controllerReplicas: 1
-    version: v1.1.4-3
+    version: v1.1.4-7
   debug:
     containersKeepRunningAfterFailure: true
     imagePullPolicyAlways: true

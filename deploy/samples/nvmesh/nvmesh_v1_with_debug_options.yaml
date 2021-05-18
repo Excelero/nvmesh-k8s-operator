@@ -9,7 +9,7 @@ spec:
     configuredNICs: eth0
   csi:
     controllerReplicas: 1
-    version: v1.1.2
+    version: v1.1.4-7
   management:
     mongoDB:
       replicas: 1
