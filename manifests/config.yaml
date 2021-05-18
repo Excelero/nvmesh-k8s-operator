@@ -13,3 +13,23 @@ bundle:
     bundle_image_name: "docker.io/excelero/dev-os-bundle"
     index_build: 1
     index_image_name: "docker.io/excelero/dev-os-catalog-source-index"
+  alm-example:
+    # This will be embedded into the bundle manifest,
+    # The RedHat scan server CI will use these versions
+    # And they will also be the default values in the OpenShift Web UI
+    apiVersion: nvmesh.excelero.com/v1
+    kind: NVMesh
+    metadata:
+      name: cluster1
+    spec:
+      core:
+        azureOptimized: true
+        version: 2.2.1
+      csi:
+        controllerReplicas: 1
+        version: v1.1.4-7
+      management:
+        mongoDB:
+          replicas: 1
+        replicas: 1
+        version: 2.2.0-os

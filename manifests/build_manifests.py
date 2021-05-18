@@ -44,10 +44,10 @@ version_info = config['operator']
 bundle_info = config['bundle']
 
 def get_alm_examples():
-    cr_sample = load_yaml_file(cr_sample_source_file)
+    alm_example = bundle_info["alm-example"]
 
     # add object status for scorecard validation
-    cr_sample['status'] = {
+    alm_example['status'] = {
         'reconcileStatus': {},
         'actionsStatus': {}
     }
@@ -55,9 +55,9 @@ def get_alm_examples():
     # add skipUninstall to alm_example
     #cr_sample['spec']['operator'] = { 'skipUninstall': True }
 
-    write_yaml_file(cr_sample, cr_sample_for_testing_yaml)
-    nvmesh_sample_as_json_string = json.dumps(cr_sample, separators=(',', ':'))
-    alm_examples = '[{}]'.format(nvmesh_sample_as_json_string)
+    write_yaml_file(alm_example, cr_sample_for_testing_yaml)
+    alm_example_as_json_string = json.dumps(alm_example, separators=(',', ':'))
+    alm_examples = '[{}]'.format(alm_example_as_json_string)
     return alm_examples
 
 def build_csv():
