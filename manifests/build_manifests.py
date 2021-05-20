@@ -84,16 +84,15 @@ def build_csv():
         'rules': role['rules']
     }
 
-    version = version_info['version']
+    bundle_version = bundle_info['version']
 
-    csv['metadata']['name'] = 'nvmesh-operator.%s' % (version)
+    csv['metadata']['name'] = 'nvmesh-operator.%s' % (bundle_version)
     csv['metadata']['annotations']['alm-examples'] = get_alm_examples()
     csv['metadata']['annotations']['containerImage'] = operator_image
 
     csv['spec']['version'] = "{version}-{release}".format(**version_info)
     csv['spec']['install']['spec']['deployments'] = [install_dep_item]
     csv['spec']['install']['spec']['clusterPermissions'] = [cluster_permissions]
-
 
     write_yaml_file(csv, output_file)
 

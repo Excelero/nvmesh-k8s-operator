@@ -15,7 +15,7 @@ spec:
     mongoDB:
       replicas: 1
     replicas: 1
-    version: 2.2.0-os
+    version: 2.2.1-1
 status:
   actionsStatus: {}
   reconcileStatus: {}
