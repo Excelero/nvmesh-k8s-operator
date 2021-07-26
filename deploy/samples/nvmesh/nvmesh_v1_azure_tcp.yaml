@@ -4,6 +4,7 @@ metadata:
   name: cluster1
 spec:
   core:
+    azureOptimized: true
     configuredNICs: eth0
     version: 2.2.1
   csi:

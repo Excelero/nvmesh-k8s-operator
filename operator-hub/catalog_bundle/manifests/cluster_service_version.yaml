@@ -15,7 +15,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     repository: https://github.com/Excelero/nvmesh-k8s-operator
     support: Excelero Support (support@excelero.com)
-  name: nvmesh-operator.0.7.0
+  name: nvmesh-operator.0.8.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -459,7 +459,7 @@ spec:
                 - --enable-leader-election
                 - --openshift
                 - --core-image-tag
-                - 0.7.0-4
+                - 0.8.0-2
                 command:
                 - /manager
                 image: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-48
