@@ -21,6 +21,7 @@ spec:
         nvmesh.excelero.com/nvmesh-client: ""
       imagePullSecrets:
         - name: excelero-registry-cred
+      hostNetwork: true
       containers:
         - name: driver-container
           image: nvmesh-driver-container:placeholder
