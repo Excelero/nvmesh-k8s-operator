@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -67,6 +68,10 @@ type MongoDBCluster struct {
 	//The number of MongoDB replicas in the MongoDB Cluster - This field is ignored if management.mongoDB.external=true
 	// +optional
 	Replicas int32 `json:"replicas,omitempty"`
+
+	//Overrides fields in the MongoDB data PVC
+	// +optional
+	DataVolumeClaim corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaim,omitempty"`
 }
 
 type NVMeshManagement struct {
@@ -97,6 +102,10 @@ type NVMeshManagement struct {
 	// Disabled - if true NVMesh Management will not be deployed
 	// +optional
 	Disabled bool `json:"disabled,omitempty"`
+
+	//Overrides fields in the Management Backups PVC
+	// +optional
+	BackupsVolumeClaim corev1.PersistentVolumeClaimSpec `json:"backupsVolumeClaim,omitempty"`
 }
 
 type NVMeshCSI struct {

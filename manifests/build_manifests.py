@@ -60,6 +60,10 @@ def get_alm_examples():
     alm_examples = '[{}]'.format(alm_example_as_json_string)
     return alm_examples
 
+def get_bundle_name():
+	bundle_version = bundle_info['version']
+	return 'nvmesh-operator.%s' % (bundle_version)
+
 def build_csv():
     csv = load_yaml_file(csv_base)
     role = load_yaml_file(role_file)
@@ -84,9 +88,7 @@ def build_csv():
         'rules': role['rules']
     }
 
-    bundle_version = bundle_info['version']
-
-    csv['metadata']['name'] = 'nvmesh-operator.%s' % (bundle_version)
+    csv['metadata']['name'] = get_bundle_name()
     csv['metadata']['annotations']['alm-examples'] = get_alm_examples()
     csv['metadata']['annotations']['containerImage'] = operator_image
 
@@ -135,7 +137,7 @@ def build_bundle_dir():
     copyfile(path.join(bases, "crd/nvmesh.crd.yaml"), path.join(bundle_dir,"manifests", "nvmesh_crd.yaml"))
 
 def update_catalog_source():
-    catalog_source_file = '../operator-hub/dev/catalog_source.yaml'
+    catalog_source_file = path.join(operator_hub_dir, "dev/catalog_source.yaml")
     cat_source = load_yaml_file(catalog_source_file)
     image = '{image}:{version}-{rel}-{bundle_build}'.format(
         image=bundle_info['dev']['index_image_name'],
@@ -147,7 +149,14 @@ def update_catalog_source():
 
     write_yaml_file(cat_source, catalog_source_file)
 
+def update_subscription():
+    subscription_file = path.join(operator_hub_dir, "dev/subscription.yaml")
+    subscription = load_yaml_file(subscription_file)
+    subscription['spec']['startingCSV'] = get_bundle_name()
+    write_yaml_file(subscription, subscription_file)
+
 copy_and_format_crd()
 build_deploy_dir()
 build_bundle_dir()
 update_catalog_source()
+update_subscription()

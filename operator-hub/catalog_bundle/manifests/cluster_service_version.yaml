@@ -7,7 +7,7 @@ metadata:
     alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.2.1"},"management":{"mongoDB":{"replicas":1},"version":"2.2.1-1","replicas":1},"csi":{"version":"v1.1.4-7","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
-    containerImage: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-48
+    containerImage: docker.io/excelero/nvmesh-operator:0.8.0-6
     createdAt: '2020-10-28T00:00:00Z'
     description: NVMesh Operator enables users to install Excelero NVMesh on Kubernetes
       and OpenShift clusters
@@ -459,10 +459,10 @@ spec:
                 - --enable-leader-election
                 - --openshift
                 - --core-image-tag
-                - 0.8.0-2
+                - 0.8.0-10
                 command:
                 - /manager
-                image: registry.connect.redhat.com/excelero/nvmesh-operator:0.7.0-48
+                image: docker.io/excelero/nvmesh-operator:0.8.0-6
                 name: controller
                 resources:
                   limits:
@@ -501,4 +501,4 @@ spec:
   maturity: beta
   provider:
     name: Excelero
-  version: 0.7.0-48
+  version: 0.8.0-6

@@ -271,11 +271,34 @@ func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *a
 	o.Spec.Replicas = &cr.Spec.Management.Replicas
 	r.addKeepRunningAfterFailureEnvVar(cr, &o.Spec.Template.Spec.Containers[0])
 
+	overrideVolumeClaimFields(&o.Spec.VolumeClaimTemplates[0].Spec, &cr.Spec.Management.BackupsVolumeClaim)
+
 	return nil
+}
+
+func overrideVolumeClaimFields(target *v1.PersistentVolumeClaimSpec, source *v1.PersistentVolumeClaimSpec) {
+	if source.StorageClassName != nil {
+		target.StorageClassName = source.StorageClassName
+	}
+
+	if source.Selector != nil {
+		target.Selector = source.Selector
+	}
+
+	if source.Resources.Requests != nil {
+		target.Resources.Requests = source.Resources.Requests
+	}
+
+	if source.Resources.Limits != nil {
+		target.Resources.Limits = source.Resources.Limits
+	}
 }
 
 func (r *NVMeshMgmtReconciler) initiateMongoStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
 	o.Spec.Template.Spec.Containers[0].Image = r.getCoreFullImageName(cr, mongoInstanceImageName)
+
+	overrideVolumeClaimFields(&o.Spec.VolumeClaimTemplates[0].Spec, &cr.Spec.Management.MongoDB.DataVolumeClaim)
+
 	return nil
 }
 

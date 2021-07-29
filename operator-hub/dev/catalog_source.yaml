@@ -7,6 +7,6 @@ metadata:
   namespace: openshift-marketplace
 spec:
   displayName: NVMesh Catalog Source
-  image: docker.io/excelero/dev-os-catalog-source-index:0.7.0-4-dev-1
+  image: docker.io/excelero/dev-os-catalog-source-index:0.8.0-6-dev-1
   publisher: Excelero
   sourceType: grpc
