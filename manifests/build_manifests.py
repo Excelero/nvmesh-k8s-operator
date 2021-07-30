@@ -102,15 +102,20 @@ def copy_and_format_crd():
     crd = load_yaml_file(crd_base)
     del crd['metadata']['creationTimestamp']
     write_yaml_file(crd, crd_base)
-def get_operator_image():
-    return '{repo}/{image_name}:{version}-{release}'.format(**version_info)
+
+def get_operator_image(repo=None):
+    ver_info_copy = version_info.copy()
+    if repo:
+        ver_info_copy['repo'] = repo
+
+    return '{repo}/{image_name}:{version}-{release}'.format(**ver_info_copy)
 
 def get_deployment_for_kubernetes():
     deployment = load_yaml_file(operator_dep_file)
 
     operatorPodSpec = deployment['spec']['template']['spec']
     operatorContainer = operatorPodSpec['containers'][0]
-    operatorContainer['image'] = get_operator_image()
+    operatorContainer['image'] = get_operator_image('docker.io')
     return deployment
 
 def build_deploy_dir():
