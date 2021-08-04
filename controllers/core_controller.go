@@ -62,11 +62,11 @@ func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 }
 
 //ShouldUpdateObject Manages update objects in Core
-func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, obj *runtime.Object) bool {
+func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, expected *runtime.Object, obj *runtime.Object) bool {
 	name, _ := getRunetimeObjectNameAndKind(obj)
 	switch o := (*obj).(type) {
 	case *appsv1.DaemonSet:
-		expDS := (*exp).(*appsv1.DaemonSet)
+		expDS := (*expected).(*appsv1.DaemonSet)
 		switch name {
 		case coreUserspaceDaemonSetName:
 			fallthrough
@@ -76,7 +76,8 @@ func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 			return r.shouldUpdateDaemonSet(cr, expDS, o)
 		}
 	case *v1.ConfigMap:
-		// shouldUpdateCoreConfigMap
+		expectedConfigMap := (*expected).(*corev1.ConfigMap)
+		return r.shouldUpdateCoreConfigMap(cr, expectedConfigMap, o)
 	default:
 	}
 
@@ -105,6 +106,52 @@ func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expect
 	}
 
 	return false
+}
+
+func (r *NVMeshCoreReconciler) shouldUpdateNVMeshConf(cr *nvmeshv1.NVMesh, expected string, current string) (bool, string) {
+	log := r.Log.WithValues("method", "shouldUpdateNVMeshConf")
+
+	expectedDict := r.configStringToDict(expected)
+	currentDict := r.configStringToDict(current)
+
+	shouldUpdate := false
+
+	// Only check if expected field has a differnet value and preserve any user added parameters that do not appear in "expected"
+	for field, _ := range expectedDict {
+		if currentDict[field] != expectedDict[field] {
+			log.Info(fmt.Sprintf("nvmesh-core-config nvmesh.conf field %s will be updated from %s to %s\n", field, currentDict[field], expectedDict[field]))
+			shouldUpdate = true
+		}
+	}
+
+	// copy all fields that are not in expected
+	for field, _ := range currentDict {
+		if _, ok := expectedDict[field]; !ok {
+			expectedDict[field] = currentDict[field]
+		}
+	}
+
+	newExpectedAsString := r.configDictToString(expectedDict)
+	return shouldUpdate, newExpectedAsString
+}
+
+func (r *NVMeshCoreReconciler) shouldUpdateCoreConfigMap(cr *nvmeshv1.NVMesh, expected *corev1.ConfigMap, cm *corev1.ConfigMap) bool {
+	log := r.Log.WithValues("method", "shouldUpdateCoreConfigMap")
+
+	shouldUpdate := false
+	newExpectedConfString := ""
+
+	for field, _ := range expected.Data {
+		if field == "nvmesh.conf" {
+			shouldUpdate, newExpectedConfString = r.shouldUpdateNVMeshConf(cr, expected.Data[field], cm.Data[field])
+			expected.Data[field] = newExpectedConfString
+		} else if expected.Data[field] != cm.Data[field] {
+			log.Info(fmt.Sprintf("nvmesh-core-config %s should be updated expected %s but got %s\n", field, expected.Data[field], cm.Data[field]))
+			shouldUpdate = true
+		}
+	}
+
+	return shouldUpdate
 }
 
 func (r *NVMeshCoreReconciler) addVolumeAndMountToContainer(volumeName string, mountPath string, podSpec *v1.PodSpec, container *v1.Container) {
@@ -246,6 +293,7 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 
 	cm.Data["fileServer.skipCheckCertificate"] = strconv.FormatBool(fileServerOptions.SkipCheckCertificate)
 
+	// get values from the hardcoded yaml and adds dynamic values
 	configDict := r.configStringToDict(cm.Data["nvmesh.conf"])
 
 	managementServers := r.getMgmtServersConnectionString(cr)
@@ -264,6 +312,18 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 		// Reduces calls to S.M.A.R.T because of poor performance of NVMe SMART
 		configDict["TOMA_CLOUD_MODE"] = nvmeshConfWrapWithQuotes("Yes")
 		configDict["AGENT_CLOUD_MODE"] = nvmeshConfWrapWithQuotes("Yes")
+	}
+
+	if cr.Spec.Core.ExcludeDrives != nil {
+		serials := cr.Spec.Core.ExcludeDrives.SerialNumbers
+		if serials != nil {
+			configDict["EXCLUDE_DRIVE_SERIALS"] = nvmeshConfWrapWithQuotes(strings.Join(serials[:], ","))
+		}
+
+		if cr.Spec.Core.ExcludeDrives.DevicePaths != nil {
+			devicePaths := cr.Spec.Core.ExcludeDrives.DevicePaths
+			configDict["EXCLUDE_DEVICE_PATHS"] = nvmeshConfWrapWithQuotes(strings.Join(devicePaths[:], ","))
+		}
 	}
 
 	cm.Data["nvmesh.conf"] = r.configDictToString(configDict)

@@ -5,8 +5,16 @@ metadata:
 spec:
   core:
     version: 2.2.1
-    tcpOnly: true
-    configuredNICs: eth0
+    imageVersionTag: 0.8.0-17
+    #tcpOnly: true
+    #configuredNICs: eth0
+    excludeDrives:
+      serialNumbers:
+        - S3HCNX0K600408
+        - S3HCNX0K60040X
+      devicePaths:
+        - nvme1n1
+        - nvme2n1
   csi:
     controllerReplicas: 1
     version: v1.1.4-7

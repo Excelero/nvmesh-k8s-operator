@@ -50,6 +50,14 @@ type NVMeshCore struct {
 
 	// Azure Optimized - Make optimizations for running on Azure cloud
 	AzureOptimized bool `json:"azureOptimized,omitempty"`
+
+	// Exclude NVMe Drives
+	ExcludeDrives *ExcludeNVMeDrivesSpec `json:"excludeDrives,omitempty"`
+}
+
+type ExcludeNVMeDrivesSpec struct {
+	SerialNumbers []string `json:"serialNumbers,omitempty"`
+	DevicePaths   []string `json:"devicePaths,omitempty"`
 }
 
 type MongoDBCluster struct {
