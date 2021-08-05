@@ -1,0 +1,59 @@
+apiVersion: nvmesh.excelero.com/v1
+kind: NVMesh
+metadata:
+  name: cluster1
+spec:
+  core:
+    # The version for the Core components
+    version: 2.2.1
+
+    # Choose a specific version for the component images, please do not change this unless instructed by Excelero
+    imageVersionTag: 0.8.0-17
+
+    # Use TCP / IP - If false Infiniband is assumed
+    tcpOnly: true
+
+    # Define which network interfaces should be used for the storage data path
+    configuredNICs: eth0
+
+    # Define which NVMe drives should not be used by the NVMesh software
+    excludeDrives:
+      # A list of NVMe drive serial numbers that should not be used by the NVMesh software
+      serialNumbers:
+        - S3HCNX0K600408
+        - S3HCNX0K600409
+
+      # A list of device paths that should not be used by the NVMesh software
+      devicePaths:
+        - /dev/nvme1n1
+        - /dev/nvme2n1
+  csi:
+    controllerReplicas: 1
+
+    # The version of the NVMesh CSI driver
+    version: v1.1.6-3
+  management:
+    mongoDB:
+      replicas: 1
+
+    # The number of Management servers in a High-Availability Management
+    replicas: 1
+
+    # The version of the NVMesh-Management server
+    version: 2.2.0
+
+  actions:
+    # Initiate logs collection on the NVMesh cluster
+    # logs will be saved locally on each host at /opt/nvmesh-operator/logs
+    - name: "collect-logs"
+
+  # Internal debugging options
+  debug:
+    # This will try to pull all images even if they exist locally
+    imagePullPolicyAlways: true
+
+    # This will prevent containers from crashing causing the pod to be restarted
+    containersKeepRunningAfterFailure: true
+
+    # Adds additional debug prints to jobs for actions and uninstall
+    debugJobs: false

@@ -79,7 +79,7 @@ if [ -z "$pod_name" ]; then
         show_help
         exit 1
     else
-        # get pod anme from hostname provided
+        # get pod name from hostname provided
         pod_name=$(kubectl get pods -o name --field-selector spec.nodeName=$host --selector=name=nvmesh-target-driver-container | head -1)
         if [ -z "$pod_name" ]; then
             print_err "Error: could not find the pod nvmesh-target-driver-container that runs on host $host"

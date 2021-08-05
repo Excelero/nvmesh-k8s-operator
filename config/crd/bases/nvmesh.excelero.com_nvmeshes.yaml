@@ -8,6 +8,31 @@ metadata:
   creationTimestamp: null
   name: nvmeshes.nvmesh.excelero.com
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .spec.core.version
+    name: Core
+    type: string
+  - JSONPath: .spec.management.version
+    name: Mgmt
+    type: string
+  - JSONPath: .spec.csi.version
+    name: CSI
+    type: string
+  - JSONPath: .spec.core.tcpOnly
+    name: TCP
+    priority: 10
+    type: boolean
+  - JSONPath: .status.reconcileStatus.status
+    name: Status
+    priority: 10
+    type: string
+  - JSONPath: .status.reconcileStatus.status
+    name: Reason
+    priority: 10
+    type: string
   group: nvmesh.excelero.com
   names:
     kind: NVMesh
@@ -33,7 +58,7 @@ spec:
           description: NVMeshSpec defines the desired state of NVMesh
           properties:
             actions:
-              description: Actions allow the user to intiate tasks for the operator to perform
+              description: Actions allow the user to initiate tasks for the operator to perform
               items:
                 properties:
                   args:
@@ -43,6 +68,8 @@ spec:
                     type: object
                   name:
                     description: The type of action to perform
+                    enum:
+                    - collect-logs
                     type: string
                 type: object
               type: array
@@ -58,6 +85,20 @@ spec:
                 disabled:
                   description: Disabled - if true NVMesh Core will not be deployed
                   type: boolean
+                excludeDrives:
+                  description: Exclude NVMe Drives - Define which NVMe drives should not be used by NVMesh
+                  properties:
+                    devicePaths:
+                      description: A list of device paths that should not be used by the NVMesh software, These devices will be excluded from each node. i.e. /dev/nvme1n1
+                      items:
+                        type: string
+                      type: array
+                    serialNumbers:
+                      description: A list of NVMe drive serial numbers that should not be used by the NVMesh software. i.e. S3HCNX4K123456
+                      items:
+                        type: string
+                      type: array
+                  type: object
                 imageRegistry:
                   description: The address of the image registry where the nvmesh core images are stored
                   type: string
@@ -65,7 +106,7 @@ spec:
                   description: The version tag of the nvmesh core docker images
                   type: string
                 tcpOnly:
-                  description: TCP Only - Set to true if cluster support only TCP
+                  description: TCP Only - Set to true if cluster support only TCP, If false or omitted Infiniband is used
                   type: boolean
                 version:
                   description: The version of NVMesh Core to be deployed. to perform an upgrade simply update this value to the required version.
@@ -303,7 +344,7 @@ spec:
                       format: int32
                       type: integer
                     useOperator:
-                      description: If true the NVMesh Operator will deploy a MongoDB Operator and a MongoDB Cluster using a CutomResource
+                      description: If true the NVMesh Operator will deploy a MongoDB Operator and a MongoDB Cluster using a CustomResource
                       type: boolean
                   type: object
                 noSSL:
@@ -322,6 +363,7 @@ spec:
               description: Control the behavior of the NVMesh operator for this NVMesh Cluster
               properties:
                 fileServer:
+                  description: Override the default file server for compiled binaries
                   properties:
                     address:
                       type: string

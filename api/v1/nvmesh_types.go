@@ -24,6 +24,34 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:printcolumn:name="Core",type=string,JSONPath=`.spec.core.version`
+// +kubebuilder:printcolumn:name="Mgmt",type=string,JSONPath=`.spec.management.version`
+// +kubebuilder:printcolumn:name="CSI",type=string,JSONPath=`.spec.csi.version`
+// +kubebuilder:printcolumn:name="TCP",type=boolean,JSONPath=`.spec.core.tcpOnly`,priority=10
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.reconcileStatus.status`,priority=10
+// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reconcileStatus.status`,priority=10
+
+// NVMesh is the Schema for the nvmeshes API
+type NVMesh struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   NVMeshSpec   `json:"spec,omitempty"`
+	Status NVMeshStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// NVMeshList contains a list of NVMesh
+type NVMeshList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []NVMesh `json:"items"`
+}
+
 type NVMeshCore struct {
 	//The version of NVMesh Core to be deployed. to perform an upgrade simply update this value to the required version.
 	// +required
@@ -45,19 +73,22 @@ type NVMeshCore struct {
 	// +optional
 	ConfiguredNICs string `json:"configuredNICs,omitempty"`
 
-	// TCP Only - Set to true if cluster support only TCP
+	// TCP Only - Set to true if cluster support only TCP, If false or omitted Infiniband is used
 	TCPOnly bool `json:"tcpOnly,omitempty"`
 
 	// Azure Optimized - Make optimizations for running on Azure cloud
 	AzureOptimized bool `json:"azureOptimized,omitempty"`
 
-	// Exclude NVMe Drives
+	// Exclude NVMe Drives - Define which NVMe drives should not be used by NVMesh
 	ExcludeDrives *ExcludeNVMeDrivesSpec `json:"excludeDrives,omitempty"`
 }
 
 type ExcludeNVMeDrivesSpec struct {
+	// A list of NVMe drive serial numbers that should not be used by the NVMesh software. i.e. S3HCNX4K123456
 	SerialNumbers []string `json:"serialNumbers,omitempty"`
-	DevicePaths   []string `json:"devicePaths,omitempty"`
+
+	// A list of device paths that should not be used by the NVMesh software, These devices will be excluded from each node. i.e. /dev/nvme1n1
+	DevicePaths []string `json:"devicePaths,omitempty"`
 }
 
 type MongoDBCluster struct {
@@ -65,7 +96,7 @@ type MongoDBCluster struct {
 	// +optional
 	External bool `json:"external,omitempty"`
 
-	//If true the NVMesh Operator will deploy a MongoDB Operator and a MongoDB Cluster using a CutomResource
+	//If true the NVMesh Operator will deploy a MongoDB Operator and a MongoDB Cluster using a CustomResource
 	// +optional
 	UseOperator bool `json:"useOperator,omitempty"`
 
@@ -145,6 +176,7 @@ type NVMeshOperatorSpec struct {
 	// If SkipUninstall is true, The operator will not clear the mongo db or remove files the NVMesh software has saved locally on the nodes. This can lead to an unclean state left on the k8s cluster
 	SkipUninstall bool `json:"skipUninstall,omitempty"`
 
+	// Override the default file server for compiled binaries
 	FileServer *OperatorFileServerSpec `json:"fileServer,omitempty"`
 }
 
@@ -155,9 +187,13 @@ type OperatorFileServerSpec struct {
 
 type ClusterAction struct {
 	// The type of action to perform
+	// +kubebuilder:validation:Enum=collect-logs
+	// +kubebuilder:validation:Required
+	// +required
 	Name string `json:"name,omitempty"`
 
 	// Arguments for the Action
+	// +optional
 	Args map[string]string `json:"args,omitempty"`
 }
 
@@ -191,7 +227,7 @@ type NVMeshSpec struct {
 	// +optional
 	Debug DebugOptions `json:"debug,omitempty"`
 
-	// Actions allow the user to intiate tasks for the operator to perform
+	// Actions allow the user to initiate tasks for the operator to perform
 	Actions []ClusterAction `json:"actions,omitempty"`
 }
 
@@ -208,27 +244,6 @@ type NVMeshStatus struct {
 	ReconcileStatus ReconcileStatus `json:"reconcileStatus,omitempty"`
 
 	ActionsStatus map[string]ActionStatus `json:"actionsStatus,omitempty"`
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-
-// NVMesh is the Schema for the nvmeshes API
-type NVMesh struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   NVMeshSpec   `json:"spec,omitempty"`
-	Status NVMeshStatus `json:"status,omitempty"`
-}
-
-// +kubebuilder:object:root=true
-
-// NVMeshList contains a list of NVMesh
-type NVMeshList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []NVMesh `json:"items"`
 }
 
 type ReconcileStatus struct {

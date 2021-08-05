@@ -5,13 +5,11 @@ metadata:
 spec:
   core:
     azureOptimized: true
+    tcpOnly: true
     version: 2.2.1
   csi:
     controllerReplicas: 1
     version: v1.1.4-7
-  debug:
-    containersKeepRunningAfterFailure: true
-    imagePullPolicyAlways: true
   management:
     mongoDB:
       replicas: 1
