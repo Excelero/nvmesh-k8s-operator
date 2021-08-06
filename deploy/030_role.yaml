@@ -76,6 +76,7 @@ rules:
   - storageclasses
   - csinodes
   - volumeattachments
+  - csistoragecapacities
   verbs:
   - create
   - delete
