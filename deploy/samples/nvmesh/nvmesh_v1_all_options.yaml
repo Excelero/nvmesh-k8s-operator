@@ -28,8 +28,6 @@ spec:
         - /dev/nvme1n1
         - /dev/nvme2n1
   csi:
-    controllerReplicas: 1
-
     # The version of the NVMesh CSI driver
     version: v1.1.6-3
   management:

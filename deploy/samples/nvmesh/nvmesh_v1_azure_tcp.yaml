@@ -8,7 +8,6 @@ spec:
     tcpOnly: true
     version: 2.2.1
   csi:
-    controllerReplicas: 1
     version: v1.1.4-7
   management:
     mongoDB:

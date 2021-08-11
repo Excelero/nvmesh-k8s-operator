@@ -17,7 +17,7 @@ limitations under the License.
 package v1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -34,12 +34,13 @@ import (
 // +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.reconcileStatus.status`,priority=10
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reconcileStatus.status`,priority=10
 
-// NVMesh is the Schema for the nvmeshes API
+// Represents a NVMesh Cluster
 type NVMesh struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NVMeshSpec   `json:"spec,omitempty"`
+	// +required
+	Spec   NVMeshSpec   `json:"spec"`
 	Status NVMeshStatus `json:"status,omitempty"`
 }
 
@@ -59,7 +60,7 @@ type NVMeshCore struct {
 
 	//The address of the image registry where the nvmesh core images are stored
 	// +optional
-	ImageRegistry string `json:"imageRegistry"`
+	ImageRegistry string `json:"imageRegistry,omitempty"`
 
 	//The version tag of the nvmesh core docker images
 	// +optional
@@ -74,20 +75,27 @@ type NVMeshCore struct {
 	ConfiguredNICs string `json:"configuredNICs,omitempty"`
 
 	// TCP Only - Set to true if cluster support only TCP, If false or omitted Infiniband is used
+	// +optional
 	TCPOnly bool `json:"tcpOnly,omitempty"`
 
 	// Azure Optimized - Make optimizations for running on Azure cloud
+	// +optional
 	AzureOptimized bool `json:"azureOptimized,omitempty"`
 
 	// Exclude NVMe Drives - Define which NVMe drives should not be used by NVMesh
+	// +optional
 	ExcludeDrives *ExcludeNVMeDrivesSpec `json:"excludeDrives,omitempty"`
 }
 
 type ExcludeNVMeDrivesSpec struct {
 	// A list of NVMe drive serial numbers that should not be used by the NVMesh software. i.e. S3HCNX4K123456
+	// +optional
+	// +example=S3HCNX4K123456
 	SerialNumbers []string `json:"serialNumbers,omitempty"`
 
 	// A list of device paths that should not be used by the NVMesh software, These devices will be excluded from each node. i.e. /dev/nvme1n1
+	// +optional
+	// +example=/dev/nvme1n1
 	DevicePaths []string `json:"devicePaths,omitempty"`
 }
 
@@ -110,17 +118,17 @@ type MongoDBCluster struct {
 
 	//Overrides fields in the MongoDB data PVC
 	// +optional
-	DataVolumeClaim corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaim,omitempty"`
+	DataVolumeClaim v1.PersistentVolumeClaimSpec `json:"dataVolumeClaim,omitempty"`
 }
 
 type NVMeshManagement struct {
 	//The version of NVMesh Management to be deployed. to perform an upgrade simply update this value to the required version.
 	// +required
-	Version string `json:"version,omitempty"`
+	Version string `json:"version"`
 
 	//The address of the image registry where the nvmesh management image is stored
 	// +optional
-	ImageRegistry string `json:"imageRegistry"`
+	ImageRegistry string `json:"imageRegistry,omitempty"`
 
 	//The number of replicas of the NVMesh Managemnet
 	// +kubebuilder:validation:Minimum=1
@@ -144,24 +152,24 @@ type NVMeshManagement struct {
 
 	//Overrides fields in the Management Backups PVC
 	// +optional
-	BackupsVolumeClaim corev1.PersistentVolumeClaimSpec `json:"backupsVolumeClaim,omitempty"`
+	BackupsVolumeClaim v1.PersistentVolumeClaimSpec `json:"backupsVolumeClaim,omitempty"`
 }
 
 type NVMeshCSI struct {
-	//ControllerReplicas describes the number of replicas for the NVMesh CSI Controller Statefulset
+	//The version of the NVMesh CSI Controller which will be deployed. To perform an upgrade simply update this value to the required version.
+	// +required
+	Version string `json:"version"`
+
+	//The number of replicas for the NVMesh CSI Controller Statefulset
 	// +kubebuilder:validation:Minimum=1
 	// +optional
 	ControllerReplicas int32 `json:"controllerReplicas,omitempty"`
 
-	//Version controls which version of the NVMesh CSI Controller will be deployed. to perform an upgrade simply update this value to the required version.
-	// +optional
-	Version string `json:"version,omitempty"`
-
-	//ImageName - Optional, if given will override the default repositroy/image-name
+	//Optional, if given will override the default repositroy/image-name
 	// +optional
 	ImageName string `json:"imageName,omitempty"`
 
-	// Disabled - if true NVMesh CSI Driver will not be deployed
+	//If true NVMesh CSI Driver will not be deployed
 	// +optional
 	Disabled bool `json:"disabled,omitempty"`
 }
@@ -181,8 +189,11 @@ type NVMeshOperatorSpec struct {
 }
 
 type OperatorFileServerSpec struct {
-	Address              string `json:"address,omitempty"`
-	SkipCheckCertificate bool   `json:"skipCheckCertificate,omitempty"`
+	// The url address of the binaries file server
+	Address string `json:"address,omitempty"`
+
+	// Allows to connect to a self signed https server
+	SkipCheckCertificate bool `json:"skipCheckCertificate,omitempty"`
 }
 
 type ClusterAction struct {
@@ -190,7 +201,7 @@ type ClusterAction struct {
 	// +kubebuilder:validation:Enum=collect-logs
 	// +kubebuilder:validation:Required
 	// +required
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// Arguments for the Action
 	// +optional
@@ -199,10 +210,18 @@ type ClusterAction struct {
 
 // NVMeshDebugOptions - Operator Debug Options
 type DebugOptions struct {
-	ImagePullPolicyAlways             bool `json:"imagePullPolicyAlways,omitempty"`
+
+	// If true will try to pull all images even if they exist locally. For use when the same image with the same tag was updated
+	ImagePullPolicyAlways bool `json:"imagePullPolicyAlways,omitempty"`
+
+	// Prevent containers from exiting on each error causing the pod to be restarted
 	ContainersKeepRunningAfterFailure bool `json:"containersKeepRunningAfterFailure,omitempty"`
-	CollectLogsJobsRunForever         bool `json:"collectLogsJobsRunForever,omitempty"`
-	DebugJobs                         bool `json:"debugJobs,omitempty"`
+
+	// Makes logs collector job stay running for debugging
+	CollectLogsJobsRunForever bool `json:"collectLogsJobsRunForever,omitempty"`
+
+	// Adds additional debug prints to jobs for actions and uninstall processes
+	DebugJobs bool `json:"debugJobs,omitempty"`
 }
 
 // NVMeshSpec defines the desired state of NVMesh
@@ -210,14 +229,14 @@ type NVMeshSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Core is an object describing the nvmesh-core deployment
-	Core NVMeshCore `json:"core,omitempty"`
+	// Controls deployment of NVMesh-Core components
+	Core NVMeshCore `json:"core"`
 
-	// Management is an object describing the nvmesh-management deployment
-	Management NVMeshManagement `json:"management,omitempty"`
+	// Controls deployment of NVMesh-Management
+	Management NVMeshManagement `json:"management"`
 
-	// CSI is an object describing the nvmesh-csi-driver deployment
-	CSI NVMeshCSI `json:"csi,omitempty"`
+	// Controls deployment of NVMesh CSI Driver
+	CSI NVMeshCSI `json:"csi"`
 
 	// Control the behavior of the NVMesh operator for this NVMesh Cluster
 	// +optional
@@ -227,7 +246,7 @@ type NVMeshSpec struct {
 	// +optional
 	Debug DebugOptions `json:"debug,omitempty"`
 
-	// Actions allow the user to initiate tasks for the operator to perform
+	// Initiate actions such as collecting logs
 	Actions []ClusterAction `json:"actions,omitempty"`
 }
 

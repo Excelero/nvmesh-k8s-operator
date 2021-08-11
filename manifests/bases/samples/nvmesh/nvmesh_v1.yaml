@@ -4,13 +4,8 @@ metadata:
   name: cluster1
 spec:
   core:
-    azureOptimized: true
     version: 2.2.1
   csi:
-    controllerReplicas: 1
-    version: v1.1.4-7
+    version: v1.1.6-4
   management:
-    mongoDB:
-      replicas: 1
-    replicas: 1
     version: 2.2.0
