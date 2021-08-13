@@ -90,12 +90,10 @@ type NVMeshCore struct {
 type ExcludeNVMeDrivesSpec struct {
 	// A list of NVMe drive serial numbers that should not be used by the NVMesh software. i.e. S3HCNX4K123456
 	// +optional
-	// +example=S3HCNX4K123456
 	SerialNumbers []string `json:"serialNumbers,omitempty"`
 
 	// A list of device paths that should not be used by the NVMesh software, These devices will be excluded from each node. i.e. /dev/nvme1n1
 	// +optional
-	// +example=/dev/nvme1n1
 	DevicePaths []string `json:"devicePaths,omitempty"`
 }
 

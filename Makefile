@@ -76,7 +76,7 @@ deploy: manifests kustomize
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
+manifests: controller-gen docs
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml manifests/bases/crd/nvmesh.crd.yaml
 	cd manifests && ./build_manifests.py
@@ -177,3 +177,7 @@ debug-info:
 .PHONY: scorecard
 scorecard:
 	operator-sdk scorecard operator-hub/catalog_bundle/ -o text
+
+.PHONY: docs
+docs:
+	cd docs/build_docs/ && ./gen_nvmesh_cr_docs.sh
