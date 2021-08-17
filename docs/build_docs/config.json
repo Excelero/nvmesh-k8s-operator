@@ -24,5 +24,6 @@
         "k8s.io/api/": "Kubernetes ",
         "k8s.io/apimachinery/pkg/apis/": "Kubernetes "
     },
-    "markdownDisabled": false
+    "markdownDisabled": false,
+    "gitCommitDisabled": true
 }

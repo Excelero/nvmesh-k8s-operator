@@ -1018,4 +1018,4 @@ Kubernetes meta/v1.Time
 </table>
 <hr/>
 Generated using <a href="https://github.com/company/project"><code>crd-docs-generator</code></a>
-on git commit <code>94a5ea0</code>.
+.
