@@ -27,6 +27,10 @@ spec:
       devicePaths:
         - /dev/nvme1n1
         - /dev/nvme2n1
+
+      updateStrategy:
+        maxUnavailable: 1
+        maxSurge: 1
   csi:
     # The version of the NVMesh CSI driver
     version: v1.1.6-3

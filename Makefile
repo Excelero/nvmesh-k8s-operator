@@ -157,6 +157,9 @@ bundle-dev-build: manifests docker-build
 bundle-dev-deploy:
 	kubectl apply -f operator-hub/dev/catalog_source.yaml
 
+.PHONY: dev-build-deploy
+dev-build-deploy: docker-build docker-push bundle-dev-build bundle-dev-deploy
+
 .PHONY: bundle-test
 bundle-test:
 	kubectl delete namespace test-operator || echo "namespace test-operator doesn't exists, proceeding with tests"

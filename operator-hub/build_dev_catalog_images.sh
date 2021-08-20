@@ -7,12 +7,11 @@ OPERATOR_REGISTRY_REPO=~/go/src/github.com/operator-registry
 MANIFESTS_DIR=./nvmesh_bundle/manifests
 
 CONFIG_FILE=../manifests/config.yaml
-OPER_VERSION=$(yq e ".operator.version" $CONFIG_FILE)
+BUNDLE_VERSION=$(yq e ".bundle.version" $CONFIG_FILE)
 BUNDLE_RELEASE=$(yq e ".bundle.release" $CONFIG_FILE)
-INDEX_BUILD=$(yq e ".bundle.dev.index_build" $CONFIG_FILE)
 BUNDLE_IMG=$(yq e ".bundle.dev.bundle_image_name" $CONFIG_FILE)
 INDEX_IMG=$(yq e ".bundle.dev.index_image_name" $CONFIG_FILE)
-BUNDLE_VERSION="${OPER_VERSION}-${BUNDLE_RELEASE}-${INDEX_BUILD}"
+BUNDLE_VERSION="${BUNDLE_VERSION}-${BUNDLE_RELEASE}"
 BUNDLE_IMAGE_NAME="${BUNDLE_IMG}:${BUNDLE_VERSION}"
 INDEX_IMAGE_NAME="${INDEX_IMG}:${BUNDLE_VERSION}"
 PACKAGE_NAME=nvmesh-operator

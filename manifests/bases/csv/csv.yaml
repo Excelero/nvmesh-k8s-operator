@@ -166,10 +166,16 @@ spec:
           path: management.externalIPs
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-        - displayName: HIDDEN FIELDS - Operator Controls
+        - displayName: HIDDEN FIELDS - Debug Options
           description: >-
               HIDDEN FIELDS - Debug Options - A set of debug options
           path: debug
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
+        - displayName: HIDDEN FIELDS - Operator Controls
+          description: >-
+              HIDDEN FIELDS
+          path: operator
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:hidden'
         - displayName: HIDDEN FIELDS - Management ImageRegistry

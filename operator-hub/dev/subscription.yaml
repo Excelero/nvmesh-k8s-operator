@@ -11,4 +11,4 @@ spec:
   name: nvmesh-operator
   source: nvmesh-catalog
   sourceNamespace: olm
-  startingCSV: nvmesh-operator.0.8.0
+  startingCSV: nvmesh-operator.0.8.3

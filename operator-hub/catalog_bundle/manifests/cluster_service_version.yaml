@@ -7,7 +7,7 @@ metadata:
     alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.2.1"},"management":{"mongoDB":{"replicas":1},"version":"2.2.1-1","replicas":1},"csi":{"version":"v1.1.4-7","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
-    containerImage: docker.io/excelero/nvmesh-operator:0.8.0-8
+    containerImage: docker.io/excelero/nvmesh-operator:0.8.3-2
     createdAt: '2020-10-28T00:00:00Z'
     description: NVMesh Operator enables users to install Excelero NVMesh on Kubernetes
       and OpenShift clusters
@@ -15,7 +15,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     repository: https://github.com/Excelero/nvmesh-k8s-operator
     support: Excelero Support (support@excelero.com)
-  name: nvmesh-operator.0.8.0
+  name: nvmesh-operator.0.8.3
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -143,8 +143,13 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: HIDDEN FIELDS - Debug Options - A set of debug options
-        displayName: HIDDEN FIELDS - Operator Controls
+        displayName: HIDDEN FIELDS - Debug Options
         path: debug
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: HIDDEN FIELDS
+        displayName: HIDDEN FIELDS - Operator Controls
+        path: operator
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: HIDDEN FIELDS - Override the default image registry for the management
@@ -459,10 +464,10 @@ spec:
                 - --enable-leader-election
                 - --openshift
                 - --core-image-tag
-                - 0.8.0-19
+                - 0.8.0-33
                 command:
                 - /manager
-                image: docker.io/excelero/nvmesh-operator:0.8.0-8
+                image: docker.io/excelero/nvmesh-operator:0.8.3-2
                 name: controller
                 resources:
                   limits:
@@ -501,4 +506,4 @@ spec:
   maturity: beta
   provider:
     name: Excelero
-  version: 0.8.0-8
+  version: 0.8.3

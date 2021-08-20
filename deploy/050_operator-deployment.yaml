@@ -21,7 +21,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: docker.io/nvmesh-operator:0.8.0-8
+        image: docker.io/nvmesh-operator:0.8.3-2
         name: controller
         resources:
           limits:

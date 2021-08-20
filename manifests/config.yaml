@@ -1,17 +1,16 @@
 operator:
-  version: 0.8.0
-  release: 8
+  version: 0.8.3
+  release: 2
   channel: beta
   image_name: nvmesh-operator
-  core_image_tag: 0.8.0-19
+  core_image_tag: 0.8.0-33
 #  repo: registry.connect.redhat.com/excelero
   repo: docker.io/excelero
 bundle:
-  version: 0.8.0
-  release: 10-dev
+  version: 0.8.3
+  release: 2-dev
   dev:
     bundle_image_name: "docker.io/excelero/dev-os-bundle"
-    index_build: 1
     index_image_name: "docker.io/excelero/dev-os-catalog-source-index"
   alm-example:
     # This will be embedded into the bundle manifest,

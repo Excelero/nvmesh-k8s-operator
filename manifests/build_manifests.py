@@ -92,7 +92,7 @@ def build_csv():
     csv['metadata']['annotations']['alm-examples'] = get_alm_examples()
     csv['metadata']['annotations']['containerImage'] = operator_image
 
-    csv['spec']['version'] = "{version}-{release}".format(**version_info)
+    csv['spec']['version'] = version_info['version']
     csv['spec']['install']['spec']['deployments'] = [install_dep_item]
     csv['spec']['install']['spec']['clusterPermissions'] = [cluster_permissions]
 
@@ -139,11 +139,10 @@ def build_bundle_dir():
 def update_catalog_source():
     catalog_source_file = path.join(operator_hub_dir, "dev/catalog_source.yaml")
     cat_source = load_yaml_file(catalog_source_file)
-    image = '{image}:{version}-{rel}-{bundle_build}'.format(
+    image = '{image}:{version}-{rel}'.format(
         image=bundle_info['dev']['index_image_name'],
-        version=version_info['version'],
-        rel=bundle_info['release'],
-        bundle_build=bundle_info['dev']['index_build']
+        version=bundle_info['version'],
+        rel=bundle_info['release']
     )
     cat_source['spec']['image'] = image
 
