@@ -28,15 +28,18 @@ spec:
         - /dev/nvme1n1
         - /dev/nvme2n1
 
-      updateStrategy:
-        maxUnavailable: 1
-        maxSurge: 1
   csi:
     # The version of the NVMesh CSI driver
     version: v1.1.6-3
   management:
     mongoDB:
       replicas: 1
+      # uncomment this to control parameters in the Mongo data volume PVC
+      # dataVolumeClaim:
+      #   storageClassName: some-storage-class
+      #   selector:
+      #     matchLabels:
+      #       role: mongo-for-nvmesh
 
     # The number of Management servers in a High-Availability Management
     replicas: 1
@@ -44,6 +47,14 @@ spec:
     # The version of the NVMesh-Management server
     version: 2.2.0
 
+    # uncomment this to control parameters of the management backups volume PVC
+    # backupsVolumeClaim:
+    #   # required storage-class for management backups volume
+    #   storageClassName: sc-for-management
+    #   # configure selectors to bound the PVC to a static-provisioned PV
+    #   selector:
+    #     matchLabels:
+    #       role: nvmesh-backups
   actions:
     # Initiate logs collection on the NVMesh cluster
     # logs will be saved locally on each host at /opt/nvmesh-operator/logs

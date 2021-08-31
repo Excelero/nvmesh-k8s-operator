@@ -56,7 +56,7 @@ spec:
                   key: password
           volumeMounts:
             - name: nvmesh-conf
-              mountPath: "/etc/opt/NVMesh"
+              mountPath: /coreConfigMap
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
             - name: dev
@@ -105,7 +105,7 @@ spec:
             - name: run-udev
               mountPath: /run/udev
             - name: nvmesh-conf
-              mountPath: /etc/opt/NVMesh
+              mountPath: /coreConfigMap
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
             - name: var-run-nvmesh
@@ -172,7 +172,7 @@ spec:
             name: nvmesh-core-config
             items:
             - key: "nvmesh.conf"
-              path: ".nvmesh.conf"
+              path: "nvmesh.conf"
         - name: lib-modules-dir
           hostPath:
             path: /lib/modules

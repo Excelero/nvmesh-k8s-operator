@@ -54,7 +54,7 @@ spec:
                   key: password
           volumeMounts:
             - name: nvmesh-conf
-              mountPath: "/etc/opt/NVMesh"
+              mountPath: /coreConfigMap
             - name: device-dir
               mountPath: /dev
             - name: lib-modules-dir
@@ -77,7 +77,7 @@ spec:
             name: nvmesh-core-config
             items:
             - key: "nvmesh.conf"
-              path: ".nvmesh.conf"
+              path: "nvmesh.conf"
         - name: device-dir
           hostPath:
             path: /dev

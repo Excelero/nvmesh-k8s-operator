@@ -57,7 +57,7 @@ spec:
                 key: password
           volumeMounts:
             - name: nvmesh-conf
-              mountPath: "/etc/opt/NVMesh"
+              mountPath: /coreConfigMap
             - name: var-run-nvmesh
               mountPath: /var/run/NVMesh/
             - name: var-bin-nvmesh
@@ -119,7 +119,7 @@ spec:
             name: nvmesh-core-config
             items:
             - key: "nvmesh.conf"
-              path: ".nvmesh.conf"
+              path: "nvmesh.conf"
         - name: var-run-nvmesh
           hostPath:
             path: /var/run/NVMesh/
