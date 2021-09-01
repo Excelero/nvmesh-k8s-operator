@@ -229,6 +229,7 @@ func (r *NVMeshReconciler) getUninstallJob(cr *nvmeshv1.NVMesh, nodeName string)
 	r.addHostPathMount(podSpec, 0, "/opt")
 	r.addHostPathMount(podSpec, 0, "/etc/opt")
 	r.addHostPathMount(podSpec, 0, "/var/log")
+	r.addHostPathMount(podSpec, 0, "/var/opt")
 
 	container := &podSpec.Containers[0]
 	container.Env = []corev1.EnvVar{

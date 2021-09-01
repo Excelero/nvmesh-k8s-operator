@@ -10,7 +10,7 @@ spec:
     version: 2.2.1
   csi:
     controllerReplicas: 1
-    version: v1.1.6-3
+    version: v1.1.6-5
   management:
     mongoDB:
       replicas: 1

@@ -117,7 +117,9 @@ def get_deployment_for_kubernetes():
 
     operatorPodSpec = deployment['spec']['template']['spec']
     operatorContainer = operatorPodSpec['containers'][0]
-    operatorContainer['image'] = get_operator_image('docker.io')
+
+    # For the kubectl deploy yamls we will use the image from docker hub
+    operatorContainer['image'] = get_operator_image('excelero')
     return deployment
 
 def build_deploy_dir():
