@@ -21,6 +21,7 @@ spec:
         nvmesh.excelero.com/nvmesh-client: ""
       imagePullSecrets:
         - name: excelero-registry-cred
+      hostPID: true
       hostNetwork: true
       containers:
         - name: driver-container
@@ -71,6 +72,48 @@ spec:
               mountPath: /opt/nvmesh-operator
           # terminationGracePeriodSeconds - one hour
           terminationGracePeriodSeconds: 99999999
+        - name: tracer
+          image: nvmesh-tracer:placeholder
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c", "/init.sh"]
+          securityContext:
+            privileged: true
+          env:
+            - name: NVMESH_VERSION
+              value: placeholder
+            - name: KMOD_SERVER_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: fileServer.address
+            - name: NO_CHECK_CERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: nvmesh-core-config
+                  key: fileServer.skipCheckCertificate
+            - name: KMOD_SERVER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: nvmesh-file-server-cred
+                  key: username
+            - name: KMOD_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nvmesh-file-server-cred
+                  key: password
+          volumeMounts:
+            - name: var-run-nvmesh
+              mountPath: /var/run/NVMesh/
+            - name: var-log-nvmesh
+              mountPath: /var/log/NVMesh/
+            - name: host-bin
+              mountPath: /host/bin/
+            - name: host-sbin
+              mountPath: /host/sbin/
+            - name: opt-nvmesh
+              mountPath: /opt/NVMesh
+            - name: opt-nvmesh-operator
+              mountPath: /opt/nvmesh-operator
       volumes:
         - name: nvmesh-conf
           configMap:
@@ -99,3 +142,9 @@ spec:
         - name: host-sbin
           hostPath:
             path: /sbin
+        - name: var-log-nvmesh
+          hostPath:
+            path: /var/log/NVMesh/
+        - name: var-run-nvmesh
+          hostPath:
+            path: /var/run/NVMesh/
