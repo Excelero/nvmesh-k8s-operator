@@ -113,19 +113,19 @@ fi
 for n in $nodes; do
     if [ "$type" == "client" ] || [ "$type" == "both" ]; then
         get_nvmesh_label nvmesh-client
-        kubectl label node $n "$label"
+        kubectl label node $n "$label" --overwrite
         check_err $? "failed to label node $n with $label."
     fi
 
     if [ "$type" == "target" ] || [ "$type" == "both" ]; then
         get_nvmesh_label nvmesh-target
-        kubectl label node $n "$label"
+        kubectl label node $n "$label" --overwrite
         check_err $? "failed to label node $n with $label"
     fi
 
     if [ "$type" == "mgmt" ]; then
         get_nvmesh_label nvmesh-management
-        kubectl label node $n "$label"
+        kubectl label node $n "$label" --overwrite
         check_err $? "failed to label node $n with $label"
     fi
 done
