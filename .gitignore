@@ -32,3 +32,6 @@ __debug_bin
 
 # include this file
 !/.gitignore
+
+# ingore logs collected from collect_cluster_logs.sh script
+**/log_from_*
