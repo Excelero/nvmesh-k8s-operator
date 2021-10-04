@@ -87,6 +87,11 @@ func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, expected 
 func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expected *appsv1.DaemonSet, ds *appsv1.DaemonSet) bool {
 	log := r.Log.WithValues("method", "shouldUpdateDaemonSet")
 
+	if len(ds.Spec.Template.Spec.Containers) != len(expected.Spec.Template.Spec.Containers) {
+		//TODO (Operator Upgrade): we should consider having a version notation on each object as a label so we can identify when an upgrade is required
+		return true
+	}
+
 	for i, c := range ds.Spec.Template.Spec.Containers {
 		expectedImage := expected.Spec.Template.Spec.Containers[i].Image
 		if c.Image != expectedImage {
