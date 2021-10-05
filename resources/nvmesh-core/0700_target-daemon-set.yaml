@@ -57,6 +57,9 @@ spec:
           volumeMounts:
             - name: nvmesh-conf
               mountPath: /coreConfigMap
+            - name: modprobe-d-conf
+              mountPath: /etc/modprobe.d/zz_nvmesh_from_configmap.conf
+              subPath: zz_nvmesh_from_configmap.conf
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
             - name: dev
@@ -131,6 +134,12 @@ spec:
             items:
             - key: "nvmesh.conf"
               path: "nvmesh.conf"
+        - name: modprobe-d-conf
+          configMap:
+            name: nvmesh-core-config
+            items:
+              - key: modprobe.d
+                path: zz_nvmesh_from_configmap.conf
         - name: lib-modules-dir
           hostPath:
             path: /lib/modules

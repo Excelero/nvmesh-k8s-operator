@@ -150,6 +150,9 @@ func (r *NVMeshCoreReconciler) shouldUpdateCoreConfigMap(cr *nvmeshv1.NVMesh, ex
 		if field == "nvmesh.conf" {
 			shouldUpdate, newExpectedConfString = r.shouldUpdateNVMeshConf(cr, expected.Data[field], cm.Data[field])
 			expected.Data[field] = newExpectedConfString
+		} else if field == "modprobe.d" {
+			// always preserve this field
+			expected.Data[field] = cm.Data[field]
 		} else if expected.Data[field] != cm.Data[field] {
 			log.Info(fmt.Sprintf("nvmesh-core-config %s should be updated expected %s but got %s\n", field, expected.Data[field], cm.Data[field]))
 			shouldUpdate = true

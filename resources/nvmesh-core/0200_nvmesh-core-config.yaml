@@ -18,3 +18,7 @@ data:
     CONFIG_PROFILE_ID="cluster_default"
     CONFIG_PROFILE_NAME="Cluster Default"
     CONFIG_PROFILE_VERSION="1"
+  modprobe.d: |-
+    # override modules parameters here. The contents of this field will be written to /etc/modprobe.d/zz_nvmesh_from_configmap.conf
+    # Example:
+    # options <module name> arg_name=value
