@@ -73,7 +73,6 @@ spec:
               mountPath: /host/sbin/
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
-          # terminationGracePeriodSeconds - one hour
           terminationGracePeriodSeconds: 99999999
         - name: tracer
           image: nvmesh-tracer:placeholder

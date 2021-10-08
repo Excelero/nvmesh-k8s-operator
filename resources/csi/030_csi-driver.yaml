@@ -1,6 +1,6 @@
 ---
 # Source: nvmesh-csi-driver/templates/csi-driver.yaml
-apiVersion: storage.k8s.io/v1beta1
+apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
   name: nvmesh-csi.excelero.com

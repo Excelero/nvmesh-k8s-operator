@@ -1,14 +1,14 @@
 operator:
-  version: 0.8.3
-  release: 8
+  version: 0.8.4
+  release: 10
   channel: beta
   image_name: nvmesh-operator
-  core_image_tag: 0.8.0-53
+  core_image_tag: 0.8.0-56
 #  repo: registry.connect.redhat.com/excelero
   repo: excelero
 bundle:
-  version: 0.8.3
-  release: 8-dev
+  version: 0.8.4
+  release: 10-dev
   dev:
     bundle_image_name: "docker.io/excelero/dev-os-bundle"
     index_image_name: "docker.io/excelero/dev-os-catalog-source-index"
@@ -26,7 +26,7 @@ bundle:
         version: 2.2.1
       csi:
         controllerReplicas: 1
-        version: v1.1.6-5
+        version: v1.1.7
       management:
         mongoDB:
           replicas: 1

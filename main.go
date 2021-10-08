@@ -38,7 +38,7 @@ import (
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 
 	"excelero.com/nvmesh-k8s-operator/controllers"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	// +kubebuilder:scaffold:imports
 )
 
