@@ -12,7 +12,7 @@ metadata:
     description: NVMesh Operator enables users to install Excelero NVMesh on Kubernetes
       and OpenShift clusters
     operators.operatorframework.io/builder: operator-sdk-v1.0.0
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/Excelero/nvmesh-k8s-operator
     support: Excelero Support (support@excelero.com)
   name: nvmesh-operator.0.8.4

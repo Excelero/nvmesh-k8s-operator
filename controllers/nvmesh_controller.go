@@ -71,7 +71,7 @@ type NVMeshComponent interface {
 // +kubebuilder:subresource:status
 
 // Reconcile - Reconciles an NVMesh CR
-func (r *NVMeshReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("nvmesh", req.NamespacedName)
 

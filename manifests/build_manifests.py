@@ -147,7 +147,7 @@ def update_catalog_source():
         rel=bundle_info['release']
     )
     cat_source['spec']['image'] = image
-
+    cat_source['metadata']['name'] = 'nvmesh-catalog-{}'.format(bundle_info['version'])
     write_yaml_file(cat_source, catalog_source_file)
 
 def update_subscription():

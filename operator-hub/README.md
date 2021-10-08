@@ -1,5 +1,5 @@
 # Integration with Operator Hub
-This directory contains sources, scripts and documentation on how to buildand deploy the operator into OpenShift Operator-Hub
+This directory contains sources, scripts and documentation on how to build and deploy the operator into OpenShift Operator-Hub
 
 ## Adding the Operator to OpenShift Operator-Hub listing:
 ### **CatalogSource**

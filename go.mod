@@ -1,19 +1,21 @@
 module excelero.com/nvmesh-k8s-operator
 
-go 1.12
+go 1.16
 
 require (
-	github.com/go-logr/logr v0.1.0
-	github.com/onsi/ginkgo v1.12.1
-	github.com/onsi/gomega v1.10.1
+	cloud.google.com/go v0.81.0 // indirect
+	github.com/go-logr/logr v0.4.0
+	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.15.0
 	github.com/openshift/api v3.9.0+incompatible
-	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v1.1.0 // indirect
-	github.com/prometheus/common v0.6.0
-	k8s.io/api v0.18.8
-	k8s.io/apiextensions-apiserver v0.18.6
-	k8s.io/apimachinery v0.18.8
-	k8s.io/client-go v0.18.8
-	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451
-	sigs.k8s.io/controller-runtime v0.6.2
+	github.com/pkg/errors v0.9.1
+	github.com/prometheus/common v0.26.0
+	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602 // indirect
+	k8s.io/api v0.22.2
+	k8s.io/apiextensions-apiserver v0.22.2
+	k8s.io/apimachinery v0.22.2
+	k8s.io/client-go v0.22.2
+	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
+	sigs.k8s.io/controller-runtime v0.10.2
 )

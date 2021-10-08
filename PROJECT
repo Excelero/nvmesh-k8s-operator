@@ -1,11 +1,15 @@
 domain: excelero.com
-layout: go.kubebuilder.io/v2
+layout: go.kubebuilder.io/v3
 projectName: nvmesh-k8s-operator
 repo: git@github.com:Excelero/nvmesh-k8s-operator.git
 resources:
-- group: nvmesh
+- controller: true
+  domain: excelero.com
+  group: nvmesh
   kind: NVMesh
+  # TODO(user): Update the package path for your API if the below value is incorrect.
+  path: excelero.com/nvmesh-k8s-operator/api/v1
   version: v1
-version: 3-alpha
+version: "3"
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}

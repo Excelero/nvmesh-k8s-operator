@@ -35,7 +35,7 @@ func TestManagementReconciler(t *testing.T) {
 	r := NVMeshReconciler{
 		NVMeshBaseReconciler: NVMeshBaseReconciler{
 			Scheme: e.Scheme,
-			Log:    logf.Log.Logger,
+			Log:    logf.Log,
 			Client: e.Client,
 		},
 	}

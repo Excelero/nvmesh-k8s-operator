@@ -3,7 +3,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: nvmesh-catalog
+  name: nvmesh-catalog-0.8.4
   namespace: openshift-marketplace
 spec:
   displayName: NVMesh Catalog Source

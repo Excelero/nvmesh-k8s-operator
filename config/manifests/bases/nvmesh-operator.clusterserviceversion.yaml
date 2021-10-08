@@ -5,7 +5,7 @@ metadata:
     alm-examples: '[]'
     capabilities: Full Lifecycle
     operators.operatorframework.io/builder: operator-sdk-v1.0.0
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
   name: nvmesh-operator.0.7.0
   namespace: placeholder
 spec:
