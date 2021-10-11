@@ -10,7 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -46,9 +46,8 @@ func (r *NVMeshCoreReconciler) deployCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRe
 }
 
 //InitObject Initialize objects in Core
-func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
-	//name, kind := getRunetimeObjectNameAndKind(obj)
-	switch o := (*obj).(type) {
+func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj client.Object) error {
+	switch o := (obj).(type) {
 	case *appsv1.DaemonSet:
 		err := r.initDaemonSets(cr, o)
 		return err
@@ -62,12 +61,11 @@ func (r *NVMeshCoreReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 }
 
 //ShouldUpdateObject Manages update objects in Core
-func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, expected *runtime.Object, obj *runtime.Object) bool {
-	name, _ := getRunetimeObjectNameAndKind(obj)
-	switch o := (*obj).(type) {
+func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, expected client.Object, obj client.Object) bool {
+	switch o := (obj).(type) {
 	case *appsv1.DaemonSet:
-		expDS := (*expected).(*appsv1.DaemonSet)
-		switch name {
+		expDS := (expected).(*appsv1.DaemonSet)
+		switch obj.GetName() {
 		case coreUserspaceDaemonSetName:
 			fallthrough
 		case targetDriverDaemonSetName:
@@ -76,7 +74,7 @@ func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, expected 
 			return r.shouldUpdateDaemonSet(cr, expDS, o)
 		}
 	case *v1.ConfigMap:
-		expectedConfigMap := (*expected).(*corev1.ConfigMap)
+		expectedConfigMap := (expected).(*corev1.ConfigMap)
 		return r.shouldUpdateCoreConfigMap(cr, expectedConfigMap, o)
 	default:
 	}

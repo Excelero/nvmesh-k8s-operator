@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/watch"
+	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/utils/pointer"
 
@@ -33,6 +34,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 )
 
 const (
@@ -53,7 +58,7 @@ var (
 	watchers []watch.Interface
 )
 
-func (r *NVMeshReconciler) reconcileObject(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent, removeObject bool) error {
+func (r *NVMeshReconciler) reconcileObject(cr *nvmeshv1.NVMesh, newObj client.Object, component *NVMeshComponent, removeObject bool) error {
 	if removeObject == false {
 		return r.makeSureObjectExists(cr, newObj, component)
 	}
@@ -68,12 +73,8 @@ func (r *NVMeshReconciler) getOperatorLabels(cr *nvmeshv1.NVMesh) map[string]str
 	}
 }
 
-func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
-	v1obj := (*newObj).(metav1.Object)
-	v1obj.SetNamespace(cr.GetNamespace())
-
-	// Add general labels
-	labels := v1obj.GetLabels()
+func (r *NVMeshReconciler) addOperatorLabels(cr *nvmeshv1.NVMesh, obj client.Object) {
+	labels := obj.GetLabels()
 	if labels == nil {
 		labels = make(map[string]string)
 	}
@@ -82,10 +83,15 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	for k, v := range opLabels {
 		labels[k] = v
 	}
+	obj.SetLabels(labels)
+}
 
-	v1obj.SetLabels(labels)
+func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj client.Object, component *NVMeshComponent) error {
+	newObj.SetNamespace(cr.GetNamespace())
+	r.addOperatorLabels(cr, newObj)
 
-	name, kind := getRunetimeObjectNameAndKind(newObj)
+	name := newObj.GetName()
+	kind := newObj.GetObjectKind().GroupVersionKind().Kind
 	log := r.Log.WithValues("method", "makeSureObjectExists", "name", name, "kind", kind)
 
 	if component != nil {
@@ -97,7 +103,7 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	}
 
 	// Set NVMesh instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cr, v1obj, r.Scheme); err != nil {
+	if err := controllerutil.SetControllerReference(cr, newObj, r.Scheme); err != nil {
 		if err != nil {
 			log.Error(err, "Error running SetControllerReference")
 		}
@@ -107,7 +113,7 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	if err != nil && k8serrors.IsNotFound(err) {
 		log.Info("Creating new object")
 
-		err = r.Client.Create(context.TODO(), *newObj)
+		err = r.Client.Create(context.TODO(), newObj)
 		if k8serrors.IsAlreadyExists(err) {
 			log.Info(fmt.Sprintf("WARNING: Object Already exists. while trying to create %s %s", kind, name))
 			return nil
@@ -120,11 +126,7 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 		log.Info("shouldUpdate returned true > Updating...")
 
 		// Update the resource version before an update
-		v1objFound := (*foundObj).(metav1.Object)
-		v1objNew := (*newObj).(metav1.Object)
-		v1objNew.SetResourceVersion(v1objFound.GetResourceVersion())
-
-		err = r.Client.Update(context.TODO(), *newObj)
+		err = r.Client.Update(context.TODO(), newObj)
 		if err != nil {
 			log.Info("Error updating object")
 		} else {
@@ -138,10 +140,10 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj *run
 	return nil
 }
 
-func (r *NVMeshReconciler) makeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *runtime.Object, component *NVMeshComponent) error {
-	v1obj := (*newObj).(metav1.Object)
-	v1obj.SetNamespace(cr.GetNamespace())
-	name, kind := getRunetimeObjectNameAndKind(newObj)
+func (r *NVMeshReconciler) makeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj client.Object, component *NVMeshComponent) error {
+	newObj.SetNamespace(cr.GetNamespace())
+	name := newObj.GetName()
+	kind := newObj.GetObjectKind().GroupVersionKind().Kind
 	log := r.Log.WithValues("method", "makeSureObjectRemoved", "name", name, "kind", kind)
 
 	_, err := r.getGenericObject(newObj, cr.GetNamespace())
@@ -164,7 +166,7 @@ func (r *NVMeshReconciler) makeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *ru
 		return err
 	} else {
 		log.Info("Deleting Object")
-		err = r.Client.Delete(context.TODO(), *newObj)
+		err = r.Client.Delete(context.TODO(), newObj)
 		if err != nil && !k8serrors.IsNotFound(err) {
 			log.Info("Error deleting object")
 		}
@@ -174,17 +176,18 @@ func (r *NVMeshReconciler) makeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj *ru
 	return nil
 }
 
-func (r *NVMeshReconciler) getGenericObject(fromObject *runtime.Object, namespace string) (*runtime.Object, error) {
+func (r *NVMeshReconciler) getGenericObject(fromObject client.Object, namespace string) (client.Object, error) {
 	// Extract name and namespace without knowing the type
-	name, kind := getRunetimeObjectNameAndKind(fromObject)
+	name := fromObject.GetName()
+	kind := fromObject.GetObjectKind().GroupVersionKind().Kind
 	//r.Log.Info("Going to get Object", "ns", namespace, "name", name, "kind", kind)
 	if stringInSlice(kind, GloballyNamedKinds) {
 		namespace = ""
 	}
 
-	foundObject := (*fromObject).DeepCopyObject()
+	foundObject := (fromObject.DeepCopyObject()).(client.Object)
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, foundObject)
-	return &foundObject, err
+	return foundObject, err
 }
 
 func (r *NVMeshReconciler) getDecoder() runtime.Decoder {
@@ -209,7 +212,7 @@ func (r *NVMeshReconciler) reconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 
 	var reconcileErrors []error
 	for _, obj := range objects {
-		err = r.reconcileObject(cr, &obj, &component, removeObject)
+		err = r.reconcileObject(cr, obj, &component, removeObject)
 		if err != nil {
 			log.Info(fmt.Sprintf("Failed to Reconcile %s %+v\n", reflect.TypeOf(obj), err))
 			reconcileErrors = append(reconcileErrors, err)
@@ -245,13 +248,6 @@ func (r *NVMeshReconciler) reconcileYamlObjectsFromDir(cr *nvmeshv1.NVMesh, comp
 	}
 
 	return nil
-}
-
-func getRunetimeObjectNameAndKind(obj *runtime.Object) (string, string) {
-	v1obj := (*obj).(metav1.Object)
-	name := v1obj.GetName()
-	kind := (*obj).GetObjectKind().GroupVersionKind().Kind
-	return name, kind
 }
 
 func stringInSlice(a string, list []string) bool {
@@ -388,7 +384,45 @@ func (r *NVMeshReconciler) addUnstructuredWatch(res dynamic.ResourceInterface, o
 	return nil
 }
 
+// find the corresponding GVR (available in *meta.RESTMapping) for gvk
+func findGVR(gvk schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping, error) {
+
+	// DiscoveryClient queries API server about the resources
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+func (r *NVMeshReconciler) getDynamicClientResource(gvk schema.GroupVersionKind, namespace string) (dynamic.ResourceInterface, *meta.RESTMapping, error) {
+
+	gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
+	if err != nil {
+		r.Log.Info(fmt.Sprintf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk))
+		return nil, gvrMapping, err
+	}
+
+	res := r.DynamicClient.Resource(gvrMapping.Resource).Namespace(namespace)
+	return res, gvrMapping, nil
+}
+
 type unstructuredUpdater func(*nvmeshv1.NVMesh, *unstructured.Unstructured, *schema.GroupVersionKind)
+
+func getNamespaceForObject(cr *nvmeshv1.NVMesh, gvk *schema.GroupVersionKind) string {
+	var ns string
+	if stringInSlice(gvk.Kind, GloballyNamedKinds) {
+		// Object Kind does not require namespace
+		ns = ""
+	} else {
+		// Object Kind requires namespace
+		ns = cr.GetNamespace()
+	}
+
+	return ns
+}
 
 func (r *NVMeshReconciler) reconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, directoryPath string, shouldCreate bool, processFunc unstructuredUpdater) error {
 	log := r.Log.WithValues("method", "reconcileUnstructuredObjects")
@@ -407,24 +441,13 @@ func (r *NVMeshReconciler) reconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 		}
 
 		processFunc(cr, obj, gvk)
+		namespace := getNamespaceForObject(cr, gvk)
 
-		gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
+		res, gvrMapping, err := r.getDynamicClientResource(*gvk, namespace)
 		if err != nil {
-			// Ingore this error, it will occure when we are looking for a Custom Resource but it's CRD is not deployed.
-			//log.Info(fmt.Sprintf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk))
+			// Ingore this error, This can happen when we are looking for a Custom Resource but it's CRD is not deployed.
 			continue
 		}
-
-		var ns string
-		if stringInSlice(gvk.Kind, GloballyNamedKinds) {
-			// Object Kind does not require namespace
-			ns = ""
-		} else {
-			// Object Kind requires namespace
-			ns = cr.GetNamespace()
-		}
-		res := r.DynamicClient.Resource(gvrMapping.Resource).Namespace(ns)
-		objName := obj.GetName()
 
 		if shouldCreate == true {
 			err = r.addUnstructuredWatch(res, obj)
@@ -432,6 +455,8 @@ func (r *NVMeshReconciler) reconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 				return err
 			}
 		}
+
+		objName := obj.GetName()
 
 		_, err = res.Get(context.TODO(), objName, metav1.GetOptions{})
 		if err != nil && k8serrors.IsNotFound(err) {
@@ -613,11 +638,11 @@ func (r *NVMeshReconciler) makeSureSCCExists(cr *nvmeshv1.NVMesh) (ctrl.Result, 
 }
 
 func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) error {
-	var objToCreate runtime.Object
+	var objToCreate client.Object
 	sa := r.getClusterServiceAccount(cr)
 
 	objToCreate = sa
-	err1 := r.makeSureObjectExists(cr, &objToCreate, nil)
+	err1 := r.makeSureObjectExists(cr, objToCreate, nil)
 	if err1 != nil {
 		return err1
 	}
@@ -625,13 +650,13 @@ func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) err
 	role, rb := r.getNVMeshClusterRoleAndRoleBinding(cr)
 
 	objToCreate = role
-	err2 := r.makeSureObjectExists(cr, &objToCreate, nil)
+	err2 := r.makeSureObjectExists(cr, objToCreate, nil)
 	if err2 != nil {
 		return err2
 	}
 
 	objToCreate = rb
-	err3 := r.makeSureObjectExists(cr, &objToCreate, nil)
+	err3 := r.makeSureObjectExists(cr, objToCreate, nil)
 	if err3 != nil {
 		return err3
 	}

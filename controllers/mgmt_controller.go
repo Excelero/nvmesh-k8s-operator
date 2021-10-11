@@ -10,15 +10,10 @@ import (
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/discovery"
-	memory "k8s.io/client-go/discovery/cached"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/restmapper"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -128,23 +123,10 @@ func updateMongoDBObjects(cr *nvmeshv1.NVMesh, obj *unstructured.Unstructured, g
 	}
 }
 
-// find the corresponding GVR (available in *meta.RESTMapping) for gvk
-func findGVR(gvk *schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping, error) {
-
-	// DiscoveryClient queries API server about the resources
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-}
-
 //InitObject Initializes  Management objects
-func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
-	name, _ := getRunetimeObjectNameAndKind(obj)
-	switch o := (*obj).(type) {
+func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj client.Object) error {
+	name := obj.GetName()
+	switch o := (obj).(type) {
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-management":
@@ -171,19 +153,19 @@ func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Obje
 }
 
 // ShouldUpdateObject Manages Management object updates
-func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, obj *runtime.Object) bool {
-	name, _ := getRunetimeObjectNameAndKind(obj)
-	switch o := (*obj).(type) {
+func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp client.Object, obj client.Object) bool {
+	name := obj.GetName()
+	switch o := (obj).(type) {
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-management":
-			expectedStatefulSet := (*exp).(*appsv1.StatefulSet)
+			expectedStatefulSet := (exp).(*appsv1.StatefulSet)
 			return r.shouldUpdateStatefulSet(cr, expectedStatefulSet, o)
 		}
 	case *v1.ConfigMap:
 		switch name {
 		case "nvmesh-mgmt-config":
-			var expectedConf *v1.ConfigMap = (*exp).(*v1.ConfigMap)
+			var expectedConf *v1.ConfigMap = (exp).(*v1.ConfigMap)
 			shouldUpdateConf := r.shouldUpdateConfigMap(cr, expectedConf, o)
 			if shouldUpdateConf == true {
 				r.updateConfAndRestartMgmt(cr, expectedConf, o)
@@ -193,7 +175,7 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runt
 	case *v1.Service:
 		switch name {
 		case "nvmesh-management-gui":
-			expectedService := (*exp).(*v1.Service)
+			expectedService := (exp).(*v1.Service)
 			return r.shouldUpdateGuiService(cr, expectedService, o)
 		}
 	default:

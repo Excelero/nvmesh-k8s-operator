@@ -4,12 +4,11 @@ import (
 	goerrors "errors"
 	"fmt"
 
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
-
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -42,10 +41,10 @@ func (r *NVMeshCSIReconciler) removeCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReco
 }
 
 //InitObject Initializes CSI Objects
-func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Object) error {
-	name, _ := getRunetimeObjectNameAndKind(obj)
+func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj client.Object) error {
+	name := obj.GetName()
 
-	switch o := (*obj).(type) {
+	switch o := (obj).(type) {
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-csi-controller":
@@ -76,14 +75,14 @@ func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj *runtime.Objec
 }
 
 //ShouldUpdateObject Manages CIS object updates
-func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, found *runtime.Object) bool {
-	name, _ := getRunetimeObjectNameAndKind(found)
+func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp client.Object, found client.Object) bool {
+	name := found.GetName()
 
-	switch o := (*found).(type) {
+	switch o := (found).(type) {
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-csi-controller":
-			expected := (*exp).(*appsv1.StatefulSet)
+			expected := (exp).(*appsv1.StatefulSet)
 			return r.shouldUpdateCSIControllerStatefulSet(cr, expected, o)
 		}
 	case *appsv1.DaemonSet:

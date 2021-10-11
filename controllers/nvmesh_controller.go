@@ -61,8 +61,8 @@ type NVMeshReconciler struct {
 
 // NVMeshComponent - defines the interface for NVMeshComponents (CSI, Core, Management)
 type NVMeshComponent interface {
-	InitObject(*nvmeshv1.NVMesh, *runtime.Object) error
-	ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp *runtime.Object, found *runtime.Object) bool
+	InitObject(*nvmeshv1.NVMesh, client.Object) error
+	ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp client.Object, found client.Object) bool
 	Reconcile(*nvmeshv1.NVMesh, *NVMeshReconciler) error
 }
 

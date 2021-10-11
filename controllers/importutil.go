@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -78,7 +79,7 @@ func YamlFileToUnstructured(filename string) (*unstructured.Unstructured, *schem
 }
 
 //YamlFileToObjects - Read a YAML file to typed objects
-func YamlFileToObjects(filename string, decoder runtime.Decoder) ([]runtime.Object, error) {
+func YamlFileToObjects(filename string, decoder runtime.Decoder) ([]client.Object, error) {
 	yamlString, err := YamlFileToString(filename)
 	if err != nil {
 		return nil, err
@@ -87,10 +88,10 @@ func YamlFileToObjects(filename string, decoder runtime.Decoder) ([]runtime.Obje
 	return yamlStringToObjects(yamlString, decoder)
 }
 
-func yamlStringToObjects(yamlString string, decoder runtime.Decoder) ([]runtime.Object, error) {
+func yamlStringToObjects(yamlString string, decoder runtime.Decoder) ([]client.Object, error) {
 	yamlDocs := strings.Split(yamlString, "\n---\n")
 
-	var objs []runtime.Object
+	var objs []client.Object
 	var failedDocs []YamlDocumentParseError
 
 	for i, doc := range yamlDocs {
@@ -111,12 +112,12 @@ func yamlStringToObjects(yamlString string, decoder runtime.Decoder) ([]runtime.
 	return objs, nil
 }
 
-func singleYamlDocStringToObject(yaml string, decoder runtime.Decoder) (runtime.Object, error) {
+func singleYamlDocStringToObject(yaml string, decoder runtime.Decoder) (client.Object, error) {
 	obj, _, err := decoder.Decode([]byte(yaml), nil, nil)
 
 	if err != nil {
 		err = errors.Wrap(err, "Error while decoding YAML object")
 	}
 
-	return obj, err
+	return (obj).(client.Object), err
 }
