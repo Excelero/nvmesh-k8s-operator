@@ -1,20 +1,20 @@
 operator:
-  version: 0.8.4
-  release: 10
+  version: 0.8.0
+  release: 11
   channel: beta
   image_name: nvmesh-operator
-  core_image_tag: 0.8.0-56
-#  repo: registry.connect.redhat.com/excelero
-  repo: excelero
+  core_image_tag: 0.8.0-63
+  production_repo: registry.connect.redhat.com/excelero
+  dev_repo: excelero
 bundle:
-  version: 0.8.4
-  release: 10-dev
+  version: 0.8.0
+  release: 1
   dev:
-    bundle_image_name: "docker.io/excelero/dev-os-bundle"
-    index_image_name: "docker.io/excelero/dev-os-catalog-source-index"
+    bundle_image_name: "registry.excelero.com/dev/excelero/dev-os-bundle"
+    index_image_name: "registry.excelero.com/dev/dev-os-catalog-source-index"
   alm-example:
     # This will be embedded into the bundle manifest,
-    # The RedHat scan server CI will use these versions
+    # The RedHat scan server will use these versions for the certification CI
     # And they will also be the default values in the OpenShift Web UI
     apiVersion: nvmesh.excelero.com/v1
     kind: NVMesh

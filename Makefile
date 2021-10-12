@@ -3,6 +3,8 @@
 CONFIG_FILE=manifests/config.yaml
 VERSION = $(shell yq e ".operator.version" $(CONFIG_FILE))
 RELEASE = $(shell yq e ".operator.release" $(CONFIG_FILE))
+OPERATOR_PROD_REPO = $(shell yq e ".operator.production_repo" $(CONFIG_FILE))
+OPERATOR_DEV_REPO = $(shell yq e ".operator.dev_repo" $(CONFIG_FILE))
 BUNDLE_VERSION = $(shell yq e ".bundle.version" $(CONFIG_FILE))
 BUNDLE_RELEASE = $(shell yq e ".bundle.release" $(CONFIG_FILE))
 CHANNELS = $(shell yq e ".operator.channel" $(CONFIG_FILE))
@@ -20,7 +22,9 @@ endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Image URL to use all building/pushing image targets
-IMG ?= excelero/nvmesh-operator:$(VERSION)-$(RELEASE)
+IMG = excelero/nvmesh-operator:$(VERSION)-$(RELEASE)
+PROD_IMG = $(OPERATOR_PROD_REPO)/nvmesh-operator:$(VERSION)-$(RELEASE)
+DEV_IMG = $(OPERATOR_DEV_REPO)/nvmesh-operator:$(VERSION)-$(RELEASE)
 
 CRD_OPTIONS ?= "crd"
 
@@ -30,8 +34,6 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
-
-all: manager manifests bundle
 
 # Run tests
 test:
@@ -53,10 +55,6 @@ test-full: generate fmt vet manifests
 build: generate fmt vet
 	go build ./...
 
-# Build manager binary
-manager: generate fmt vet
-	go build -o bin/controller main.go
-
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
 	go run ./main.go $(args)
@@ -76,10 +74,15 @@ deploy: manifests kustomize
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen docs
+manifests-base: controller-gen docs
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	cp config/crd/bases/nvmesh.excelero.com_nvmeshes.yaml manifests/bases/crd/nvmesh.crd.yaml
+
+manifests-dev: manifests-base
 	cd manifests && ./build_manifests.py
+
+manifests-prod: manifests-base
+	cd manifests && ./build_manifests.py --production
 
 # Run go fmt against code
 fmt:
@@ -98,8 +101,8 @@ docker-build: test
 	docker build . -t ${IMG} --build-arg VERSION=$(VERSION) --build-arg RELEASE=$(RELEASE)
 
 # Push the docker image
-docker-push:
-	docker push ${IMG}
+docker-push-dev:
+	docker push ${DEV_IMG}
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -134,22 +137,19 @@ KUSTOMIZE=$(shell which kustomize)
 endif
 
 # Generate bundle manifests and metadata, then validate generated files.
-.PHONY: bundle
-bundle: manifests
-	# operator-sdk generate kustomize manifests -q
-	# cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	# $(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+.PHONY: bundle-validate
+bundle-validate: manifests-prod
 	operator-sdk bundle validate ./operator-hub/catalog_bundle
 
 # Build the bundle image.
-.PHONY: bundle-build
-bundle-build: manifests
+.PHONY: bundle-build-prod
+bundle-build-prod: manifests-prod
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 # Build the bundle image and Custom Source index image
 # and push both to DockerHub
-.PHONY: bundle-dev-build
-bundle-dev-build: manifests docker-build
+.PHONY: bundle-build-dev
+bundle-build-dev: manifests-dev docker-build
 	cd operator-hub && ./build_dev_catalog_images.sh
 
 # Deploy the customn source in the cluster
@@ -158,7 +158,7 @@ bundle-dev-deploy:
 	kubectl apply -f operator-hub/dev/catalog_source.yaml
 
 .PHONY: dev-build-deploy
-dev-build-deploy: docker-build docker-push bundle-dev-build bundle-dev-deploy
+dev-build-deploy: docker-build docker-push-dev bundle-build-dev bundle-dev-deploy
 
 .PHONY: bundle-test
 bundle-test:
@@ -184,3 +184,7 @@ scorecard:
 .PHONY: docs
 docs:
 	cd docs/build_docs/ && ./gen_nvmesh_cr_docs.sh
+
+.PHONY: build-production
+build-production: docker-build bundle-build-prod
+	docker tag $(IMG) $(PROD_IMG)

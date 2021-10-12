@@ -3,10 +3,10 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: nvmesh-catalog-0.8.4
+  name: nvmesh-catalog-0-8-0
   namespace: openshift-marketplace
 spec:
   displayName: NVMesh Catalog Source
-  image: docker.io/excelero/dev-os-catalog-source-index:0.8.4-10-dev
+  image: registry.excelero.com/dev/dev-os-catalog-source-index:0.8.0-1
   publisher: Excelero
   sourceType: grpc

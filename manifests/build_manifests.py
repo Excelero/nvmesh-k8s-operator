@@ -6,6 +6,9 @@ import sys
 from os import path
 import pathlib
 from shutil import copyfile, copytree, rmtree
+import argparse
+
+production = False
 
 output_file = "../operator-hub/catalog_bundle/manifests/cluster_service_version.yaml"
 config_file = "./config.yaml"
@@ -62,7 +65,7 @@ def get_alm_examples():
 
 def get_bundle_name():
 	bundle_version = bundle_info['version']
-	return 'nvmesh-operator.%s' % (bundle_version)
+	return 'nvmesh-operator.v%s' % (bundle_version)
 
 def build_csv():
     csv = load_yaml_file(csv_base)
@@ -102,13 +105,17 @@ def build_csv():
 
 def copy_and_format_crd():
     crd = load_yaml_file(crd_base)
-    del crd['metadata']['creationTimestamp']
+    crd['metadata'].pop('creationTimestamp', None)
     write_yaml_file(crd, crd_base)
 
 def get_operator_image(repo=None):
     ver_info_copy = version_info.copy()
     if repo:
         ver_info_copy['repo'] = repo
+    elif production:
+        ver_info_copy['repo'] = ver_info_copy['production_repo']
+    else:
+        ver_info_copy['repo'] = ver_info_copy['dev_repo']
 
     return '{repo}/{image_name}:{version}-{release}'.format(**ver_info_copy)
 
@@ -147,7 +154,7 @@ def update_catalog_source():
         rel=bundle_info['release']
     )
     cat_source['spec']['image'] = image
-    cat_source['metadata']['name'] = 'nvmesh-catalog-{}'.format(bundle_info['version'])
+    cat_source['metadata']['name'] = 'nvmesh-catalog-{}'.format(bundle_info['version'].replace('.','-'))
     write_yaml_file(cat_source, catalog_source_file)
 
 def update_subscription():
@@ -156,8 +163,21 @@ def update_subscription():
     subscription['spec']['startingCSV'] = get_bundle_name()
     write_yaml_file(subscription, subscription_file)
 
-copy_and_format_crd()
-build_deploy_dir()
-build_bundle_dir()
-update_catalog_source()
-update_subscription()
+def parse_cmd_line_arguments():
+    global production
+    parser = argparse.ArgumentParser(description='Build NVMesh Operator and Bundle manifests')
+    parser.add_argument('--production', required=False, action='store_true', help='Build manifests for development, this will change versions and image repository')
+    args = parser.parse_args()
+    production = args.production
+    if production:
+	    print("====== Building manifests for production ======")
+
+if __name__ == '__main__':
+    parse_cmd_line_arguments()
+    copy_and_format_crd()
+    build_deploy_dir()
+
+    if not production:
+        build_bundle_dir()
+        update_catalog_source()
+        update_subscription()
