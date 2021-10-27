@@ -68,6 +68,8 @@ spec:
               mountPath: /var/opt/NVMesh
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
+            - name: var-log-nvmesh
+              mountPath: /var/log/NVMesh/
           securityContext:
             privileged: true
         - name: agent
@@ -113,6 +115,8 @@ spec:
               mountPath: /opt/NVMesh
             - name: opt-nvmesh-operator
               mountPath: /opt/nvmesh-operator
+            - name: var-log-nvmesh
+              mountPath: /var/log/NVMesh/
       volumes:
         - name: nvmesh-conf
           configMap:
@@ -141,3 +145,6 @@ spec:
         - name: etc-opt-nvmesh
           hostPath:
             path: /etc/opt/NVMesh/
+        - name: var-log-nvmesh
+          hostPath:
+            path: /var/log/NVMesh/
