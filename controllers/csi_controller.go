@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	csiAssetsLocation  = "resources/csi/"
-	csiDaemonSetName   = "nvmesh-csi-node-driver"
-	csiStatefulSetName = "nvmesh-csi-controller"
-	csiDriverImageName = "excelero/nvmesh-csi-driver"
+	csiAssetsLocation        = "resources/csi/"
+	csiDaemonSetName         = "nvmesh-csi-node-driver"
+	csiStatefulSetName       = "nvmesh-csi-controller"
+	csiDriverImageName       = "nvmesh-csi-driver"
+	csiDriverDefaultRegistry = "excelero"
 )
 
 //NVMeshCSIReconciler is a Reconciler for CSI
@@ -134,14 +135,15 @@ func initCSIConfigMap(cr *nvmeshv1.NVMesh, conf *v1.ConfigMap) error {
 }
 
 func getCSIFullImageName(cr *nvmeshv1.NVMesh) string {
-	imageName := csiDriverImageName
-	if cr.Spec.CSI.ImageName != "" {
-		imageName = cr.Spec.CSI.ImageName
+	registry := csiDriverDefaultRegistry
+	if cr.Spec.CSI.ImageRegistry != "" {
+		registry = cr.Spec.CSI.ImageRegistry
 	}
 
 	version := cr.Spec.CSI.Version
+	imageName := registry + "/" + csiDriverImageName + ":" + version
 
-	return imageName + ":" + version
+	return imageName
 }
 
 func (r *NVMeshCSIReconciler) shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) bool {

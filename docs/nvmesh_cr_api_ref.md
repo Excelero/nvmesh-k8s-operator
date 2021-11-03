@@ -448,7 +448,7 @@ Kubernetes core/v1.PersistentVolumeClaimSpec
 </tr>
 <tr>
 <td>
-<code>imageName</code><br/>
+<code>imageRegistry</code><br/>
 <em>
 <span class="type">string<span>
 </em>

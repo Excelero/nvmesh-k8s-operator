@@ -140,7 +140,7 @@ spec:
                   disabled:
                     description: If true NVMesh CSI Driver will not be deployed
                     type: boolean
-                  imageName:
+                  imageRegistry:
                     description: Optional, if given will override the default repositroy/image-name
                     type: string
                   version:

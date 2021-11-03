@@ -163,9 +163,9 @@ type NVMeshCSI struct {
 	// +optional
 	ControllerReplicas int32 `json:"controllerReplicas,omitempty"`
 
-	//Optional, if given will override the default repositroy/image-name
+	//Optional, if given will override the default image registry
 	// +optional
-	ImageName string `json:"imageName,omitempty"`
+	ImageRegistry string `json:"imageRegistry,omitempty"`
 
 	//If true NVMesh CSI Driver will not be deployed
 	// +optional
