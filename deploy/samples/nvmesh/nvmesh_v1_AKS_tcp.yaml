@@ -1,0 +1,23 @@
+apiVersion: nvmesh.excelero.com/v1
+kind: NVMesh
+metadata:
+  name: cluster1
+spec:
+  core:
+    configuredNICs: eth0
+    version: 2.4.1-3
+    tcpOnly: true
+    imageVersionTag: 0.8.0-63-aks-2
+    azureOptimized: true
+  csi:
+    controllerReplicas: 1
+    version: v1.1.7
+  management:
+    mongoDB:
+      replicas: 1
+      dataVolumeClaim:
+        storageClassName: managed-premium
+    replicas: 1
+    version: 2.4.0-15
+    backupsVolumeClaim:
+      storageClassName: managed-premium
