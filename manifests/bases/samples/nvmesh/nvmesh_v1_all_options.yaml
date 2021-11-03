@@ -34,12 +34,16 @@ spec:
   management:
     mongoDB:
       replicas: 1
-      # uncomment this to control parameters in the Mongo data volume PVC
-      # dataVolumeClaim:
-      #   storageClassName: some-storage-class
-      #   selector:
-      #     matchLabels:
-      #       role: mongo-for-nvmesh
+      # control parameters of the management backups volume PVC
+      dataVolumeClaim:
+        storageClassName: some-storage-class
+        # Control the size of the mongoDB data volume. defaults to 10Gi
+        resources:
+          requests:
+            storage: 10Gi
+        selector:
+          matchLabels:
+            role: mongo-for-nvmesh
 
     # The number of Management servers in a High-Availability Management
     replicas: 1
@@ -48,13 +52,17 @@ spec:
     version: 2.2.0
 
     # uncomment this to control parameters of the management backups volume PVC
-    # backupsVolumeClaim:
-    #   # required storage-class for management backups volume
-    #   storageClassName: sc-for-management
-    #   # configure selectors to bound the PVC to a static-provisioned PV
-    #   selector:
-    #     matchLabels:
-    #       role: nvmesh-backups
+    backupsVolumeClaim:
+      # required storage-class for management backups volume
+      storageClassName: sc-for-management
+      # Control the size of the NVMesh backups volume. defaults to 5Gi
+      resources:
+          requests:
+            storage: 8Gi
+      # configure selectors to bound the PVC to a static-provisioned PV
+      selector:
+        matchLabels:
+          role: nvmesh-backups
   actions:
     # Initiate logs collection on the NVMesh cluster
     # logs will be saved locally on each host at /opt/nvmesh-operator/logs
@@ -77,3 +85,10 @@ spec:
     ignorePersistentVolumesOnDelete: false
     # If SkipUninstall is true, The operator will not clear the mongo db or remove files the NVMesh software has saved locally on the nodes. This can lead to an unclean state left on the k8s cluster
     SkipUninstall: false
+
+    # Configure alternate location for the HTTP server from which the binary archives are fetched
+    fileServer:
+      # The url of the file server including internal routing
+      address: https://my-repo.company.com/nvmesh_operator_binaries
+      # Use skipCheckCertificates to allow fetching from an HTTPS server with a self-signed certificate
+      skipCheckCertificates: true
