@@ -34,33 +34,6 @@ rules:
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "watch"]
-  # Access to volumeattachments is only needed when the CSI driver
-  # has the PUBLISH_UNPUBLISH_VOLUME controller capability.
-  # In that case, external-provisioner will watch volumeattachments
-  # to determine when it is safe to delete a volume.
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["volumeattachments"]
-    verbs: ["get", "list", "watch"]
----
-# Source: nvmesh-csi-driver/templates/rbac-permissions.yaml
-# Attacher must be able to work with PVs, nodes and VolumeAttachments
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: external-attacher-runner
-rules:
-  - apiGroups: [""]
-    resources: ["persistentvolumes"]
-    verbs: ["get", "list", "watch", "update"]
-  - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["csinodes"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["volumeattachments"]
-    verbs: ["get", "list", "watch", "update"]
 ---
 # Source: nvmesh-csi-driver/templates/rbac-permissions.yaml
 # Resizer must be able to work with PVCs, PVs, SCs.

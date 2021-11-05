@@ -57,16 +57,6 @@ spec:
           volumeMounts:
             - name: plugin-socket-dir
               mountPath: /csi
-        # Attacher
-        - name: csi-attacher
-          image: "quay.io/k8scsi/csi-attacher:v3.1.0"
-          imagePullPolicy: "IfNotPresent"
-          args:
-            - "--v=5"
-            - "--csi-address=/csi/ctrl-csi.sock"
-          volumeMounts:
-            - name: plugin-socket-dir
-              mountPath: /csi
         # Resizer
         - name: csi-resizer
           image: "quay.io/k8scsi/csi-resizer:v1.1.0"
