@@ -142,15 +142,12 @@ func (r *NVMeshCoreReconciler) shouldUpdateCoreConfigMap(cr *nvmeshv1.NVMesh, ex
 	log := r.Log.WithValues("method", "shouldUpdateCoreConfigMap")
 
 	shouldUpdate := false
-	newExpectedConfString := ""
 
 	for field, _ := range expected.Data {
 		if field == "nvmesh.conf" {
-			shouldUpdate, newExpectedConfString = r.shouldUpdateNVMeshConf(cr, expected.Data[field], cm.Data[field])
+			shouldUpdateConf, newExpectedConfString := r.shouldUpdateNVMeshConf(cr, expected.Data[field], cm.Data[field])
 			expected.Data[field] = newExpectedConfString
-		} else if field == "modprobe.d" {
-			// always preserve this field
-			expected.Data[field] = cm.Data[field]
+			shouldUpdate = shouldUpdate || shouldUpdateConf
 		} else if expected.Data[field] != cm.Data[field] {
 			log.Info(fmt.Sprintf("nvmesh-core-config %s should be updated expected %s but got %s\n", field, expected.Data[field], cm.Data[field]))
 			shouldUpdate = true
@@ -331,6 +328,9 @@ func (r *NVMeshCoreReconciler) initCoreConfigMap(cr *nvmeshv1.NVMesh, cm *v1.Con
 			configDict["EXCLUDE_DEVICE_PATHS"] = nvmeshConfWrapWithQuotes(strings.Join(devicePaths[:], ","))
 		}
 	}
+
+	// copy spec.core.moduleParams -> ConfigMap.Data["modprobe.d"]
+	cm.Data["modprobe.d"] = cr.Spec.Core.ModuleParams
 
 	cm.Data["nvmesh.conf"] = r.configDictToString(configDict)
 	return nil

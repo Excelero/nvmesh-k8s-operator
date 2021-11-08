@@ -455,7 +455,7 @@ Kubernetes core/v1.PersistentVolumeClaimSpec
 </td>
 <td>
 <em>(Optional)</em>
-<p>Optional, if given will override the default repositroy/image-name</p>
+<p>Optional, if given will override the default image registry</p>
 </td>
 </tr>
 <tr>
@@ -584,6 +584,16 @@ ExcludeNVMeDrivesSpec
 <td>
 <em>(Optional)</em>
 <p>Exclude NVMe Drives - Define which NVMe drives should not be used by NVMesh</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>moduleParams</code><br/>
+<em>
+<span class="type">string<span>
+</em>
+</td>
+<td>
 </td>
 </tr>
 </tbody>

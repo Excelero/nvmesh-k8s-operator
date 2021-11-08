@@ -118,6 +118,8 @@ spec:
                   imageVersionTag:
                     description: The version tag of the nvmesh core docker images
                     type: string
+                  moduleParams:
+                    type: string
                   tcpOnly:
                     description: TCP Only - Set to true if cluster support only TCP,
                       If false or omitted Infiniband is used
@@ -142,7 +144,8 @@ spec:
                     description: If true NVMesh CSI Driver will not be deployed
                     type: boolean
                   imageRegistry:
-                    description: Optional, if given will override the default repositroy/image-name
+                    description: Optional, if given will override the default image
+                      registry
                     type: string
                   version:
                     description: The version of the NVMesh CSI Controller which will

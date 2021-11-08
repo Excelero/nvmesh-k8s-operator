@@ -85,6 +85,8 @@ type NVMeshCore struct {
 	// Exclude NVMe Drives - Define which NVMe drives should not be used by NVMesh
 	// +optional
 	ExcludeDrives *ExcludeNVMeDrivesSpec `json:"excludeDrives,omitempty"`
+
+	ModuleParams string `json:"moduleParams,omitempty"`
 }
 
 type ExcludeNVMeDrivesSpec struct {
