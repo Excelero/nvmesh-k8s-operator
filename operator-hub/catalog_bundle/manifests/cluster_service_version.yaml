@@ -7,7 +7,7 @@ metadata:
     alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.2.1"},"management":{"mongoDB":{"replicas":1},"version":"2.2.1-1","replicas":1},"csi":{"version":"v1.1.7","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
-    containerImage: excelero/nvmesh-operator:0.8.0-11
+    containerImage: excelero/nvmesh-operator:0.8.0-12
     createdAt: '2020-10-28T00:00:00Z'
     description: NVMesh Operator enables users to install Excelero NVMesh on Kubernetes
       and OpenShift clusters
@@ -467,7 +467,7 @@ spec:
                 - 0.8.0-63
                 command:
                 - /manager
-                image: excelero/nvmesh-operator:0.8.0-11
+                image: excelero/nvmesh-operator:0.8.0-12
                 name: controller
                 resources:
                   limits:
