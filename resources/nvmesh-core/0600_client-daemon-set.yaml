@@ -23,6 +23,8 @@ spec:
         - name: excelero-registry-cred
       hostPID: true
       hostNetwork: true
+      # terminationGracePeriod of 1 Hours
+      terminationGracePeriodSeconds: 3600
       containers:
         - name: driver-container
           image: nvmesh-driver-container:placeholder
@@ -75,7 +77,6 @@ spec:
               mountPath: /opt/nvmesh-operator
             - name: var-log-nvmesh
               mountPath: /var/log/NVMesh/
-          terminationGracePeriodSeconds: 99999999
         - name: tracer
           image: nvmesh-tracer:placeholder
           imagePullPolicy: IfNotPresent

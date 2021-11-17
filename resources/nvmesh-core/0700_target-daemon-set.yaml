@@ -24,6 +24,8 @@ spec:
         nvmesh.excelero.com/nvmesh-client: ""
       hostPID: true
       hostNetwork: true
+      # terminationGracePeriod of 1 Hour
+      terminationGracePeriodSeconds: 3600
       containers:
         - name: driver-container
           image: nvmesh-driver-container:placeholder
@@ -76,7 +78,6 @@ spec:
               mountPath: /host/sbin/
             - name: var-log-nvmesh
               mountPath: /var/log/NVMesh/
-          terminationGracePeriodSeconds: 3600
         - name: toma
           image: nvmesh-toma:placeholder
           imagePullPolicy: IfNotPresent
