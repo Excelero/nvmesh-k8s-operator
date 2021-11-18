@@ -1,9 +1,9 @@
 operator:
   version: 0.8.0
-  release: 12
+  release: 13
   channel: beta
   image_name: nvmesh-operator
-  core_image_tag: 0.8.0-63
+  core_image_tag: 0.8.0-65
   production_repo: registry.connect.redhat.com/excelero
   dev_repo: excelero
 bundle:

@@ -21,7 +21,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: excelero/nvmesh-operator:0.8.0-12
+        image: excelero/nvmesh-operator:0.8.0-13
         name: controller
         resources:
           limits:
