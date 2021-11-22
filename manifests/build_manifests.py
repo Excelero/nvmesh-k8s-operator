@@ -138,6 +138,24 @@ def build_deploy_dir():
     deployment = get_deployment_for_kubernetes()
     write_yaml_file(deployment, path.join(deploy, "050_operator-deployment.yaml"))
 
+    files_to_join = [
+        "010_nvmesh_crd.yaml",
+        "020_service_account.yaml",
+        "030_role.yaml",
+        "040_role_binding.yaml",
+        "050_operator-deployment.yaml"
+    ]
+
+    full_dep_objs = []
+    for deploy_file_path in files_to_join:
+        obj = load_yaml_file(path.join(deploy, deploy_file_path))
+        full_dep_objs.append(obj)
+
+    full_deployment_file_path = path.join(deploy, "operator.yaml")
+    with open(full_deployment_file_path, 'w') as f:
+        f.writelines(generated_yaml_file_comment)
+        yaml.safe_dump_all(full_dep_objs, f, sort_keys=True)
+
     rmtree(path.join(deploy, "samples"))
     copytree(path.join(bases, "samples"), path.join(deploy, "samples"))
 
