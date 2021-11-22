@@ -5,9 +5,9 @@ metadata:
 spec:
   core:
     configuredNICs: eth0
-    version: 2.4.1-3
+    version: 2.4.1-23
     tcpOnly: true
-    imageVersionTag: 0.8.0-63-aks-2
+    imageVersionTag: 0.8.0-65
     azureOptimized: true
     moduleParams: |
       options nvmeibs min_local_nvmeqs=32
