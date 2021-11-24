@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/util/retry"
 )
 
 const (
@@ -675,29 +676,34 @@ func (r *NVMeshReconciler) addClusterServiceAccountToSCC(cr *nvmeshv1.NVMesh) er
 	accountName := r.getClusterServiceAccountName(cr)
 	ns := cr.GetNamespace()
 	scc := &securityv1.SecurityContextConstraints{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: operatorSCCName}, scc)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", operatorSCCName))
-	}
 
-	if scc.Users == nil {
-		scc.Users = []string{}
-	}
-
-	userRef := "system:serviceaccount:" + ns + ":" + accountName
-
-	for _, user := range scc.Users {
-		if user == userRef {
-			// if already exists - exit the function
-			return nil
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: operatorSCCName}, scc)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", operatorSCCName))
 		}
-	}
 
-	scc.Users = append(scc.Users, userRef)
+		if scc.Users == nil {
+			scc.Users = []string{}
+		}
 
-	err = r.Client.Update(context.TODO(), scc)
+		userRef := "system:serviceaccount:" + ns + ":" + accountName
+
+		for _, user := range scc.Users {
+			if user == userRef {
+				// if already exists - exit the function
+				return nil
+			}
+		}
+
+		scc.Users = append(scc.Users, userRef)
+
+		err = r.Client.Update(context.TODO(), scc)
+		return err
+	})
+
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf(" Failed to update SCC after adding service account %s in namespace %s to SCC %s.", accountName, ns, operatorSCCName))
+		return errors.Wrap(err, fmt.Sprintf(" Failed to add ServiceAccount %s in namespace %s to SCC %s.", accountName, ns, operatorSCCName))
 	}
 
 	return nil
@@ -707,46 +713,51 @@ func (r *NVMeshReconciler) removeClusterServiceAccountFromSCC(cr *nvmeshv1.NVMes
 	accountName := r.getClusterServiceAccountName(cr)
 	ns := cr.GetNamespace()
 	scc := &securityv1.SecurityContextConstraints{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: operatorSCCName}, scc)
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			// SCC not found, then  we don't need to remove the service account from it
-			return nil
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: operatorSCCName}, scc)
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				// SCC not found, then  we don't need to remove the service account from it
+				return nil
+			}
+
+			return errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", operatorSCCName))
 		}
 
-		return errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", operatorSCCName))
-	}
+		if scc.Users != nil {
+			userRef := "system:serviceaccount:" + ns + ":" + accountName
 
-	if scc.Users != nil {
-		userRef := "system:serviceaccount:" + ns + ":" + accountName
+			newUsersList := make([]string, 0)
+			for _, user := range scc.Users {
+				if user != userRef {
+					newUsersList = append(newUsersList, user)
+				} else {
+					r.Log.Info(fmt.Sprintf("Removing service account %s from SCC %s", userRef, scc.GetName()))
+				}
+			}
 
-		newUsersList := make([]string, 0)
-		for _, user := range scc.Users {
-			if user != userRef {
-				newUsersList = append(newUsersList, user)
-			} else {
-				r.Log.Info(fmt.Sprintf("Removing service account %s from SCC %s", userRef, scc.GetName()))
+			scc.Users = newUsersList
+		}
+
+		if scc.Users == nil || len(scc.Users) == 0 {
+			// We can delete the SCC as it has no users assigned to it now
+			r.Log.Info(fmt.Sprintf("Deleting SCC %s", scc.GetName()))
+			err = r.Client.Delete(context.TODO(), scc)
+			if err != nil && !k8serrors.IsNotFound(err) {
+				return errors.Wrap(err, fmt.Sprintf("Failed to remove SCC %s after removing service account %s in namespace %s.", operatorSCCName, ns, accountName))
+			}
+		} else {
+			err = r.Client.Update(context.TODO(), scc)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Failed to update SCC %s after removing service account %s in namespace %s.", operatorSCCName, ns, accountName))
 			}
 		}
 
-		scc.Users = newUsersList
-	}
+		return err
+	})
 
-	if scc.Users == nil || len(scc.Users) == 0 {
-		// We can delete the SCC as it has no users assigned to it now
-		r.Log.Info(fmt.Sprintf("Deleting SCC %s", scc.GetName()))
-		err = r.Client.Delete(context.TODO(), scc)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return errors.Wrap(err, fmt.Sprintf("Failed to remove SCC %s after removing service account %s in namespace %s.", operatorSCCName, ns, accountName))
-		}
-	} else {
-		err = r.Client.Update(context.TODO(), scc)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Failed to update SCC %s after removing service account %s in namespace %s.", operatorSCCName, ns, accountName))
-		}
-	}
-
-	return nil
+	return err
 }
 
 func (r *NVMeshReconciler) printAllPodsStatuses(namespace string) {
