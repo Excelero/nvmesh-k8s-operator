@@ -12,8 +12,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -390,49 +388,5 @@ func (r *NVMeshMgmtReconciler) updateConfAndRestartMgmt(cr *nvmeshv1.NVMesh, exp
 }
 
 func (r *NVMeshMgmtReconciler) restartManagement(namespace string) error {
-	log := r.Log.WithValues("method", "restartManagement")
-
-	log.Info("restarting Managements\n")
-	var ss appsv1.StatefulSet
-	var originalValue int32
-	// Scale to 0
-	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: mgmtStatefulSetName, Namespace: namespace}, &ss)
-		if err != nil {
-			log.Error(err, "Error while scaling down Management StatefulSet object")
-			return err
-		}
-
-		originalValue = *ss.Spec.Replicas
-		var newValue int32 = 0
-		ss.Spec.Replicas = &newValue
-
-		err = r.Client.Update(context.TODO(), &ss)
-		return err
-	})
-
-	if err != nil {
-		log.Error(err, "Error while getting object")
-		return err
-	}
-
-	// Scale back to expected number of replicas
-	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: mgmtStatefulSetName, Namespace: namespace}, &ss)
-		if err != nil {
-			log.Error(err, "Error while getting object")
-			return err
-		}
-
-		ss.Spec.Replicas = &originalValue
-		err = r.Client.Update(context.TODO(), &ss)
-		return err
-	})
-
-	if err != nil {
-		log.Error(err, "Error while scaling back Management StatefulSet")
-		return err
-	}
-
-	return nil
+	return r.restartStatefulSet(namespace, mgmtStatefulSetName)
 }

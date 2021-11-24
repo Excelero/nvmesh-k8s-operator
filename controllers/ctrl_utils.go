@@ -12,6 +12,7 @@ import (
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 
+	appsv1 "k8s.io/api/apps/v1"
 	rbac "k8s.io/api/rbac/v1"
 
 	errors "github.com/pkg/errors"
@@ -774,4 +775,34 @@ func (r *NVMeshReconciler) printAllPodsStatuses(namespace string) {
 			r.Log.Info(fmt.Sprintf("DEBUG: all pods - pod: %s status: %+v", pod.GetName(), pod.Status.ContainerStatuses))
 		}
 	}
+}
+
+func (r *NVMeshBaseReconciler) restartStatefulSet(namespace string, name string) error {
+	log := r.Log.WithValues("method", "restartStatefulSet", "name", name, "namesapce", namespace)
+
+	log.Info(fmt.Sprintf("restarting StatefulSet %s in namespace %s\n", name, namespace))
+	var ss appsv1.StatefulSet
+	// Add dummy label to cause a rolling restart that will take into account the UpdateStrategy
+	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, &ss)
+		if err != nil {
+			log.Error(err, fmt.Sprintf("Error while fetching StatefulSet %s in namespace %s", name, namespace))
+			return err
+		}
+
+		if ss.Spec.Template.Annotations == nil {
+			ss.Spec.Template.Annotations = map[string]string{}
+		}
+
+		ss.Spec.Template.Annotations["operator.nvmesh.excelero.com/restartedAt"] = time.Now().UTC().Format(time.RFC3339)
+		err = r.Client.Update(context.TODO(), &ss)
+		return err
+	})
+
+	if err != nil {
+		log.Error(err, "Error while restarting StatefulSet")
+		return err
+	}
+
+	return nil
 }
