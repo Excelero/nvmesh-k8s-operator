@@ -11,6 +11,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.26.0
+	go.mongodb.org/mongo-driver v1.8.0
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602 // indirect
 	k8s.io/api v0.22.2
 	k8s.io/apiextensions-apiserver v0.22.2

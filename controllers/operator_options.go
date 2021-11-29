@@ -4,4 +4,5 @@ package controllers
 type OperatorOptions struct {
 	IsOpenShift         bool
 	DefaultCoreImageTag string
+	Development         bool
 }

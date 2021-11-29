@@ -4,15 +4,28 @@ import (
 	"context"
 	"encoding/json"
 	goerrors "errors"
+	"time"
+
+	errors "github.com/pkg/errors"
+
 	"fmt"
 	"strconv"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	mongoclient "excelero.com/nvmesh-k8s-operator/mongoclient"
+	mongotopology "go.mongodb.org/mongo-driver/x/mongo/driver/topology"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
@@ -35,8 +48,10 @@ type NVMeshMgmtReconciler struct {
 }
 
 //Reconcile - Reconciles for NVMesh-Management
-func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) (reconcile.Result, error) {
 	var err error
+	result := DoNotRequeue()
+	defaultRequeue := Requeue(time.Second)
 
 	if !cr.Spec.Management.Disabled && cr.Spec.Management.MongoDB.UseOperator {
 		err = r.deployMongoDBOperator(cr, nvmeshr)
@@ -45,7 +60,7 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	}
 
 	if err != nil {
-		return err
+		return defaultRequeue, err
 	}
 
 	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
@@ -55,7 +70,7 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	}
 
 	if err != nil {
-		return err
+		return defaultRequeue, err
 	}
 
 	// Reconcile MongoDB custom resource using the unstructured client
@@ -66,16 +81,96 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	}
 
 	if err != nil {
-		return err
+		return defaultRequeue, err
 	}
 
 	if cr.Spec.Management.Disabled {
 		err = nvmeshr.removeObjectsFromDir(cr, r, mgmtAssetsLocation, recursive)
 	} else {
+		err = r.handleDBManipulations(cr)
+		if err == mongo.ErrNoDocuments {
+			// If mongo available but no gernealSettings document we should continue to create the management and requeue to reconcile again
+			result = Requeue(time.Second * 5)
+
+		} else if err != nil {
+			_, isServerSelectionError := err.(mongotopology.ServerSelectionError)
+			if isServerSelectionError {
+				// If failed to connect to mongo return immediately and requeue
+				r.Log.Info("Failed to connect to MongoDB.. Please make sure that you have a valid PersistentVolume created for Mongo and that MongoDB Pod is running")
+				return Requeue(time.Second * 5), nil
+			} else {
+				// return any other unexpected error
+				return defaultRequeue, err
+			}
+		}
+
 		err = nvmeshr.createObjectsFromDir(cr, r, mgmtAssetsLocation, recursive)
 	}
 
-	return err
+	return result, err
+}
+
+func (r *NVMeshMgmtReconciler) handleDBManipulations(cr *nvmeshv1.NVMesh) error {
+
+	filter := bson.D{}
+	projection := bson.D{{"hidden", 1}}
+	var err error
+
+	type HiddenSettings struct {
+		AutoEvictDrives  bool `bson:"autoEvictDrives"`
+		AutoFormatDrives bool `bson:"autoFormatDrives"`
+		IsElectDisabled  bool `bson:"isElectDisabled"`
+	}
+
+	type FindResult struct {
+		ID     primitive.ObjectID `bson:"_id"` // omitempty to protect against zeroed _id insertion
+		Hidden HiddenSettings     `bson:"hidden"`
+	}
+
+	var result FindResult
+	mongoURI := getMongoURI(cr)
+
+	// Used for development when we don't have access to the Pod's ClusterIP where mongo is listening
+	if r.Options.Development {
+		mongoURI = "mongodb://localhost:27017"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+	if err != nil {
+		return errors.Wrap(err, "Failed to connect to MongoDB")
+	}
+
+	defer func() {
+		if asyncErr := client.Disconnect(context.TODO()); asyncErr != nil {
+			r.Log.Error(asyncErr, "Error disconnecting from MongoDB")
+		}
+	}()
+
+	err = mongoclient.FindOne(client, "globalSettings", filter, projection, &result)
+
+	if err != nil {
+		r.Log.V(5).Info(fmt.Sprintf("Mongo FindOne failed: %s", err))
+		return err
+	}
+
+	if cr.Spec.Management.DisableAutoFormatDrives != !result.Hidden.AutoFormatDrives || cr.Spec.Management.DisableAutoEvictDrives != !result.Hidden.AutoEvictDrives {
+		r.Log.Info(fmt.Sprintf("Updating AutoFormatDrives=%t and AutoEvictDrives=%t in the DB", !cr.Spec.Management.DisableAutoFormatDrives, !cr.Spec.Management.DisableAutoEvictDrives))
+
+		update := bson.D{{"$set", bson.D{
+			{"hidden.autoEvictDrives", !cr.Spec.Management.DisableAutoEvictDrives},
+			{"hidden.autoFormatDrives", !cr.Spec.Management.DisableAutoFormatDrives}}}}
+		err = mongoclient.UpdateOne(client, "globalSettings", filter, &update)
+		if err != nil {
+			return errors.Wrap(err, "Failed to update autoEvictDrives & autoFormatDrives in MongoDB")
+		}
+
+		// we attempt to restart the management server but we ingore errors since it is possible that the it was not deployed yet
+		_ = r.restartManagement(cr.GetNamespace())
+	}
+
+	return nil
 }
 
 func (r *NVMeshMgmtReconciler) removeMongoCustomResource(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
@@ -159,7 +254,10 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp clien
 		switch name {
 		case "nvmesh-management":
 			expectedStatefulSet := (exp).(*appsv1.StatefulSet)
-			return r.shouldUpdateStatefulSet(cr, expectedStatefulSet, o)
+			return r.shouldUpdateManagementStatefulSet(cr, expectedStatefulSet, o)
+		case "mongo":
+			expectedStatefulSet := (exp).(*appsv1.StatefulSet)
+			return r.shouldUpdateMongoStatefulSet(cr, expectedStatefulSet, o)
 		}
 	case *v1.ConfigMap:
 		switch name {
@@ -167,7 +265,10 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp clien
 			var expectedConf *v1.ConfigMap = (exp).(*v1.ConfigMap)
 			shouldUpdateConf := r.shouldUpdateConfigMap(cr, expectedConf, o)
 			if shouldUpdateConf == true {
-				r.updateConfAndRestartMgmt(cr, expectedConf, o)
+				err := r.updateConfAndRestartMgmt(cr, expectedConf, o)
+				if err != nil {
+					r.Log.Info(fmt.Sprintf("Failed to Update Management Config. Error: %s", err))
+				}
 				return false
 			}
 		}
@@ -187,6 +288,10 @@ func (r *NVMeshMgmtReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp clien
 
 func getMongoConnectionString(cr *nvmeshv1.NVMesh) string {
 	return fmt.Sprintf("mongo-svc.%s.svc.cluster.local:27017", cr.GetNamespace())
+}
+
+func getMongoURI(cr *nvmeshv1.NVMesh) string {
+	return fmt.Sprintf("mongodb://%s", getMongoConnectionString(cr))
 }
 
 func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.ConfigMap) error {
@@ -296,8 +401,8 @@ func getMgmtImageFromResource(cr *nvmeshv1.NVMesh) string {
 	return imageRegistry + "/" + mgmtImageName + ":" + cr.Spec.Management.Version
 }
 
-func (r *NVMeshMgmtReconciler) shouldUpdateStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
-	log := r.Log.WithValues("method", "shouldUpdateStatefulSet")
+func (r *NVMeshMgmtReconciler) shouldUpdateManagementStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
+	log := r.Log.WithValues("method", "shouldUpdateManagementStatefulSet")
 
 	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
 	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
@@ -310,6 +415,26 @@ func (r *NVMeshMgmtReconciler) shouldUpdateStatefulSet(cr *nvmeshv1.NVMesh, expe
 	foundReplicas := *ss.Spec.Replicas
 	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
 		log.Info(fmt.Sprintf("Management replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas))
+		return true
+	}
+
+	return false
+}
+
+func (r *NVMeshMgmtReconciler) shouldUpdateMongoStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
+	log := r.Log.WithValues("method", "shouldUpdateMongoStatefulSet")
+
+	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
+	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
+	if expectedVersion != foundVersion {
+		log.Info(fmt.Sprintf("found mongo image version missmatch - expected: %s found: %s\n", expectedVersion, foundVersion))
+		return true
+	}
+
+	expectedReplicas := *expected.Spec.Replicas
+	foundReplicas := *ss.Spec.Replicas
+	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
+		log.Info(fmt.Sprintf("Mongo replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas))
 		return true
 	}
 
@@ -380,7 +505,6 @@ func (r *NVMeshMgmtReconciler) updateConfAndRestartMgmt(cr *nvmeshv1.NVMesh, exp
 
 	err := r.Client.Update(context.TODO(), expected)
 	if err != nil {
-		log.Error(err, "Error updating ConfigMap")
 		return err
 	}
 

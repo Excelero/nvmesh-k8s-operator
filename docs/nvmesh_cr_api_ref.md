@@ -712,6 +712,30 @@ Kubernetes core/v1.PersistentVolumeClaimSpec
 <p>Overrides fields in the Management Backups PVC</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>disableAutoFormatDrives</code><br/>
+<em>
+<span class="type">bool<span>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Disable Auto-Format NVMe drives as they are discovered</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>disableAutoEvictDrives</code><br/>
+<em>
+<span class="type">bool<span>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Disable Auto-Evict Missing NVMe drives - This enables NVMesh to auto-rebuild volumes when drives were replaced (for example on the cloud after a machine was restarted)</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="nvmesh-excelero-com-v1-nvmeshoperatorspec">NVMeshOperatorSpec

@@ -8,6 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -25,12 +26,12 @@ type NVMeshCSIReconciler struct {
 }
 
 //Reconcile Reconciles CSI
-func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+func (r *NVMeshCSIReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) (ctrl.Result, error) {
 	if !cr.Spec.CSI.Disabled {
-		return r.deployCSI(cr, nvmeshr)
+		return DoNotRequeue(), r.deployCSI(cr, nvmeshr)
 	}
 
-	return r.removeCSI(cr, nvmeshr)
+	return DoNotRequeue(), r.removeCSI(cr, nvmeshr)
 }
 
 func (r *NVMeshCSIReconciler) deployCSI(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {

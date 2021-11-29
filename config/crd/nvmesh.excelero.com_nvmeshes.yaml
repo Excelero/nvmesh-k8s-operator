@@ -118,6 +118,8 @@ spec:
                   imageVersionTag:
                     description: The version tag of the nvmesh core docker images
                     type: string
+                  moduleParams:
+                    type: string
                   tcpOnly:
                     description: TCP Only - Set to true if cluster support only TCP,
                       If false or omitted Infiniband is used
@@ -141,8 +143,9 @@ spec:
                   disabled:
                     description: If true NVMesh CSI Driver will not be deployed
                     type: boolean
-                  imageName:
-                    description: Optional, if given will override the default repositroy/image-name
+                  imageRegistry:
+                    description: Optional, if given will override the default image
+                      registry
                     type: string
                   version:
                     description: The version of the NVMesh CSI Controller which will
@@ -335,6 +338,14 @@ spec:
                           backing this claim.
                         type: string
                     type: object
+                  disableAutoEvictMissingDrives:
+                    description: Auto-Evict Missing NVMe drives - This enables NVMesh
+                      to auto-rebuild volumes when drives were replaced (for example
+                      on the cloud after a machine was restarted)
+                    type: boolean
+                  disableAutoFromatDrives:
+                    description: Auto-Format NVMe drives as they are discovered
+                    type: boolean
                   disabled:
                     description: Disabled - if true NVMesh Management will not be
                       deployed

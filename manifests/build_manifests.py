@@ -82,13 +82,14 @@ def build_csv():
     operatorPodSpec = install_dep_item['spec']['template']['spec']
     operatorContainer = operatorPodSpec['containers'][0]
     operatorContainer['image'] = operator_image
+    operatorContainer['imagePullPolicy'] = 'IfNotPresent' if production else 'Always'
     operatorContainer['args'].append("--openshift")
     operatorContainer['args'].append("--core-image-tag")
     operatorContainer['args'].append(version_info["core_image_tag"])
 
     cluster_permissions = {
         'serviceAccountName': get_name(service_account),
-        'rules': role['rules']
+        'rules': role['rules'],
     }
 
     csv['metadata']['name'] = get_bundle_name()
@@ -173,12 +174,19 @@ def update_catalog_source():
     )
     cat_source['spec']['image'] = image
     cat_source['metadata']['name'] = 'nvmesh-catalog-{}'.format(bundle_info['version'].replace('.','-'))
+    cat_source['metadata']['namespace'] = 'openshift-marketplace'
     write_yaml_file(cat_source, catalog_source_file)
+    return cat_source
 
-def update_subscription():
+def update_subscription(catalog_source):
     subscription_file = path.join(operator_hub_dir, "dev/subscription.yaml")
     subscription = load_yaml_file(subscription_file)
+    subscription['spec']['channel'] = 'beta'
+    subscription['spec']['installPlanApproval'] = 'Automatic'
+    subscription['spec']['source'] = catalog_source['metadata']['name']
+    subscription['spec']['sourceNamespace'] = catalog_source['metadata']['namespace']
     subscription['spec']['startingCSV'] = get_bundle_name()
+
     write_yaml_file(subscription, subscription_file)
 
 def parse_cmd_line_arguments():
@@ -197,5 +205,5 @@ if __name__ == '__main__':
 
     if not production:
         build_bundle_dir()
-        update_catalog_source()
-        update_subscription()
+        catalog_source = update_catalog_source()
+        update_subscription(catalog_source)

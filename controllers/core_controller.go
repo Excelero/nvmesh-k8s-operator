@@ -10,6 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -29,12 +30,12 @@ type NVMeshCoreReconciler struct {
 }
 
 //Reconcile NVMesh Core Component
-func (r *NVMeshCoreReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+func (r *NVMeshCoreReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) (ctrl.Result, error) {
 	if !cr.Spec.Core.Disabled {
-		return r.deployCore(cr, nvmeshr)
+		return DoNotRequeue(), r.deployCore(cr, nvmeshr)
 	}
 
-	return r.removeCore(cr, nvmeshr)
+	return DoNotRequeue(), r.removeCore(cr, nvmeshr)
 }
 
 func (r *NVMeshCoreReconciler) removeCore(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {

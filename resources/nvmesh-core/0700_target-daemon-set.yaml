@@ -15,6 +15,8 @@ spec:
         app: nvmesh-target
         nvmesh.driver-container-type: target
         nvmesh.excelero.com/component: target
+      annotations:
+        kubectl.kubernetes.io/default-container: driver-container
     spec:
       serviceAccountName: nvmesh-cluster
       imagePullSecrets:

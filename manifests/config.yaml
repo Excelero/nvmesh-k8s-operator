@@ -1,17 +1,17 @@
 operator:
   version: 0.8.0
-  release: 13
+  release: 18
   channel: beta
   image_name: nvmesh-operator
   core_image_tag: 0.8.0-65
   production_repo: registry.connect.redhat.com/excelero
-  dev_repo: excelero
+  dev_repo: registry.excelero.com/dev
 bundle:
   version: 0.8.0
-  release: 2
+  release: 11
   dev:
-    bundle_image_name: "docker.io/excelero/dev-os-bundle"
-    index_image_name: "docker.io/excelero/dev-os-catalog-source-index"
+    bundle_image_name: "registry.excelero.com/dev/dev-os-bundle"
+    index_image_name: "registry.excelero.com/dev/dev-os-catalog-source-index"
   alm-example:
     # This will be embedded into the bundle manifest,
     # The RedHat scan server will use these versions for the certification CI

@@ -61,6 +61,12 @@ spec:
     # The version of the NVMesh-Management server
     version: 2.2.0
 
+    # Disable Auto-Format NVMe drives as they are discovered
+    disableAutoFormatDrives: true
+
+    # Disable Auto-Evict Missing NVMe drives - if true will prevent NVMesh from evicting missing drives, this will prevent auto-rebuild volumes
+    disableAutoEvictMissingDrives: true
+
     # uncomment this to control parameters of the management backups volume PVC
     backupsVolumeClaim:
       # required storage-class for management backups volume

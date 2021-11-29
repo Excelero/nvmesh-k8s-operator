@@ -22,8 +22,11 @@ endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Image URL to use all building/pushing image targets
+# Basic IMage tag for bulding locally
 IMG = excelero/nvmesh-operator:$(VERSION)-$(RELEASE)
+# repo/image name for production
 PROD_IMG = $(OPERATOR_PROD_REPO)/nvmesh-operator:$(VERSION)-$(RELEASE)
+# repo/image to push for development
 DEV_IMG = $(OPERATOR_DEV_REPO)/nvmesh-operator:$(VERSION)-$(RELEASE)
 
 CRD_OPTIONS ?= "crd"
@@ -70,7 +73,7 @@ uninstall: manifests kustomize
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 # make run args="-openshift -image-pull-always"
 deploy: manifests kustomize
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${DEV_IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
@@ -99,6 +102,8 @@ generate: controller-gen
 # Build the docker image
 docker-build: test
 	docker build . -t ${IMG} --build-arg VERSION=$(VERSION) --build-arg RELEASE=$(RELEASE)
+	docker tag ${IMG} ${DEV_IMG}
+	docker tag ${IMG} ${PROD_IMG}
 
 # Push the docker image
 docker-push-dev:
@@ -152,13 +157,15 @@ bundle-build-prod: manifests-prod
 bundle-build-dev: manifests-dev docker-build
 	cd operator-hub && ./build_dev_catalog_images.sh
 
-# Deploy the customn source in the cluster
+# Install operator
 .PHONY: bundle-dev-deploy
-bundle-dev-deploy:
-	kubectl apply -f operator-hub/dev/catalog_source.yaml
+bundle-deploy-locally:
+	oc delete -f operator-hub/dev/subscription.yaml ; oc delete csv nvmesh-operator.v${BUNDLE_VERSION} ; oc apply -f operator-hub/dev/catalog_source.yaml
+	oc apply -f operator-hub/dev/subscription.yaml
+	oc patch sa nvmesh-operator --type='json' -p='[{"op": "add", "path": "/imagePullSecrets/1", "value": {"name": "excelero-registry-cred" } }]'
 
 .PHONY: dev-build-deploy
-dev-build-deploy: docker-build docker-push-dev bundle-build-dev bundle-dev-deploy
+dev-build-deploy: docker-build docker-push-dev bundle-build-dev bundle-deploy-locally
 
 .PHONY: bundle-test
 bundle-test:

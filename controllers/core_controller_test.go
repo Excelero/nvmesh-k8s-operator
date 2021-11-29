@@ -58,11 +58,11 @@ func TestCoreReconciler(t *testing.T) {
 	}
 
 	By("Reconciling First Attempt")
-	err = corer.Reconcile(cr, &nvmeshr)
+	_, err = corer.Reconcile(cr, &nvmeshr)
 	Expect(err).To(BeNil())
 
 	By("Reconciling Second Attempt")
-	err = corer.Reconcile(cr, &nvmeshr)
+	_, err = corer.Reconcile(cr, &nvmeshr)
 	Expect(err).To(BeNil())
 
 	By("Test Core Reconciler finished")

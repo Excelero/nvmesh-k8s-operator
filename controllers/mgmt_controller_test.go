@@ -57,10 +57,10 @@ func TestManagementReconciler(t *testing.T) {
 	}
 
 	By("TestManagementReconciler - Reconciling First Attempt")
-	err = mgmtr.Reconcile(cr, &r)
+	_, err = mgmtr.Reconcile(cr, &r)
 	Expect(err).To(BeNil())
 
 	By("TestManagementReconciler - Reconciling Second Attempt")
-	err = mgmtr.Reconcile(cr, &r)
+	_, err = mgmtr.Reconcile(cr, &r)
 	Expect(err).To(BeNil())
 }

@@ -4,11 +4,10 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: nvmesh-operator
-  namespace: olm
 spec:
   channel: beta
   installPlanApproval: Automatic
   name: nvmesh-operator
-  source: nvmesh-catalog
-  sourceNamespace: olm
+  source: nvmesh-catalog-0-8-0
+  sourceNamespace: openshift-marketplace
   startingCSV: nvmesh-operator.v0.8.0

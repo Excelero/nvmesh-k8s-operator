@@ -77,11 +77,11 @@ func TestCsiReconciler(t *testing.T) {
 	}
 
 	By("Reconciling First Attempt")
-	err = csir.Reconcile(cr, &nvmeshr)
+	_, err = csir.Reconcile(cr, &nvmeshr)
 	Expect(err).To(BeNil())
 
 	By("Reconciling Second Attempt")
-	err = csir.Reconcile(cr, &nvmeshr)
+	_, err = csir.Reconcile(cr, &nvmeshr)
 	Expect(err).To(BeNil())
 
 	By("Test CSI Reconciler finished")

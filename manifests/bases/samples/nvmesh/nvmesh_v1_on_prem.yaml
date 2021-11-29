@@ -4,8 +4,13 @@ metadata:
   name: cluster1
 spec:
   core:
-    version: 2.2.1
+    configuredNICs: ens4f0
+    version: 2.4.1-23
+    imageVersionTag: 0.8.0-66-dev-2
   csi:
     version: v1.1.4-7
   management:
-    version: 2.2.0
+    version: 2.4.0-15
+  operator:
+    fileServer:
+      address: https://repo.excelero.com/repos/nvmesh/operator_binaries/dev/

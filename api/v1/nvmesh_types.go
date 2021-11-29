@@ -153,6 +153,14 @@ type NVMeshManagement struct {
 	//Overrides fields in the Management Backups PVC
 	// +optional
 	BackupsVolumeClaim v1.PersistentVolumeClaimSpec `json:"backupsVolumeClaim,omitempty"`
+
+	// Disable Auto-Format NVMe drives as they are discovered
+	// +optional
+	DisableAutoFormatDrives bool `json:"disableAutoFormatDrives,omitempty"`
+
+	// Disable Auto-Evict Missing NVMe drives - This enables NVMesh to auto-rebuild volumes when drives were replaced (for example on the cloud after a machine was restarted)
+	// +optional
+	DisableAutoEvictDrives bool `json:"disableAutoEvictDrives,omitempty"`
 }
 
 type NVMeshCSI struct {

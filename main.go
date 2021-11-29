@@ -88,6 +88,7 @@ func main() {
 
 	operatorOptions := controllers.OperatorOptions{
 		IsOpenShift: false,
+		Development: false,
 	}
 
 	// metrics-addr default is 0 - so it is disable, if we want to re-enable it, we should set the default to :8080
@@ -95,6 +96,9 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&operatorOptions.IsOpenShift, "openshift", false, "Set this flag if you are running on an openshift cluster")
 	flag.StringVar(&operatorOptions.DefaultCoreImageTag, "core-image-tag", "tag-not-set", "The tag to use for the nvmesh core and utils images e.g. 0.7.0-4")
+
+	// Development - Use this when developing locally and when you have access to the api-server but not internal ClusterIPs
+	flag.BoolVar(&operatorOptions.Development, "development", false, "Used for development only")
 
 	flag.Parse()
 

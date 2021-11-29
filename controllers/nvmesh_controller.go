@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -63,7 +64,7 @@ type NVMeshReconciler struct {
 type NVMeshComponent interface {
 	InitObject(*nvmeshv1.NVMesh, client.Object) error
 	ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp client.Object, found client.Object) bool
-	Reconcile(*nvmeshv1.NVMesh, *NVMeshReconciler) error
+	Reconcile(*nvmeshv1.NVMesh, *NVMeshReconciler) (ctrl.Result, error)
 }
 
 // +kubebuilder:rbac:groups=nvmesh.excelero.com,resources=nvmeshes,verbs=get;list;watch;create;update;patch;delete
@@ -129,13 +130,15 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Reconcile
-	err = r.reconcileAllcomponents(cr)
+	result, err := r.reconcileAllcomponents(cr)
 	if err != nil {
-		return r.ManageError(cr, err)
+		_, err := r.ManageError(cr, err)
+		// drop the result returned by ManageError
+		return result, err
 	}
 
 	// Handle Stale Action Statuses
-	result := r.removeFinishedActionStatuses(cr)
+	result = r.removeFinishedActionStatuses(cr)
 	if result.Requeue {
 		return r.ManageSuccess(cr, result)
 	}
@@ -155,17 +158,27 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return r.ManageSuccess(cr, DoNotRequeue())
 }
 
-func (r *NVMeshReconciler) reconcileAllcomponents(cr *nvmeshv1.NVMesh) error {
+func (r *NVMeshReconciler) reconcileAllcomponents(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
 	csi := NVMeshCSIReconciler(*r)
 
 	components := []NVMeshComponent{&mgmt, &core, &csi}
 	var errorList []error
+	var shortestRequeueTime time.Duration = -1
 	for _, component := range components {
-		err := component.Reconcile(cr, r)
+		result, err := component.Reconcile(cr, r)
+
+		// We collect errors and keep on Reconciling other components
+		// We then requeue another reconcile cycle with the shortest reconcile requested
 		if err != nil {
 			errorList = append(errorList, err)
+		}
+
+		if result.Requeue {
+			if shortestRequeueTime == -1 || result.RequeueAfter < shortestRequeueTime {
+				shortestRequeueTime = result.RequeueAfter
+			}
 		}
 	}
 
@@ -173,10 +186,10 @@ func (r *NVMeshReconciler) reconcileAllcomponents(cr *nvmeshv1.NVMesh) error {
 		for _, e := range errorList {
 			r.Log.Error(e, "Error from ReconcileComponent")
 		}
-		return errorList[0]
+		return ctrl.Result{Requeue: true, RequeueAfter: shortestRequeueTime}, errorList[0]
 	}
 
-	return nil
+	return DoNotRequeue(), nil
 }
 
 func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {
@@ -217,7 +230,7 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Reconcile only if generation field changed - this is to prevent cycle loop after status updates
 	generationChangePredicate := predicate.GenerationChangedPredicate{}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&nvmeshv1.NVMesh{}).
 		WithEventFilter(generationChangePredicate).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}}, handler).
@@ -234,8 +247,9 @@ func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &rbac.RoleBinding{}}, handler).
 		Watches(&source.Kind{Type: &storagev1.CSIDriver{}}, handler).
 		Watches(&source.Kind{Type: &storagev1.StorageClass{}}, handler).
-		Watches(&source.Kind{Type: &apiext.CustomResourceDefinition{}}, handler).
-		Complete(r)
+		Watches(&source.Kind{Type: &apiext.CustomResourceDefinition{}}, handler)
+
+	return controllerBuilder.Complete(r)
 }
 
 func (r *NVMeshReconciler) initializeEmptyFieldsOnCustomResource(cr *nvmeshv1.NVMesh) {

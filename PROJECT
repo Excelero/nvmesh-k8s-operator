@@ -7,7 +7,6 @@ resources:
   domain: excelero.com
   group: nvmesh
   kind: NVMesh
-  # TODO(user): Update the package path for your API if the below value is incorrect.
   path: excelero.com/nvmesh-k8s-operator/api/v1
   version: v1
 version: "3"

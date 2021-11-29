@@ -11,6 +11,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -29,7 +30,7 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result
 		}
 
 		r.setStatusOnCustomResource(cr)
-		err := r.UpdateStatus(cr)
+		err := r.UpdateStatus(*cr)
 
 		if err != nil && !k8serrors.IsNotFound(err) {
 			log.Error(err, "unable to update status")
@@ -67,10 +68,10 @@ func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconc
 
 	r.setStatusOnCustomResource(cr)
 	cr.Status.ReconcileStatus = newStatus
-	err := r.UpdateStatus(cr)
+	err := r.UpdateStatus(*cr)
 
 	if err != nil {
-		log.Error(err, "unable to update status")
+		log.Error(err, "Failed to update status")
 
 		return reconcile.Result{
 			RequeueAfter: time.Second,
@@ -91,28 +92,27 @@ func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconc
 }
 
 //UpdateStatus - Updates CR Status field
-func (r *NVMeshReconciler) UpdateStatus(cr *nvmeshv1.NVMesh) error {
-	err := r.Client.Status().Update(context.TODO(), cr)
-
-	if err != nil {
+func (r *NVMeshReconciler) UpdateStatus(cr nvmeshv1.NVMesh) error {
+	handle_err := func(err error) error {
 		if k8serrors.IsNotFound(err) {
-			return err
+			// if the object was deleted, failing to update it's status is not an error
+			return nil
 		}
-
-		updated := &nvmeshv1.NVMesh{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: cr.GetName(), Namespace: cr.GetNamespace()}, updated)
-
-		if err != nil {
-			if k8serrors.IsNotFound(err) {
-				// if the object was deleted, failing to update it's status is not an error
-				return nil
-			}
-			return err
-		}
-
-		updated.Status = cr.Status
-		return r.Client.Status().Update(context.TODO(), cr)
+		return err
 	}
 
-	return nil
+	var updatedStatus nvmeshv1.NVMeshStatus = cr.Status
+
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: cr.GetName(), Namespace: cr.GetNamespace()}, &cr)
+		if err != nil {
+			return handle_err(err)
+		}
+
+		cr.Status = updatedStatus
+		err = r.Client.Status().Update(context.TODO(), &cr)
+		return handle_err(err)
+	})
+
+	return err
 }

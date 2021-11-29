@@ -154,13 +154,12 @@ func (r *NVMeshReconciler) makeSureObjectRemoved(cr *nvmeshv1.NVMesh, newObj cli
 	} else if err != nil {
 		if _, ok := err.(*meta.NoKindMatchError); ok && kind == "SecurityContextConstraints" {
 			if r.Options.IsOpenShift {
-				log.Info("Ignoring no kind SecurityContextConstraints error, As this is not an openshift cluster (check -openshift flag)")
-			} else {
 				log.Info("Got No kind SecurityContextConstraints error from Kubernetes API, Seems this is not an openshift cluster, But -openshift flag is set")
+			} else {
+				log.Info("Ignoring no kind SecurityContextConstraints error, As this is not an openshift cluster (check -openshift flag)")
 			}
 
 			return nil
-
 		}
 
 		log.Error(err, "Error while trying to find out if object exists")
@@ -403,7 +402,10 @@ func (r *NVMeshReconciler) getDynamicClientResource(gvk schema.GroupVersionKind,
 
 	gvrMapping, err := findGVR(gvk, r.Manager.GetConfig())
 	if err != nil {
-		r.Log.Info(fmt.Sprintf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk))
+		if gvk.Kind != "MongoDB" {
+			r.Log.Info(fmt.Sprintf("Warning: failed to find GroupVersionResource for object %s, if this is a CustomResource it is possible the CRD for it is not loaded\n", gvk))
+		}
+
 		return nil, gvrMapping, err
 	}
 
@@ -628,12 +630,12 @@ func (r *NVMeshReconciler) makeSureSCCExists(cr *nvmeshv1.NVMesh) (ctrl.Result, 
 
 			err = r.Client.Create(context.TODO(), scc)
 			if err != nil && !k8serrors.IsAlreadyExists(err) {
-				return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("failed to create SCC %s. Error: %s", scc.GetName(), err))
+				return Requeue(time.Second * 10), errors.Wrap(err, fmt.Sprintf("Failed to create SCC %s. Error: %s", scc.GetName(), err))
 			}
 
-			return Requeue(time.Millisecond * 100), nil
+			return DoNotRequeue(), nil
 		} else {
-			return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("failed to get SCC %s", scc.GetName()))
+			return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", scc.GetName()))
 		}
 	}
 	return DoNotRequeue(), nil
@@ -677,8 +679,8 @@ func (r *NVMeshReconciler) addClusterServiceAccountToSCC(cr *nvmeshv1.NVMesh) er
 	accountName := r.getClusterServiceAccountName(cr)
 	ns := cr.GetNamespace()
 	scc := &securityv1.SecurityContextConstraints{}
-
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	retryBackoff := retry.DefaultRetry
+	err := retry.RetryOnConflict(retryBackoff, func() error {
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: operatorSCCName}, scc)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", operatorSCCName))
@@ -704,7 +706,7 @@ func (r *NVMeshReconciler) addClusterServiceAccountToSCC(cr *nvmeshv1.NVMesh) er
 	})
 
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf(" Failed to add ServiceAccount %s in namespace %s to SCC %s.", accountName, ns, operatorSCCName))
+		return errors.Wrap(err, fmt.Sprintf(" Failed to add ServiceAccount %s in namespace %s to SCC %s. Retried %d times", accountName, ns, operatorSCCName, retryBackoff.Steps))
 	}
 
 	return nil
@@ -799,10 +801,5 @@ func (r *NVMeshBaseReconciler) restartStatefulSet(namespace string, name string)
 		return err
 	})
 
-	if err != nil {
-		log.Error(err, "Error while restarting StatefulSet")
-		return err
-	}
-
-	return nil
+	return err
 }
