@@ -7,12 +7,12 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: nvmesh-target
+      app: nvmesh-target
       nvmesh.driver-container-type: target
   template:
     metadata:
       labels:
-        name: nvmesh-target
+        app: nvmesh-target
         nvmesh.driver-container-type: target
         nvmesh.excelero.com/component: target
     spec:
