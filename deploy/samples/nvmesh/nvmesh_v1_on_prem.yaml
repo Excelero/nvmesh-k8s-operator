@@ -5,9 +5,10 @@ metadata:
 spec:
   core:
     configuredNICs: ens4f0
+    tcpOnly: true
     version: 2.4.1-23
-    imageVersionTag: 0.8.0-66-dev-2
+    imageVersionTag: 0.8.0-66
   csi:
-    version: v1.1.4-7
+    version: v1.1.7
   management:
     version: 2.4.0-15

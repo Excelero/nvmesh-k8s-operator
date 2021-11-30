@@ -635,11 +635,11 @@ status:
   storedVersions: []
 ---
 apiVersion: v1
+imagePullSecrets:
+- excelero-registry-cred
 kind: ServiceAccount
 metadata:
   name: nvmesh-operator
-imagePullSecrets:
-  - excelero-registry-cred
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

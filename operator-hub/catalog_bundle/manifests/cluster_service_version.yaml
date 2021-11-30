@@ -464,7 +464,7 @@ spec:
                 - --enable-leader-election
                 - --openshift
                 - --core-image-tag
-                - 0.8.0-65
+                - 0.8.0-66
                 command:
                 - /manager
                 image: registry.excelero.com/dev/nvmesh-operator:0.8.0-18
