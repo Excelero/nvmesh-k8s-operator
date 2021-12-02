@@ -103,18 +103,6 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	r.stopAllUnstructuredWatchers()
 
-	if r.Options.IsOpenShift {
-		// Make sure SCC exists
-		sccCheckResult, err := r.makeSureSCCExists(cr)
-		if err != nil {
-			return r.ManageError(cr, err)
-		}
-
-		if sccCheckResult.Requeue {
-			return r.ManageSuccess(cr, sccCheckResult)
-		}
-	}
-
 	if err := r.makeSureServiceAccountExists(cr); err != nil {
 		return r.ManageError(cr, err)
 	}

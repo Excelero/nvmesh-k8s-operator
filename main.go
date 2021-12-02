@@ -33,8 +33,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	securityv1 "github.com/openshift/api/security/v1"
-
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
 
 	"excelero.com/nvmesh-k8s-operator/controllers"
@@ -60,13 +58,6 @@ func addToScheme(scheme *runtime.Scheme) {
 
 	// Add CRDs type
 	if err := apiext.AddToScheme(scheme); err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
-	//Add OpenShift security to scheme
-	// This is to allow us to handle OpenShift SecurityContextConstraints objects
-	if err := securityv1.AddToScheme(scheme); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}

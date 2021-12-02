@@ -27,8 +27,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/utils/pointer"
 
-	securityv1 "github.com/openshift/api/security/v1"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -51,7 +49,7 @@ const (
 	fileServerSecretName       = "nvmesh-file-server-cred"
 	exceleroRegistrySecretName = "excelero-registry-cred"
 
-	operatorSCCName = "nvmesh-operator"
+	operatorSCCName = "privileged"
 )
 
 var (
@@ -584,63 +582,6 @@ func (r *NVMeshBaseReconciler) getNVMeshClusterRoleAndRoleBinding(cr *nvmeshv1.N
 	return role, rb
 }
 
-func (r *NVMeshReconciler) getNVMeshSCC(cr *nvmeshv1.NVMesh) *securityv1.SecurityContextConstraints {
-	scc := &securityv1.SecurityContextConstraints{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: operatorSCCName,
-			Annotations: map[string]string{
-				"kubernetes.io/description": "SCC for allowing NVMesh Operator to deploy privileged containers",
-			},
-			Labels: r.getOperatorLabels(cr),
-		},
-		AllowHostDirVolumePlugin: true,
-		AllowHostIPC:             true,
-		AllowHostNetwork:         true,
-		AllowHostPID:             true,
-		AllowHostPorts:           true,
-		AllowPrivilegedContainer: true,
-		ReadOnlyRootFilesystem:   false,
-		RunAsUser: securityv1.RunAsUserStrategyOptions{
-			Type: securityv1.RunAsUserStrategyRunAsAny,
-		},
-		SELinuxContext: securityv1.SELinuxContextStrategyOptions{
-			Type: securityv1.SELinuxStrategyRunAsAny,
-		},
-		FSGroup: securityv1.FSGroupStrategyOptions{
-			Type: securityv1.FSGroupStrategyRunAsAny,
-		},
-		SupplementalGroups: securityv1.SupplementalGroupsStrategyOptions{
-			Type: securityv1.SupplementalGroupsStrategyRunAsAny,
-		},
-		SeccompProfiles:     []string{"*"},
-		AllowedCapabilities: []corev1.Capability{"*"},
-		Volumes:             []securityv1.FSType{"*"},
-	}
-
-	return scc
-}
-
-func (r *NVMeshReconciler) makeSureSCCExists(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
-	scc := r.getNVMeshSCC(cr)
-
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: scc.GetName()}, scc)
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			r.Log.Info(fmt.Sprintf("Creating SCC %s", scc.GetName()))
-
-			err = r.Client.Create(context.TODO(), scc)
-			if err != nil && !k8serrors.IsAlreadyExists(err) {
-				return Requeue(time.Second * 10), errors.Wrap(err, fmt.Sprintf("Failed to create SCC %s. Error: %s", scc.GetName(), err))
-			}
-
-			return DoNotRequeue(), nil
-		} else {
-			return DoNotRequeue(), errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", scc.GetName()))
-		}
-	}
-	return DoNotRequeue(), nil
-}
-
 func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) error {
 	var objToCreate client.Object
 	sa := r.getClusterServiceAccount(cr)
@@ -665,102 +606,7 @@ func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) err
 		return err3
 	}
 
-	if r.Options.IsOpenShift {
-		err4 := r.addClusterServiceAccountToSCC(cr)
-		if err4 != nil {
-			return errors.Wrap(err4, fmt.Sprintf("Failed to add ServiceAccount to SCC. Error: %s", err4))
-		}
-	}
-
 	return nil
-}
-
-func (r *NVMeshReconciler) addClusterServiceAccountToSCC(cr *nvmeshv1.NVMesh) error {
-	accountName := r.getClusterServiceAccountName(cr)
-	ns := cr.GetNamespace()
-	scc := &securityv1.SecurityContextConstraints{}
-	retryBackoff := retry.DefaultRetry
-	err := retry.RetryOnConflict(retryBackoff, func() error {
-		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: operatorSCCName}, scc)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", operatorSCCName))
-		}
-
-		if scc.Users == nil {
-			scc.Users = []string{}
-		}
-
-		userRef := "system:serviceaccount:" + ns + ":" + accountName
-
-		for _, user := range scc.Users {
-			if user == userRef {
-				// if already exists - exit the function
-				return nil
-			}
-		}
-
-		scc.Users = append(scc.Users, userRef)
-
-		err = r.Client.Update(context.TODO(), scc)
-		return err
-	})
-
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf(" Failed to add ServiceAccount %s in namespace %s to SCC %s. Retried %d times", accountName, ns, operatorSCCName, retryBackoff.Steps))
-	}
-
-	return nil
-}
-
-func (r *NVMeshReconciler) removeClusterServiceAccountFromSCC(cr *nvmeshv1.NVMesh) error {
-	accountName := r.getClusterServiceAccountName(cr)
-	ns := cr.GetNamespace()
-	scc := &securityv1.SecurityContextConstraints{}
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-
-		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: operatorSCCName}, scc)
-		if err != nil {
-			if k8serrors.IsNotFound(err) {
-				// SCC not found, then  we don't need to remove the service account from it
-				return nil
-			}
-
-			return errors.Wrap(err, fmt.Sprintf("Failed to get SCC %s", operatorSCCName))
-		}
-
-		if scc.Users != nil {
-			userRef := "system:serviceaccount:" + ns + ":" + accountName
-
-			newUsersList := make([]string, 0)
-			for _, user := range scc.Users {
-				if user != userRef {
-					newUsersList = append(newUsersList, user)
-				} else {
-					r.Log.Info(fmt.Sprintf("Removing service account %s from SCC %s", userRef, scc.GetName()))
-				}
-			}
-
-			scc.Users = newUsersList
-		}
-
-		if scc.Users == nil || len(scc.Users) == 0 {
-			// We can delete the SCC as it has no users assigned to it now
-			r.Log.Info(fmt.Sprintf("Deleting SCC %s", scc.GetName()))
-			err = r.Client.Delete(context.TODO(), scc)
-			if err != nil && !k8serrors.IsNotFound(err) {
-				return errors.Wrap(err, fmt.Sprintf("Failed to remove SCC %s after removing service account %s in namespace %s.", operatorSCCName, ns, accountName))
-			}
-		} else {
-			err = r.Client.Update(context.TODO(), scc)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("Failed to update SCC %s after removing service account %s in namespace %s.", operatorSCCName, ns, accountName))
-			}
-		}
-
-		return err
-	})
-
-	return err
 }
 
 func (r *NVMeshReconciler) printAllPodsStatuses(namespace string) {

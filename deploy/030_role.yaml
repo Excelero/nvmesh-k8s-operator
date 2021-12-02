@@ -101,23 +101,10 @@ rules:
   - security.openshift.io
   resources:
   - securitycontextconstraints
-  verbs:
-  - get
-  - use
-  - patch
-  - update
-  - watch
-  - delete
   resourceNames:
-  - nvmesh-operator
-- apiGroups:
-  - security.openshift.io
-  resources:
-  - securitycontextconstraints
+  - privileged
   verbs:
-  - get
-  - list
-  - create
+  - use
 - apiGroups:
   - coordination.k8s.io
   resources:
