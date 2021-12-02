@@ -135,12 +135,6 @@ spec:
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:text'
             - 'urn:alm:descriptor:com.tectonic.ui:advanced'
-        - description: Deploy a MongoDB Operator
-          displayName: MongoDB Operator
-          path: management.mongoDB.useOperator
-          x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
-            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
         # HIDDEN FIELDS (Hidden from the UI)
         - displayName: HIDDEN FIELDS - Management ImageRegistry
           description: >-

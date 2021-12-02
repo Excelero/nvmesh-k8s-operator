@@ -22,24 +22,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
-	mgmtAssetsLocation             = "resources/management/"
-	mongoDBOperatorAssetsLocation  = "resources/mongodb-operator"
-	mongoDBCustomResourceLocation  = "resources/mongodb-operator/custom-resource"
-	mongoDBUnManagedAssetsLocation = "resources/mongodb-unmanaged"
-	mgmtStatefulSetName            = "nvmesh-management"
-	mgmtImageName                  = "nvmesh-management"
-	mongoInstanceImageName         = "nvmesh-mongo-instance"
-	mgmtGuiServiceName             = "nvmesh-management-gui"
-	mgmtProtocol                   = "https"
-	recursive                      = true
-	nonRecursive                   = false
+	mgmtAssetsLocation     = "resources/management/"
+	mongoDBAssetsLocation  = "resources/mongodb"
+	mgmtStatefulSetName    = "nvmesh-management"
+	mgmtImageName          = "nvmesh-management"
+	mongoInstanceImageName = "nvmesh-mongo-instance"
+	mgmtGuiServiceName     = "nvmesh-management-gui"
+	mgmtProtocol           = "https"
+	recursive              = true
+	nonRecursive           = false
 )
 
 //NVMeshMgmtReconciler - Reconciler for NVMesh-Management
@@ -53,31 +49,14 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	result := DoNotRequeue()
 	defaultRequeue := Requeue(time.Second)
 
-	if !cr.Spec.Management.Disabled && cr.Spec.Management.MongoDB.UseOperator {
-		err = r.deployMongoDBOperator(cr, nvmeshr)
+	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
+		err = r.deployMongoDB(cr, nvmeshr)
 	} else {
-		err = r.removeMongoDBOperator(cr, nvmeshr)
+		err = r.removeMongoDB(cr, nvmeshr)
 	}
 
 	if err != nil {
 		return defaultRequeue, err
-	}
-
-	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
-		err = r.deployMongoDBWithoutOperator(cr, nvmeshr)
-	} else {
-		err = r.removeMongoDBWithoutOperator(cr, nvmeshr)
-	}
-
-	if err != nil {
-		return defaultRequeue, err
-	}
-
-	// Reconcile MongoDB custom resource using the unstructured client
-	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
-		err = r.deployMongoCustomResource(cr, nvmeshr)
-	} else {
-		err = r.removeMongoCustomResource(cr, nvmeshr)
 	}
 
 	if err != nil {
@@ -173,28 +152,12 @@ func (r *NVMeshMgmtReconciler) handleDBManipulations(cr *nvmeshv1.NVMesh) error 
 	return nil
 }
 
-func (r *NVMeshMgmtReconciler) removeMongoCustomResource(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.reconcileUnstructuredObjects(cr, mongoDBCustomResourceLocation, false, updateMongoDBObjects)
+func (r *NVMeshMgmtReconciler) deployMongoDB(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.createObjectsFromDir(cr, r, mongoDBAssetsLocation, nonRecursive)
 }
 
-func (r *NVMeshMgmtReconciler) deployMongoCustomResource(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.reconcileUnstructuredObjects(cr, mongoDBCustomResourceLocation, true, updateMongoDBObjects)
-}
-
-func (r *NVMeshMgmtReconciler) deployMongoDBWithoutOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.createObjectsFromDir(cr, r, mongoDBUnManagedAssetsLocation, nonRecursive)
-}
-
-func (r *NVMeshMgmtReconciler) removeMongoDBWithoutOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.removeObjectsFromDir(cr, r, mongoDBUnManagedAssetsLocation, nonRecursive)
-}
-
-func (r *NVMeshMgmtReconciler) deployMongoDBOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.createObjectsFromDir(cr, r, mongoDBOperatorAssetsLocation, nonRecursive)
-}
-
-func (r *NVMeshMgmtReconciler) removeMongoDBOperator(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
-	return nvmeshr.removeObjectsFromDir(cr, r, mongoDBOperatorAssetsLocation, nonRecursive)
+func (r *NVMeshMgmtReconciler) removeMongoDB(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
+	return nvmeshr.removeObjectsFromDir(cr, r, mongoDBAssetsLocation, nonRecursive)
 }
 
 func (r *NVMeshMgmtReconciler) deployManagement(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
@@ -203,18 +166,6 @@ func (r *NVMeshMgmtReconciler) deployManagement(cr *nvmeshv1.NVMesh, nvmeshr *NV
 
 func (r *NVMeshMgmtReconciler) removeManagement(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	return nvmeshr.removeObjectsFromDir(cr, r, mgmtAssetsLocation, recursive)
-}
-
-func updateMongoDBObjects(cr *nvmeshv1.NVMesh, obj *unstructured.Unstructured, gvk *schema.GroupVersionKind) {
-	switch gvk.Kind {
-	case "MongoDB":
-		spec := obj.Object["spec"].(map[string]interface{})
-		spec["replicas"] = cr.Spec.Management.MongoDB.Replicas
-
-		// if cr.Spec.Management.MongoDB.Version != "" {
-		// 	spec["version"] = cr.Spec.Management.MongoDB.Version
-		// }
-	}
 }
 
 //InitObject Initializes  Management objects

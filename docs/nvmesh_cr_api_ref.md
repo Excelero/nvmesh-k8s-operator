@@ -356,18 +356,6 @@ NVMeshStatus
 </tr>
 <tr>
 <td>
-<code>useOperator</code><br/>
-<em>
-<span class="type">bool<span>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>If true the NVMesh Operator will deploy a MongoDB Operator and a MongoDB Cluster using a CustomResource</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>address</code><br/>
 <em>
 <span class="type">string<span>

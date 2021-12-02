@@ -118,15 +118,8 @@ func (r *NVMeshReconciler) uninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctr
 
 func (r *NVMeshReconciler) removeMongo(cr *nvmeshv1.NVMesh) error {
 	mgmt := NVMeshMgmtReconciler(*r)
-	if err := mgmt.removeMongoDBOperator(cr, r); err != nil {
-		return err
-	}
 
-	if err := mgmt.removeMongoCustomResource(cr, r); err != nil {
-		return err
-	}
-
-	if err := mgmt.removeMongoDBWithoutOperator(cr, r); err != nil {
+	if err := mgmt.removeMongoDB(cr, r); err != nil {
 		return err
 	}
 
@@ -417,7 +410,6 @@ func (r *NVMeshReconciler) deleteClusterServiceAccount(cr *nvmeshv1.NVMesh) (ctr
 		return Requeue(time.Second), err
 	}
 
-	r.removeClusterServiceAccountFromSCC(cr)
 	return ctrl.Result{}, nil
 }
 

@@ -26,13 +26,6 @@ func (r *NVMeshReconciler) isValid(cr *nvmeshv1.NVMesh) error {
 		)
 	}
 
-	if cr.Spec.Management.MongoDB.External && cr.Spec.Management.MongoDB.UseOperator {
-		return validationError(cr,
-			"Cannot use both mongoDB.external: true AND mongoDB.useOperator: true",
-			"If you have a MongoDB cluster already deployed, Please use MongoDB.external: true and supply the mongo connection string in MongoDB.address. MongoDB.useOperator: true will cause the NVMesh Operator to deploy A MongoDB operator for you.",
-		)
-	}
-
 	return nil
 }
 

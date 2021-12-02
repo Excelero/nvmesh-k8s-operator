@@ -538,10 +538,6 @@ spec:
                           Cluster - This field is ignored if management.mongoDB.external=true
                         format: int32
                         type: integer
-                      useOperator:
-                        description: If true the NVMesh Operator will deploy a MongoDB
-                          Operator and a MongoDB Cluster using a CustomResource
-                        type: boolean
                     type: object
                   noSSL:
                     description: Disable TLS/SSL on NVMesh-Management websocket and
