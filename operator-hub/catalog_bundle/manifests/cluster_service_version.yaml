@@ -7,7 +7,7 @@ metadata:
     alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.2.1"},"management":{"mongoDB":{"replicas":1},"version":"2.2.1-1","replicas":1},"csi":{"version":"v1.1.7","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
-    containerImage: registry.excelero.com/dev/nvmesh-operator:0.8.0-18
+    containerImage: excelero/nvmesh-operator:0.8.1-1
     createdAt: '2020-10-28T00:00:00Z'
     description: NVMesh Operator enables users to install Excelero NVMesh on Kubernetes
       and OpenShift clusters
@@ -15,7 +15,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/Excelero/nvmesh-k8s-operator
     support: Excelero Support (support@excelero.com)
-  name: nvmesh-operator.v0.8.0
+  name: nvmesh-operator.v0.8.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -111,12 +111,6 @@ spec:
         path: management.mongoDB.address
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-        - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Deploy a MongoDB Operator
-        displayName: MongoDB Operator
-        path: management.mongoDB.useOperator
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
         - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: HIDDEN FIELDS - Override the default image registry for the management
           image
@@ -329,24 +323,11 @@ spec:
         - apiGroups:
           - security.openshift.io
           resourceNames:
-          - nvmesh-operator
+          - privileged
           resources:
           - securitycontextconstraints
           verbs:
-          - get
           - use
-          - patch
-          - update
-          - watch
-          - delete
-        - apiGroups:
-          - security.openshift.io
-          resources:
-          - securitycontextconstraints
-          verbs:
-          - get
-          - list
-          - create
         - apiGroups:
           - coordination.k8s.io
           resources:
@@ -467,7 +448,7 @@ spec:
                 - 0.8.0-66
                 command:
                 - /manager
-                image: registry.excelero.com/dev/nvmesh-operator:0.8.0-18
+                image: excelero/nvmesh-operator:0.8.1-1
                 imagePullPolicy: Always
                 name: controller
                 resources:
@@ -507,4 +488,4 @@ spec:
   maturity: beta
   provider:
     name: Excelero
-  version: 0.8.0
+  version: 0.8.1

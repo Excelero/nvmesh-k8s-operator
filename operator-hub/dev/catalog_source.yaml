@@ -3,12 +3,12 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: nvmesh-catalog-0-8-0
+  name: nvmesh-catalog-0-8-1
   namespace: openshift-marketplace
 spec:
   displayName: NVMesh Catalog Source
-  image: registry.excelero.com/dev/dev-os-catalog-source-index:0.8.0-11
+  image: registry.excelero.com/dev/dev-os-catalog-source-index:0.8.1-1
   publisher: Excelero
   secrets:
-  - excelero-registry-cred
+    - excelero-registry-cred
   sourceType: grpc
