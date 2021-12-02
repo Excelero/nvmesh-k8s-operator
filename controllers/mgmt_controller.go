@@ -22,20 +22,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
-	mgmtAssetsLocation     = "resources/management/"
-	mongoDBAssetsLocation  = "resources/mongodb"
-	mgmtStatefulSetName    = "nvmesh-management"
-	mgmtImageName          = "nvmesh-management"
-	mongoInstanceImageName = "nvmesh-mongo-instance"
-	mgmtGuiServiceName     = "nvmesh-management-gui"
-	mgmtProtocol           = "https"
-	recursive              = true
-	nonRecursive           = false
+	mgmtAssetsLocation          = "resources/management/"
+	mongoDBAssetsLocation       = "resources/mongodb"
+	mgmtStatefulSetName         = "nvmesh-management"
+	mgmtImageName               = "nvmesh-management"
+	mongoInstanceImageName      = "nvmesh-mongo-instance"
+	mgmtGuiServiceName          = "nvmesh-management-gui"
+	mgmtProtocol                = "https"
+	mgmtInitDbJobName           = "mgmt-init-db"
+	recursive                   = true
+	nonRecursive                = false
+	SettingsKeyAutoFromatDrives = "hidden.autoFormatDrive"
+	SettingsKeyAutoEvictDrives  = "hidden.autoEvictDrive"
 )
 
 //NVMeshMgmtReconciler - Reconciler for NVMesh-Management
@@ -46,7 +50,6 @@ type NVMeshMgmtReconciler struct {
 //Reconcile - Reconciles for NVMesh-Management
 func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) (reconcile.Result, error) {
 	var err error
-	result := DoNotRequeue()
 	defaultRequeue := Requeue(time.Second)
 
 	if !cr.Spec.Management.Disabled && !cr.Spec.Management.MongoDB.External {
@@ -68,9 +71,10 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 	} else {
 		err = r.handleDBManipulations(cr)
 		if err == mongo.ErrNoDocuments {
-			// If mongo available but no gernealSettings document we should continue to create the management and requeue to reconcile again
-			result = Requeue(time.Second * 5)
-
+			// First run - Init DB
+			r.Log.Info("No globalSettings document found in MongoDB - Running initDB")
+			err = r.runMgmtInitDBJob(cr)
+			return Requeue(time.Second * 3), err
 		} else if err != nil {
 			_, isServerSelectionError := err.(mongotopology.ServerSelectionError)
 			if isServerSelectionError {
@@ -82,23 +86,23 @@ func (r *NVMeshMgmtReconciler) Reconcile(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshRec
 				return defaultRequeue, err
 			}
 		}
-
 		err = nvmeshr.createObjectsFromDir(cr, r, mgmtAssetsLocation, recursive)
 	}
 
-	return result, err
+	return DoNotRequeue(), err
 }
 
 func (r *NVMeshMgmtReconciler) handleDBManipulations(cr *nvmeshv1.NVMesh) error {
+	log := r.Log.WithName("handleDBManipulations")
 
 	filter := bson.D{}
 	projection := bson.D{{"hidden", 1}}
 	var err error
 
 	type HiddenSettings struct {
-		AutoEvictDrives  bool `bson:"autoEvictDrives"`
-		AutoFormatDrives bool `bson:"autoFormatDrives"`
-		IsElectDisabled  bool `bson:"isElectDisabled"`
+		AutoEvictDrive  bool `bson:"autoEvictDrive"`
+		AutoFormatDrive bool `bson:"autoFormatDrive"`
+		IsElectDisabled bool `bson:"isElectDisabled"`
 	}
 
 	type FindResult struct {
@@ -123,23 +127,26 @@ func (r *NVMeshMgmtReconciler) handleDBManipulations(cr *nvmeshv1.NVMesh) error 
 
 	defer func() {
 		if asyncErr := client.Disconnect(context.TODO()); asyncErr != nil {
-			r.Log.Error(asyncErr, "Error disconnecting from MongoDB")
+			log.Error(asyncErr, "Error disconnecting from MongoDB")
 		}
 	}()
 
 	err = mongoclient.FindOne(client, "globalSettings", filter, projection, &result)
 
 	if err != nil {
-		r.Log.V(5).Info(fmt.Sprintf("Mongo FindOne failed: %s", err))
+		log.V(5).Info(fmt.Sprintf("Mongo FindOne failed: %s", err))
 		return err
 	}
 
-	if cr.Spec.Management.DisableAutoFormatDrives != !result.Hidden.AutoFormatDrives || cr.Spec.Management.DisableAutoEvictDrives != !result.Hidden.AutoEvictDrives {
-		r.Log.Info(fmt.Sprintf("Updating AutoFormatDrives=%t and AutoEvictDrives=%t in the DB", !cr.Spec.Management.DisableAutoFormatDrives, !cr.Spec.Management.DisableAutoEvictDrives))
+	// We can now definitely delete any initDBJob that is left
+	r.deleteJob(cr.GetNamespace(), mgmtInitDbJobName)
+
+	if cr.Spec.Management.DisableAutoFormatDrives != !result.Hidden.AutoFormatDrive || cr.Spec.Management.DisableAutoEvictDrives != !result.Hidden.AutoEvictDrive {
+		log.Info(fmt.Sprintf("Updating AutoFormatDrives=%t and AutoEvictDrives=%t in the DB", !cr.Spec.Management.DisableAutoFormatDrives, !cr.Spec.Management.DisableAutoEvictDrives))
 
 		update := bson.D{{"$set", bson.D{
-			{"hidden.autoEvictDrives", !cr.Spec.Management.DisableAutoEvictDrives},
-			{"hidden.autoFormatDrives", !cr.Spec.Management.DisableAutoFormatDrives}}}}
+			{"hidden.autoEvictDrive", !cr.Spec.Management.DisableAutoEvictDrives},
+			{"hidden.autoFormatDrive", !cr.Spec.Management.DisableAutoFormatDrives}}}}
 		err = mongoclient.UpdateOne(client, "globalSettings", filter, &update)
 		if err != nil {
 			return errors.Wrap(err, "Failed to update autoEvictDrives & autoFormatDrives in MongoDB")
@@ -166,6 +173,27 @@ func (r *NVMeshMgmtReconciler) deployManagement(cr *nvmeshv1.NVMesh, nvmeshr *NV
 
 func (r *NVMeshMgmtReconciler) removeManagement(cr *nvmeshv1.NVMesh, nvmeshr *NVMeshReconciler) error {
 	return nvmeshr.removeObjectsFromDir(cr, r, mgmtAssetsLocation, recursive)
+}
+
+func (r *NVMeshMgmtReconciler) runMgmtInitDBJob(cr *nvmeshv1.NVMesh) error {
+	imageName := getMgmtImageFromResource(cr)
+	job := r.getNewJob(cr, mgmtInitDbJobName, imageName)
+	backoffLimit := int32(1)
+	job.Spec.BackoffLimit = &backoffLimit
+	container := &job.Spec.Template.Spec.Containers[0]
+
+	container.Command = []string{"mongo"}
+	mongoConnString := getMongoConnectionString(cr) + "/management"
+	container.Args = []string{mongoConnString, "/opt/NVMesh/management/initDB.js"}
+
+	err := r.Client.Create(context.TODO(), job)
+	if err == nil {
+		r.Log.Info(fmt.Sprintf("Job %s created", mgmtInitDbJobName))
+	} else if !k8serrors.IsAlreadyExists(err) {
+		return errors.Wrap(err, "Failed to create iniDB job")
+	}
+
+	return nil
 }
 
 //InitObject Initializes  Management objects
@@ -353,7 +381,7 @@ func getMgmtImageFromResource(cr *nvmeshv1.NVMesh) string {
 }
 
 func (r *NVMeshMgmtReconciler) shouldUpdateManagementStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
-	log := r.Log.WithValues("method", "shouldUpdateManagementStatefulSet")
+	log := r.Log.WithName("shouldUpdateManagementStatefulSet")
 
 	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
 	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
@@ -373,7 +401,7 @@ func (r *NVMeshMgmtReconciler) shouldUpdateManagementStatefulSet(cr *nvmeshv1.NV
 }
 
 func (r *NVMeshMgmtReconciler) shouldUpdateMongoStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
-	log := r.Log.WithValues("method", "shouldUpdateMongoStatefulSet")
+	log := r.Log.WithName("shouldUpdateMongoStatefulSet")
 
 	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
 	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
@@ -431,7 +459,7 @@ func (r *NVMeshMgmtReconciler) shouldUpdateGuiService(cr *nvmeshv1.NVMesh, expec
 }
 
 func (r *NVMeshMgmtReconciler) shouldUpdateConfigMap(cr *nvmeshv1.NVMesh, expected *v1.ConfigMap, conf *v1.ConfigMap) bool {
-	log := r.Log.WithValues("method", "shouldUpdateConfigMap")
+	log := r.Log.WithName("shouldUpdateConfigMap")
 
 	expectedConfig := expected.Data["config"]
 	foundConfig := conf.Data["config"]
@@ -450,7 +478,7 @@ func (r *NVMeshMgmtReconciler) shouldUpdateConfigMap(cr *nvmeshv1.NVMesh, expect
 }
 
 func (r *NVMeshMgmtReconciler) updateConfAndRestartMgmt(cr *nvmeshv1.NVMesh, expected *v1.ConfigMap, conf *v1.ConfigMap) error {
-	log := r.Log.WithValues("method", "updateConfAndRestartMgmt")
+	log := r.Log.WithName("updateConfAndRestartMgmt")
 
 	log.Info("Updating ConfigMap\n")
 

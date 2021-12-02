@@ -79,7 +79,7 @@ func (r *NVMeshReconciler) doBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh
 		// Update the uninstall status
 		err := r.Client.Status().Update(context.TODO(), nvmeshCluster)
 		if err != nil {
-			log := r.Log.WithValues("method", "DoBeforeDeletingNVMesh", "component", "Finalizer")
+			log := r.Log.WithName("DoBeforeDeletingNVMesh")
 			uninstallStatus := nvmeshCluster.Status.ActionsStatus[uninstallAction.Name]
 			log.Info(fmt.Sprintf("Failed to update uninstall status with %+v", uninstallStatus))
 		}
@@ -95,7 +95,7 @@ func (r *NVMeshReconciler) doBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh
 }
 
 func (r *NVMeshReconciler) isAllowedToDeleteCluster(cr *nvmeshv1.NVMesh) error {
-	log := r.Log.WithValues("method", "isAllowedToDeleteCluster", "component", "Finalizer")
+	log := r.Log.WithName("isAllowedToDeleteCluster")
 
 	// delete any external resources associated with the Cluster
 	// Ensure that delete implementation is idempotent and safe to invoke

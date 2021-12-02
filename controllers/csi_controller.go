@@ -148,7 +148,7 @@ func getCSIFullImageName(cr *nvmeshv1.NVMesh) string {
 }
 
 func (r *NVMeshCSIReconciler) shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) bool {
-	log := r.Log.WithValues("method", "shouldUpdateCSINodeDriverDaemonSet")
+	log := r.Log.WithName("shouldUpdateCSINodeDriverDaemonSet")
 	if getCSIFullImageName(cr) != ds.Spec.Template.Spec.Containers[0].Image {
 		log.Info(fmt.Sprintf("CSI Node Driver Image needs to be updated expected: %s found: %s\n", getCSIFullImageName(cr), ds.Spec.Template.Spec.Containers[0].Image))
 		return true
@@ -158,7 +158,7 @@ func (r *NVMeshCSIReconciler) shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NV
 }
 
 func (r *NVMeshCSIReconciler) shouldUpdateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
-	log := r.Log.WithValues("method", "shouldUpdateCSIControllerStatefulSet")
+	log := r.Log.WithName("shouldUpdateCSIControllerStatefulSet")
 
 	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
 		log.Info(fmt.Sprintf("CSI controller replica number needs to be updated expected: %d found: %d\n", *expected.Spec.Replicas, *ss.Spec.Replicas))

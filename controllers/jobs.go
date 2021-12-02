@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -21,11 +22,11 @@ const (
 	registryCredSecretName = "excelero-registry-cred"
 )
 
-func (r *NVMeshReconciler) waitForJobToFinish(cr *nvmeshv1.NVMesh, jobName string) (ctrl.Result, error) {
+func (r *NVMeshBaseReconciler) waitForJobToFinish(cr *nvmeshv1.NVMesh, jobName string) (ctrl.Result, error) {
 	return r.waitForJobToFinishWithoutCR(cr.GetNamespace(), jobName, cr.Spec.Debug.DebugJobs)
 }
 
-func (r *NVMeshReconciler) waitForJobToFinishWithoutCR(namespace string, jobName string, debug bool) (ctrl.Result, error) {
+func (r *NVMeshBaseReconciler) waitForJobToFinishWithoutCR(namespace string, jobName string, debug bool) (ctrl.Result, error) {
 	job := &batchv1.Job{}
 
 	objKey := client.ObjectKey{Name: jobName, Namespace: namespace}
@@ -51,7 +52,7 @@ func (r *NVMeshReconciler) waitForJobToFinishWithoutCR(namespace string, jobName
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) isSingleJobCompleted(job *batchv1.Job) (completed bool, err error) {
+func (r *NVMeshBaseReconciler) isSingleJobCompleted(job *batchv1.Job) (completed bool, err error) {
 	s := job.Status
 
 	if s.Failed > 0 {
@@ -67,14 +68,14 @@ func (r *NVMeshReconciler) isSingleJobCompleted(job *batchv1.Job) (completed boo
 	return false, nil
 }
 
-func (r *NVMeshReconciler) getJobPods(namespace string, jobName string) (*corev1.PodList, error) {
+func (r *NVMeshBaseReconciler) getJobPods(namespace string, jobName string) (*corev1.PodList, error) {
 	podList := &corev1.PodList{}
 	matchLabels := client.MatchingLabels{"job-name": jobName}
 	err := r.Client.List(context.TODO(), podList, matchLabels)
 	return podList, err
 }
 
-func (r *NVMeshReconciler) deleteJob(namespace string, jobName string) error {
+func (r *NVMeshBaseReconciler) deleteJob(namespace string, jobName string) error {
 	job := &batchv1.Job{}
 	job.SetName(jobName)
 	job.SetNamespace(namespace)
@@ -104,7 +105,7 @@ func matchNode(nodeName string) map[string]string {
 	return map[string]string{"kubernetes.io/hostname": nodeName}
 }
 
-func (r *NVMeshReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image string) *batchv1.Job {
+func (r *NVMeshBaseReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image string) *batchv1.Job {
 	backOffLimit := int32(3)
 	completions := int32(1)
 
@@ -141,7 +142,7 @@ func (r *NVMeshReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, image 
 	}
 }
 
-func (r *NVMeshReconciler) addHostPathMount(podSpec *corev1.PodSpec, containerIndex int, path string) {
+func (r *NVMeshBaseReconciler) addHostPathMount(podSpec *corev1.PodSpec, containerIndex int, path string) {
 	volName := strings.ToLower(strings.ReplaceAll(path[1:], "/", "-"))
 	vol := v1.Volume{
 		Name: volName,
@@ -160,7 +161,7 @@ func (r *NVMeshReconciler) addHostPathMount(podSpec *corev1.PodSpec, containerIn
 	podSpec.Containers[containerIndex].VolumeMounts = append(podSpec.Containers[containerIndex].VolumeMounts, mount)
 }
 
-func (r *NVMeshReconciler) addConfigMapMount(podSpec *corev1.PodSpec, containerIndex int, configMapName string, path string) {
+func (r *NVMeshBaseReconciler) addConfigMapMount(podSpec *corev1.PodSpec, containerIndex int, configMapName string, path string) {
 	volName := "config-map-vol-" + configMapName
 	vol := v1.Volume{
 		Name: volName,
@@ -181,7 +182,7 @@ func (r *NVMeshReconciler) addConfigMapMount(podSpec *corev1.PodSpec, containerI
 	podSpec.Containers[containerIndex].VolumeMounts = append(podSpec.Containers[containerIndex].VolumeMounts, mount)
 }
 
-func (r *NVMeshReconciler) printJob(jobName string, namespace string) {
+func (r *NVMeshBaseReconciler) printJob(jobName string, namespace string) {
 	jobJSONBytes, err := r.getJobAsJSON(jobName, namespace)
 
 	if err != nil {
@@ -191,8 +192,20 @@ func (r *NVMeshReconciler) printJob(jobName string, namespace string) {
 	}
 }
 
-func (r *NVMeshReconciler) monitorJob(jobName string, namespace string, debugJobs bool) {
-	log := r.Log.WithValues("method", "debug_cluster")
+func (r *NVMeshBaseReconciler) getJobAsJSON(jobName string, namespace string) ([]byte, error) {
+	jobKey := client.ObjectKey{Name: jobName, Namespace: namespace}
+	job := &batchv1.Job{}
+	err := r.Client.Get(context.TODO(), jobKey, job)
+	if err != nil {
+		r.Log.Info(fmt.Sprintf("DEBUG: Failed to get job %s. Error: %s", jobName, err))
+	}
+	bytes, err := json.MarshalIndent(job, "", "    ")
+
+	return bytes, err
+}
+
+func (r *NVMeshBaseReconciler) monitorJob(jobName string, namespace string, debugJobs bool) {
+	log := r.Log.WithName("debug_cluster")
 	// 1. check the job pods and it's status
 	podList, err := r.getJobPods(namespace, jobName)
 	if err != nil && !k8serrors.IsNotFound(err) {

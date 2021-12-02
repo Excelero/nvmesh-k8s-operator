@@ -84,7 +84,7 @@ func (r *NVMeshCoreReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, expected 
 }
 
 func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expected *appsv1.DaemonSet, ds *appsv1.DaemonSet) bool {
-	log := r.Log.WithValues("method", "shouldUpdateDaemonSet")
+	log := r.Log.WithName("shouldUpdateDaemonSet")
 
 	if len(ds.Spec.Template.Spec.Containers) != len(expected.Spec.Template.Spec.Containers) {
 		//TODO (Operator Upgrade): we should consider having a version notation on each object as a label so we can identify when an upgrade is required
@@ -113,7 +113,7 @@ func (r *NVMeshCoreReconciler) shouldUpdateDaemonSet(cr *nvmeshv1.NVMesh, expect
 }
 
 func (r *NVMeshCoreReconciler) shouldUpdateNVMeshConf(cr *nvmeshv1.NVMesh, expected string, current string) (bool, string) {
-	log := r.Log.WithValues("method", "shouldUpdateNVMeshConf")
+	log := r.Log.WithName("shouldUpdateNVMeshConf")
 
 	expectedDict := r.configStringToDict(expected)
 	currentDict := r.configStringToDict(current)
@@ -140,7 +140,7 @@ func (r *NVMeshCoreReconciler) shouldUpdateNVMeshConf(cr *nvmeshv1.NVMesh, expec
 }
 
 func (r *NVMeshCoreReconciler) shouldUpdateCoreConfigMap(cr *nvmeshv1.NVMesh, expected *corev1.ConfigMap, cm *corev1.ConfigMap) bool {
-	log := r.Log.WithValues("method", "shouldUpdateCoreConfigMap")
+	log := r.Log.WithName("shouldUpdateCoreConfigMap")
 
 	shouldUpdate := false
 

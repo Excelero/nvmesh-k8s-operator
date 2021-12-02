@@ -66,14 +66,14 @@ func (r *NVMeshReconciler) reconcileObject(cr *nvmeshv1.NVMesh, newObj client.Ob
 	return r.makeSureObjectRemoved(cr, newObj, component)
 }
 
-func (r *NVMeshReconciler) getOperatorLabels(cr *nvmeshv1.NVMesh) map[string]string {
+func (r *NVMeshBaseReconciler) getOperatorLabels(cr *nvmeshv1.NVMesh) map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/managed-by": "nvmesh-operator",
 		nvmeshClusterNameLabelKey:      cr.GetName(),
 	}
 }
 
-func (r *NVMeshReconciler) addOperatorLabels(cr *nvmeshv1.NVMesh, obj client.Object) {
+func (r *NVMeshBaseReconciler) addOperatorLabels(cr *nvmeshv1.NVMesh, obj client.Object) {
 	labels := obj.GetLabels()
 	if labels == nil {
 		labels = make(map[string]string)
@@ -362,7 +362,7 @@ func (r *NVMeshReconciler) stopAllUnstructuredWatchers() {
 }
 
 func (r *NVMeshReconciler) listenOnChanAndReconcile(ch <-chan watch.Event) {
-	log := r.Log.WithValues("method", "listenOnChanAndReconcile")
+	log := r.Log.WithName("listenOnChanAndReconcile")
 
 	for e := range ch {
 		log.Info(fmt.Sprintf("received Event %s %s", e.Object.GetObjectKind().GroupVersionKind().Kind, e.Type))
@@ -609,7 +609,7 @@ func (r *NVMeshReconciler) makeSureServiceAccountExists(cr *nvmeshv1.NVMesh) err
 	return nil
 }
 
-func (r *NVMeshReconciler) printAllPodsStatuses(namespace string) {
+func (r *NVMeshBaseReconciler) printAllPodsStatuses(namespace string) {
 	allPodsList := &corev1.PodList{}
 	err := r.Client.List(context.TODO(), allPodsList, &client.ListOptions{Namespace: namespace})
 	if err != nil {
@@ -634,7 +634,6 @@ func (r *NVMeshBaseReconciler) restartStatefulSet(namespace string, name string)
 	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, &ss)
 		if err != nil {
-			log.Error(err, fmt.Sprintf("Error while fetching StatefulSet %s in namespace %s", name, namespace))
 			return err
 		}
 

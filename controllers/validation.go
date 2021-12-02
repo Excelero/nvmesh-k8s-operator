@@ -15,7 +15,7 @@ func validationError(cr *nvmeshv1.NVMesh, errorMessage string, additionlaDetails
 	return goerrors.New(fmt.Sprintf("Validation failed for NVMesh %s. %s %s", cr.GetName(), errorMessage, additionlaDetails))
 }
 
-func (r *NVMeshReconciler) isValid(cr *nvmeshv1.NVMesh) error {
+func (r *NVMeshBaseReconciler) isValid(cr *nvmeshv1.NVMesh) error {
 	// NOTE: it is best to apply most of the validation using the OpenAPI with kubebuilder annotations on the NVMesh type
 
 	// If External mongo is deployed, mongo connection address is expected
@@ -29,7 +29,7 @@ func (r *NVMeshReconciler) isValid(cr *nvmeshv1.NVMesh) error {
 	return nil
 }
 
-func (r *NVMeshReconciler) verifySecretExists(secretName string, ns string) error {
+func (r *NVMeshBaseReconciler) verifySecretExists(secretName string, ns string) error {
 	// check if a secret exist
 	secret := &corev1.Secret{}
 	secretKey := client.ObjectKey{Name: exceleroRegistrySecretName, Namespace: ns}
@@ -48,7 +48,7 @@ func (r *NVMeshReconciler) verifySecretExists(secretName string, ns string) erro
 	return err
 }
 
-func (r *NVMeshReconciler) verifyNVMeshSecretsExist(namespace string) {
+func (r *NVMeshBaseReconciler) verifyNVMeshSecretsExist(namespace string) {
 	// check if the secrets exist in the current namespace
 	r.verifySecretExists(exceleroRegistrySecretName, namespace)
 	r.verifySecretExists(fileServerSecretName, namespace)

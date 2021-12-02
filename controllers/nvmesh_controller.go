@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -119,8 +118,13 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Reconcile
 	result, err := r.reconcileAllcomponents(cr)
-	if err != nil {
-		_, err := r.ManageError(cr, err)
+
+	if result.Requeue {
+
+		if err != nil {
+			_, err = r.ManageError(cr, err)
+		}
+
 		// drop the result returned by ManageError
 		return result, err
 	}
@@ -150,10 +154,10 @@ func (r *NVMeshReconciler) reconcileAllcomponents(cr *nvmeshv1.NVMesh) (ctrl.Res
 	mgmt := NVMeshMgmtReconciler(*r)
 	core := NVMeshCoreReconciler(*r)
 	csi := NVMeshCSIReconciler(*r)
-
 	components := []NVMeshComponent{&mgmt, &core, &csi}
 	var errorList []error
-	var shortestRequeueTime time.Duration = -1
+	var errToReturn error
+	resultWithMinimalRequeue := DoNotRequeue()
 	for _, component := range components {
 		result, err := component.Reconcile(cr, r)
 
@@ -164,8 +168,9 @@ func (r *NVMeshReconciler) reconcileAllcomponents(cr *nvmeshv1.NVMesh) (ctrl.Res
 		}
 
 		if result.Requeue {
-			if shortestRequeueTime == -1 || result.RequeueAfter < shortestRequeueTime {
-				shortestRequeueTime = result.RequeueAfter
+			resultWithMinimalRequeue.Requeue = true
+			if result.RequeueAfter < resultWithMinimalRequeue.RequeueAfter {
+				resultWithMinimalRequeue.RequeueAfter = result.RequeueAfter
 			}
 		}
 	}
@@ -174,10 +179,11 @@ func (r *NVMeshReconciler) reconcileAllcomponents(cr *nvmeshv1.NVMesh) (ctrl.Res
 		for _, e := range errorList {
 			r.Log.Error(e, "Error from ReconcileComponent")
 		}
-		return ctrl.Result{Requeue: true, RequeueAfter: shortestRequeueTime}, errorList[0]
+
+		errToReturn = errorList[0]
 	}
 
-	return DoNotRequeue(), nil
+	return resultWithMinimalRequeue, errToReturn
 }
 
 func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {

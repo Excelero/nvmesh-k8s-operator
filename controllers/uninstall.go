@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -31,7 +30,7 @@ const (
 var uninstallAction = nvmeshv1.ClusterAction{Name: "uninstall"}
 
 func (r *NVMeshReconciler) uninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctrl.Result, error) {
-	log := r.Log.WithValues("method", "uninstallCluster", "component", "Finalizer")
+	log := r.Log.WithName("uninstallCluster")
 
 	if nvmeshCluster.Spec.Operator.SkipUninstall {
 		// Skip uninstall procedure
@@ -145,20 +144,8 @@ func (r *NVMeshReconciler) removeAllWorkloadsExceptMongo(cr *nvmeshv1.NVMesh) (c
 	return DoNotRequeue(), nil
 }
 
-func (r *NVMeshReconciler) getJobAsJSON(jobName string, namespace string) ([]byte, error) {
-	jobKey := client.ObjectKey{Name: jobName, Namespace: namespace}
-	job := &batchv1.Job{}
-	err := r.Client.Get(context.TODO(), jobKey, job)
-	if err != nil {
-		r.Log.Info(fmt.Sprintf("DEBUG: Failed to get job %s. Error: %s", jobName, err))
-	}
-	bytes, err := json.MarshalIndent(job, "", "    ")
-
-	return bytes, err
-}
-
 func (r *NVMeshReconciler) waitForClearDBToFinish(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
-	log := r.Log.WithValues("method", "clearDB", "component", "Finalizer")
+	log := r.Log.WithName("clearDB")
 	result, err := r.waitForJobToFinish(cr, clearDbJobName)
 
 	if result.Requeue {
@@ -177,7 +164,7 @@ func (r *NVMeshReconciler) waitForClearDBToFinish(cr *nvmeshv1.NVMesh) (ctrl.Res
 }
 
 func (r *NVMeshReconciler) waitForWorkloadsToFinish(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
-	log := r.Log.WithValues("method", "waitForWorkloadsToFinish", "component", "Finalizer")
+	log := r.Log.WithName("waitForWorkloadsToFinish")
 	podList := &corev1.PodList{}
 
 	require, err := labels.NewRequirement("nvmesh.excelero.com/component", selection.In, []string{"client", "target", "mcs-agent", "csi-node-driver"})

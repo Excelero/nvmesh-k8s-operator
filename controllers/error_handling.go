@@ -18,7 +18,7 @@ import (
 
 //ManageSuccess - Handles Reconcile success result
 func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result) (ctrl.Result, error) {
-	//log := r.Log.WithValues("method", "DoNotRequeue")
+	//log := r.Log.WithName("method", "DoNotRequeue")
 	var generation int64 = -1
 
 	if cr != nil {
@@ -50,7 +50,7 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result
 
 //ManageError - Handles Reconcile errors, updates CR status, prints to log, and returns reconcile.Result
 func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconcile.Result, error) {
-	log := r.Log.WithValues("method", "ManageError")
+	log := r.Log.WithName("ManageError")
 	var retryInterval time.Duration
 
 	log.Info(fmt.Sprintf("Reconcile cycle failed. %s", issue))

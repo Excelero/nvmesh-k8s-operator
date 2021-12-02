@@ -59,9 +59,9 @@ var _ = Describe("MongoClient", func() {
 			projection := bson.D{{"hidden", 1}}
 
 			type HiddenSettings struct {
-				AutoEvictDrives  bool `bson:"autoEvictDrives"`
-				AutoFormatDrives bool `bson:"autoFormatDrives"`
-				IsElectDisabled  bool `bson:"isElectDisabled"`
+				AutoEvictDrive  bool `bson:"autoEvictDrive"`
+				AutoFormatDrive bool `bson:"autoFormatDrive"`
+				IsElectDisabled bool `bson:"isElectDisabled"`
 			}
 
 			type FindResult struct {
@@ -72,8 +72,8 @@ var _ = Describe("MongoClient", func() {
 			findResult := FindResult{}
 
 			update := bson.D{{"$set", bson.D{
-				{"hidden.autoEvictDrives", true},
-				{"hidden.autoFormatDrives", true}}}}
+				{"hidden.autoEvictDrive", true},
+				{"hidden.autoFormatDrive", true}}}}
 
 			err = UpdateOne(client, "globalSettings", filter, &update)
 			Expect(err).To(BeNil())
@@ -81,12 +81,12 @@ var _ = Describe("MongoClient", func() {
 			err = FindOne(client, "globalSettings", filter, projection, &findResult)
 			Expect(err).To(BeNil())
 
-			Expect(findResult.Hidden.AutoEvictDrives).To(BeTrue())
-			Expect(findResult.Hidden.AutoFormatDrives).To(BeTrue())
+			Expect(findResult.Hidden.AutoEvictDrive).To(BeTrue())
+			Expect(findResult.Hidden.AutoFormatDrive).To(BeTrue())
 
 			update = bson.D{{"$set", bson.D{
-				{"hidden.autoEvictDrives", false},
-				{"hidden.autoFormatDrives", false}}}}
+				{"hidden.autoEvictDrive", false},
+				{"hidden.autoFormatDrive", false}}}}
 
 			err = UpdateOne(client, "globalSettings", filter, &update)
 			Expect(err).To(BeNil())
@@ -94,8 +94,8 @@ var _ = Describe("MongoClient", func() {
 			err = FindOne(client, "globalSettings", filter, projection, &findResult)
 			Expect(err).To(BeNil())
 
-			Expect(findResult.Hidden.AutoEvictDrives).To(BeFalse())
-			Expect(findResult.Hidden.AutoFormatDrives).To(BeFalse())
+			Expect(findResult.Hidden.AutoEvictDrive).To(BeFalse())
+			Expect(findResult.Hidden.AutoFormatDrive).To(BeFalse())
 		})
 	})
 })
