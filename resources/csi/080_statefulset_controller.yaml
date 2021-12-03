@@ -17,7 +17,7 @@ spec:
       annotations:
         kubectl.kubernetes.io/default-container: nvmesh-csi-controller
     spec:
-      serviceAccount: nvmesh-csi
+      serviceAccountName: nvmesh-csi
       containers:
         # NVMesh Driver
         - name: nvmesh-csi-controller

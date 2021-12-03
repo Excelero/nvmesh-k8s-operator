@@ -8,6 +8,6 @@ spec:
   channel: beta
   installPlanApproval: Automatic
   name: nvmesh-operator
-  source: nvmesh-catalog-0-8-1
+  source: nvmesh-catalog-0-8-0
   sourceNamespace: openshift-marketplace
-  startingCSV: nvmesh-operator.v0.8.1
+  startingCSV: nvmesh-operator.v0.8.0

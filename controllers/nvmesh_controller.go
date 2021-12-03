@@ -267,10 +267,6 @@ func (r *NVMeshReconciler) initializeEmptyFieldsOnCustomResource(cr *nvmeshv1.NV
 		cr.Spec.Management.Replicas = 1
 	}
 
-	if cr.Spec.Management.MongoDB.Replicas == 0 {
-		cr.Spec.Management.MongoDB.Replicas = 1
-	}
-
 	if cr.Spec.Actions == nil {
 		cr.Spec.Actions = make([]nvmeshv1.ClusterAction, 0)
 	}

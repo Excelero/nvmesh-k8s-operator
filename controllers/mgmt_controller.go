@@ -204,19 +204,19 @@ func (r *NVMeshMgmtReconciler) InitObject(cr *nvmeshv1.NVMesh, obj client.Object
 	case *appsv1.StatefulSet:
 		switch name {
 		case "nvmesh-management":
-			return r.initiateMgmtStatefulSet(cr, o)
+			return r.initMgmtStatefulSet(cr, o)
 		case "mongo":
-			return r.initiateMongoStatefulSet(cr, o)
+			return r.initMongoStatefulSet(cr, o)
 		}
 	case *v1.ConfigMap:
 		switch name {
 		case "nvmesh-mgmt-config":
-			return r.initiateConfigMap(cr, o)
+			return r.initConfigMap(cr, o)
 		}
 	case *v1.Service:
 		switch name {
 		case "nvmesh-management-gui":
-			return r.initiateMgmtGuiService(cr, o)
+			return r.initMgmtGuiService(cr, o)
 		}
 	default:
 		//o is unknown for us
@@ -274,7 +274,7 @@ func getMongoURI(cr *nvmeshv1.NVMesh) string {
 	return fmt.Sprintf("mongodb://%s", getMongoConnectionString(cr))
 }
 
-func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.ConfigMap) error {
+func (r *NVMeshMgmtReconciler) initConfigMap(cr *nvmeshv1.NVMesh, o *v1.ConfigMap) error {
 	o.Data["configVersion"] = cr.Spec.Management.Version
 
 	var mongoConnectionString string
@@ -326,7 +326,7 @@ func (r *NVMeshMgmtReconciler) getSMTPConfig(cr *nvmeshv1.NVMesh) map[string]int
 	return smtpConf
 }
 
-func (r *NVMeshMgmtReconciler) initiateMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
+func (r *NVMeshMgmtReconciler) initMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
 
 	if cr.Spec.Management.Version == "" {
 		return goerrors.New("Missing Management Version (NVMesh.Spec.Management.Version)")
@@ -359,7 +359,7 @@ func overrideVolumeClaimFields(target *v1.PersistentVolumeClaimSpec, source *v1.
 	}
 }
 
-func (r *NVMeshMgmtReconciler) initiateMongoStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
+func (r *NVMeshMgmtReconciler) initMongoStatefulSet(cr *nvmeshv1.NVMesh, o *appsv1.StatefulSet) error {
 	o.Spec.Template.Spec.Containers[0].Image = r.getCoreFullImageName(cr, mongoInstanceImageName)
 
 	overrideVolumeClaimFields(&o.Spec.VolumeClaimTemplates[0].Spec, &cr.Spec.Management.MongoDB.DataVolumeClaim)
@@ -367,7 +367,7 @@ func (r *NVMeshMgmtReconciler) initiateMongoStatefulSet(cr *nvmeshv1.NVMesh, o *
 	return nil
 }
 
-func (r *NVMeshMgmtReconciler) initiateMgmtGuiService(cr *nvmeshv1.NVMesh, svc *v1.Service) error {
+func (r *NVMeshMgmtReconciler) initMgmtGuiService(cr *nvmeshv1.NVMesh, svc *v1.Service) error {
 	if cr.Spec.Management.ExternalIPs != nil {
 		svc.Spec.ExternalIPs = cr.Spec.Management.ExternalIPs
 	}
@@ -407,7 +407,6 @@ func (r *NVMeshMgmtReconciler) shouldUpdateMongoStatefulSet(cr *nvmeshv1.NVMesh,
 
 	fields := []string{
 		"Spec.Template.Spec.Containers[0].Image",
-		"Spec.Replicas",
 	}
 
 	err, result := reflectutils.CompareFieldsInTwoObjects(expected, ss, fields)

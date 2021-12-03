@@ -368,18 +368,6 @@ NVMeshStatus
 </tr>
 <tr>
 <td>
-<code>replicas</code><br/>
-<em>
-<span class="type">int32<span>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>The number of MongoDB replicas in the MongoDB Cluster - This field is ignored if management.mongoDB.external=true</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>dataVolumeClaim</code><br/>
 <em>
 <a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#persistentvolumeclaimspec-v1-core">

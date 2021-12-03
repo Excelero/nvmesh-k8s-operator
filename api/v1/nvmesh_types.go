@@ -108,10 +108,6 @@ type MongoDBCluster struct {
 	// +optional
 	Address string `json:"address,omitempty"`
 
-	//The number of MongoDB replicas in the MongoDB Cluster - This field is ignored if management.mongoDB.external=true
-	// +optional
-	Replicas int32 `json:"replicas,omitempty"`
-
 	//Overrides fields in the MongoDB data PVC
 	// +optional
 	DataVolumeClaim v1.PersistentVolumeClaimSpec `json:"dataVolumeClaim,omitempty"`

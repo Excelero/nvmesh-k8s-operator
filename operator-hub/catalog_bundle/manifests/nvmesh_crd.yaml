@@ -532,11 +532,6 @@ spec:
                           already deployed, and MongoAddress should be given, if false
                           - MongoDB will be automatically deployed
                         type: boolean
-                      replicas:
-                        description: The number of MongoDB replicas in the MongoDB
-                          Cluster - This field is ignored if management.mongoDB.external=true
-                        format: int32
-                        type: integer
                     type: object
                   noSSL:
                     description: Disable TLS/SSL on NVMesh-Management websocket and
