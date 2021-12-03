@@ -15,7 +15,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	mongoclient "excelero.com/nvmesh-k8s-operator/mongoclient"
+	mongoclient "excelero.com/nvmesh-k8s-operator/pkg/mongoclient"
+	reflectutils "excelero.com/nvmesh-k8s-operator/pkg/reflectutils"
 	mongotopology "go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -305,7 +306,6 @@ func (r *NVMeshMgmtReconciler) initiateConfigMap(cr *nvmeshv1.NVMesh, o *v1.Conf
 		return err
 	}
 	o.Data["config"] = string(jsonString)
-	fmt.Println(string(jsonString))
 
 	return nil
 }
@@ -383,17 +383,19 @@ func getMgmtImageFromResource(cr *nvmeshv1.NVMesh) string {
 func (r *NVMeshMgmtReconciler) shouldUpdateManagementStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
 	log := r.Log.WithName("shouldUpdateManagementStatefulSet")
 
-	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
-	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
-	if expectedVersion != foundVersion {
-		log.Info(fmt.Sprintf("found mgmt version missmatch - expected: %s found: %s\n", expectedVersion, foundVersion))
-		return true
+	fields := []string{
+		"Spec.Template.Spec.Containers[0].Image",
+		"Spec.Replicas",
 	}
 
-	expectedReplicas := *expected.Spec.Replicas
-	foundReplicas := *ss.Spec.Replicas
-	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
-		log.Info(fmt.Sprintf("Management replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas))
+	err, result := reflectutils.CompareFieldsInTwoObjects(expected, ss, fields)
+
+	if err != nil {
+		log.Error(err, "Error comparing Management StatefulSet")
+	}
+
+	if !result.Equals {
+		log.Info(fmt.Sprintf("Management StatefulSet field %s needs to be updated expected: %+v found: %+v\n", result.Path, result.Value1, result.Value2))
 		return true
 	}
 
@@ -403,17 +405,19 @@ func (r *NVMeshMgmtReconciler) shouldUpdateManagementStatefulSet(cr *nvmeshv1.NV
 func (r *NVMeshMgmtReconciler) shouldUpdateMongoStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
 	log := r.Log.WithName("shouldUpdateMongoStatefulSet")
 
-	expectedVersion := expected.Spec.Template.Spec.Containers[0].Image
-	foundVersion := ss.Spec.Template.Spec.Containers[0].Image
-	if expectedVersion != foundVersion {
-		log.Info(fmt.Sprintf("found mongo image version missmatch - expected: %s found: %s\n", expectedVersion, foundVersion))
-		return true
+	fields := []string{
+		"Spec.Template.Spec.Containers[0].Image",
+		"Spec.Replicas",
 	}
 
-	expectedReplicas := *expected.Spec.Replicas
-	foundReplicas := *ss.Spec.Replicas
-	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
-		log.Info(fmt.Sprintf("Mongo replica number needs to be updated expected: %d found: %d\n", expectedReplicas, foundReplicas))
+	err, result := reflectutils.CompareFieldsInTwoObjects(expected, ss, fields)
+
+	if err != nil {
+		log.Error(err, "Error comparing mongo StatefulSet")
+	}
+
+	if !result.Equals {
+		log.Info(fmt.Sprintf("mongo StatefulSet field %s needs to be updated expected: %+v found: %+v\n", result.Path, result.Value1, result.Value2))
 		return true
 	}
 

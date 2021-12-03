@@ -162,7 +162,7 @@ bundle-build-dev: manifests-dev docker-build
 bundle-deploy-locally:
 	oc delete -f operator-hub/dev/subscription.yaml ; oc delete csv nvmesh-operator.v${BUNDLE_VERSION} ; oc apply -f operator-hub/dev/catalog_source.yaml
 	oc apply -f operator-hub/dev/subscription.yaml
-	sleep 2
+	sleep 5
 	oc patch sa nvmesh-operator --type='json' -p='[{"op": "add", "path": "/imagePullSecrets/1", "value": {"name": "excelero-registry-cred" } }]'
 	/bin/bash -c 'oc delete $$(oc get pod -l app=nvmesh-operator --output name)'
 

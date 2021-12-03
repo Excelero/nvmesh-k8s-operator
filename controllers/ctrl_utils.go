@@ -92,7 +92,7 @@ func (r *NVMeshReconciler) makeSureObjectExists(cr *nvmeshv1.NVMesh, newObj clie
 
 	name := newObj.GetName()
 	kind := newObj.GetObjectKind().GroupVersionKind().Kind
-	log := r.Log.WithValues("method", "makeSureObjectExists", "name", name, "kind", kind)
+	log := r.Log.WithName("makeSureObjectExists").WithValues("kind", kind, "name", name)
 
 	if component != nil {
 		err := (*component).InitObject(cr, newObj)

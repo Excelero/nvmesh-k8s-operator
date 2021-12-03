@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	reflectutils "excelero.com/nvmesh-k8s-operator/pkg/reflectutils"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -90,7 +91,8 @@ func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp client
 	case *appsv1.DaemonSet:
 		switch name {
 		case "nvmesh-csi-node-driver":
-			return r.shouldUpdateCSINodeDriverDaemonSet(cr, o)
+			expected := (exp).(*appsv1.DaemonSet)
+			return r.shouldUpdateCSINodeDriverDaemonSet(cr, expected, o)
 		}
 
 	case *appsv1.Deployment:
@@ -147,10 +149,22 @@ func getCSIFullImageName(cr *nvmeshv1.NVMesh) string {
 	return imageName
 }
 
-func (r *NVMeshCSIReconciler) shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) bool {
+func (r *NVMeshCSIReconciler) shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, expected *appsv1.DaemonSet, ds *appsv1.DaemonSet) bool {
 	log := r.Log.WithName("shouldUpdateCSINodeDriverDaemonSet")
-	if getCSIFullImageName(cr) != ds.Spec.Template.Spec.Containers[0].Image {
-		log.Info(fmt.Sprintf("CSI Node Driver Image needs to be updated expected: %s found: %s\n", getCSIFullImageName(cr), ds.Spec.Template.Spec.Containers[0].Image))
+
+	fields := []string{
+		"Spec.Template.Spec.Containers[0].Image",
+		"Spec.Template.Spec.Containers[0].ImagePullPolicy",
+	}
+
+	err, result := reflectutils.CompareFieldsInTwoObjects(expected, ds, fields)
+
+	if err != nil {
+		log.Error(err, "Error comparing CSI Node Driver DaemonSet")
+	}
+
+	if !result.Equals {
+		log.Info(fmt.Sprintf("CSI Node Driver field %s needs to be updated expected: %+v found: %+v\n", result.Path, result.Value1, result.Value2))
 		return true
 	}
 
@@ -159,14 +173,19 @@ func (r *NVMeshCSIReconciler) shouldUpdateCSINodeDriverDaemonSet(cr *nvmeshv1.NV
 
 func (r *NVMeshCSIReconciler) shouldUpdateCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, expected *appsv1.StatefulSet, ss *appsv1.StatefulSet) bool {
 	log := r.Log.WithName("shouldUpdateCSIControllerStatefulSet")
-
-	if *(expected.Spec.Replicas) != *(ss.Spec.Replicas) {
-		log.Info(fmt.Sprintf("CSI controller replica number needs to be updated expected: %d found: %d\n", *expected.Spec.Replicas, *ss.Spec.Replicas))
-		return true
+	fields := []string{
+		"Spec.Template.Spec.Containers[0].Image",
+		"Spec.Replicas",
 	}
 
-	if expected.Spec.Template.Spec.Containers[0].Image != ss.Spec.Template.Spec.Containers[0].Image {
-		log.Info(fmt.Sprintf("CSI controller Image needs to be updated expected: %s found: %s\n", getCSIFullImageName(cr), ss.Spec.Template.Spec.Containers[0].Image))
+	err, result := reflectutils.CompareFieldsInTwoObjects(expected, ss, fields)
+
+	if err != nil {
+		log.Error(err, "Error comparing CSI Controller StatefulSet")
+	}
+
+	if !result.Equals {
+		log.Info(fmt.Sprintf("CSI Controller field %s needs to be updated expected: %+v found: %+v\n", result.Path, result.Value1, result.Value2))
 		return true
 	}
 
