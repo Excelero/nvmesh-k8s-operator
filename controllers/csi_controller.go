@@ -19,6 +19,7 @@ const (
 	csiStatefulSetName       = "nvmesh-csi-controller"
 	csiDriverImageName       = "nvmesh-csi-driver"
 	csiDriverDefaultRegistry = "excelero"
+	csiServiceAccountName    = "nvmesh-csi"
 )
 
 //NVMeshCSIReconciler is a Reconciler for CSI
@@ -64,11 +65,9 @@ func (r *NVMeshCSIReconciler) InitObject(cr *nvmeshv1.NVMesh, obj client.Object)
 	case *v1.ConfigMap:
 		return initCSIConfigMap(cr, o)
 	case *rbac.RoleBinding:
-		addNamespaceToRoleBinding(cr, o)
-		return nil
+		return r.initRoleBinding(cr, o)
 	case *rbac.ClusterRoleBinding:
-		addNamespaceToClusterRoleBinding(cr, o)
-		return nil
+		return r.initClusterRoleBinding(cr, o)
 	default:
 		//o is unknown for us
 		//log.Info(fmt.Sprintf("Object type %s not handled", o))
@@ -106,10 +105,16 @@ func (r *NVMeshCSIReconciler) ShouldUpdateObject(cr *nvmeshv1.NVMesh, exp client
 	return false
 }
 
+func (r *NVMeshCSIReconciler) getCSIServiceAccountName(cr *nvmeshv1.NVMesh) string {
+	return csiServiceAccountName
+}
+
 func (r *NVMeshCSIReconciler) initCSINodeDriverDaemonSet(cr *nvmeshv1.NVMesh, ds *appsv1.DaemonSet) error {
 	if cr.Spec.CSI.Version == "" {
 		return goerrors.New("Missing NVMesh CSI Driver Version (NVMesh.Spec.CSI.Version)")
 	}
+
+	ds.Spec.Template.Spec.ServiceAccountName = r.getCSIServiceAccountName(cr)
 
 	ds.Spec.Template.Spec.Containers[0].Image = getCSIFullImageName(cr)
 	ds.Spec.Template.Spec.Containers[0].ImagePullPolicy = r.getImagePullPolicy(cr)
@@ -121,6 +126,8 @@ func (r *NVMeshCSIReconciler) initCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, 
 	if cr.Spec.CSI.Version == "" {
 		return goerrors.New("Missing NVMesh CSI Driver Version (NVMesh.Spec.CSI.Version)")
 	}
+
+	ss.Spec.Template.Spec.ServiceAccountName = r.getCSIServiceAccountName(cr)
 
 	ss.Spec.Template.Spec.Containers[0].Image = getCSIFullImageName(cr)
 	ss.Spec.Template.Spec.Containers[0].ImagePullPolicy = r.getImagePullPolicy(cr)
@@ -134,6 +141,26 @@ func (r *NVMeshCSIReconciler) initCSIControllerStatefulSet(cr *nvmeshv1.NVMesh, 
 func initCSIConfigMap(cr *nvmeshv1.NVMesh, conf *v1.ConfigMap) error {
 	conf.Data["management.protocol"] = mgmtProtocol
 	conf.Data["management.servers"] = mgmtGuiServiceName + "." + cr.GetNamespace() + ".svc.cluster.local:4000"
+	return nil
+}
+
+func (r *NVMeshCSIReconciler) initClusterRoleBinding(cr *nvmeshv1.NVMesh, crb *rbac.ClusterRoleBinding) error {
+	ns := cr.GetNamespace()
+	for i := range crb.Subjects {
+		crb.Subjects[i].Namespace = ns
+	}
+
+	crb.Subjects[0].Name = r.getCSIServiceAccountName(cr)
+	return nil
+}
+
+func (r *NVMeshCSIReconciler) initRoleBinding(cr *nvmeshv1.NVMesh, rb *rbac.RoleBinding) error {
+	ns := cr.GetNamespace()
+	for i := range rb.Subjects {
+		rb.Subjects[i].Namespace = ns
+	}
+
+	rb.Subjects[0].Name = r.getCSIServiceAccountName(cr)
 	return nil
 }
 

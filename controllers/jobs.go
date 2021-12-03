@@ -126,7 +126,7 @@ func (r *NVMeshBaseReconciler) getNewJob(cr *nvmeshv1.NVMesh, jobName string, im
 					Labels: labels,
 				},
 				Spec: v1.PodSpec{
-					ServiceAccountName: nvmeshClusterServiceAccountName,
+					ServiceAccountName: r.getClusterServiceAccountName(cr),
 					ImagePullSecrets:   []v1.LocalObjectReference{{Name: registryCredSecretName}},
 					RestartPolicy:      corev1.RestartPolicyOnFailure,
 					Containers: []v1.Container{

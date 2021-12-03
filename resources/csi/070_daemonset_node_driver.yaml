@@ -13,7 +13,7 @@ spec:
         app.kubernetes.io/name: nvmesh-csi-driver
         app.kubernetes.io/component: node-driver
     spec:
-    serviceAccountName: nvmesh-csi
+      serviceAccountName: nvmesh-csi
       hostNetwork: true
       nodeSelector:
         nvmesh.excelero.com/nvmesh-client: ''

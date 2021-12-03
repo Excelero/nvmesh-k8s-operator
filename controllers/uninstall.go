@@ -21,10 +21,9 @@ import (
 )
 
 const (
-	uninstallJobNamePrefix          = "n-uninstall-"
-	clearDbJobName                  = "nvmesh-clear-db-job"
-	uninstallJobImageName           = "nvmesh-uninstall-job"
-	nvmeshClusterServiceAccountName = "nvmesh-cluster"
+	uninstallJobNamePrefix = "n-uninstall-"
+	clearDbJobName         = "nvmesh-clear-db-job"
+	uninstallJobImageName  = "nvmesh-uninstall-job"
 )
 
 var uninstallAction = nvmeshv1.ClusterAction{Name: "uninstall"}

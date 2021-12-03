@@ -292,20 +292,6 @@ func listFilesInSubDirs(root string) ([]string, error) {
 	return files, err
 }
 
-func addNamespaceToClusterRoleBinding(cr *nvmeshv1.NVMesh, crb *rbac.ClusterRoleBinding) {
-	ns := cr.GetNamespace()
-	for i := range crb.Subjects {
-		crb.Subjects[i].Namespace = ns
-	}
-}
-
-func addNamespaceToRoleBinding(cr *nvmeshv1.NVMesh, rb *rbac.RoleBinding) {
-	ns := cr.GetNamespace()
-	for i := range rb.Subjects {
-		rb.Subjects[i].Namespace = ns
-	}
-}
-
 func setControllerReferenceOnUnstructured(owner metav1.Object, object *unstructured.Unstructured, gvk *schema.GroupVersionKind) {
 	ref := metav1.OwnerReference{
 		APIVersion:         gvk.GroupVersion().String(),
@@ -574,7 +560,7 @@ func (r *NVMeshBaseReconciler) getNVMeshClusterRoleAndRoleBinding(cr *nvmeshv1.N
 		},
 		Subjects: []rbac.Subject{{
 			Kind:      "ServiceAccount",
-			Name:      clusterServiceAccountName,
+			Name:      r.getClusterServiceAccountName(cr),
 			Namespace: cr.GetNamespace(),
 		}},
 	}

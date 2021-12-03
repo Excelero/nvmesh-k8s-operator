@@ -244,7 +244,7 @@ func (r *NVMeshReconciler) runCollectDBJob(cr *nvmeshv1.NVMesh, action nvmeshv1.
 		},
 	}
 
-	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
+	podSpec.ServiceAccountName = r.getClusterServiceAccountName(cr)
 	setContainerAsPrivileged(container)
 
 	r.addClusterNameEnvVar(container, cr)
@@ -278,7 +278,7 @@ func (r *NVMeshReconciler) runCollectConfigMapsJob(cr *nvmeshv1.NVMesh, action n
 	container.Command = []string{"/bin/bash"}
 	container.Args = []string{"-c", "/init.sh --config-maps"}
 
-	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
+	podSpec.ServiceAccountName = r.getClusterServiceAccountName(cr)
 	setContainerAsPrivileged(container)
 
 	r.addClusterNameEnvVar(container, cr)
@@ -323,7 +323,7 @@ func (r *NVMeshReconciler) createCollectLogsJob(cr *nvmeshv1.NVMesh, action nvme
 	container.Command = []string{"sudo"}
 	container.Args = []string{"-E", "/init.sh", "--node-logs"}
 
-	podSpec.ServiceAccountName = nvmeshClusterServiceAccountName
+	podSpec.ServiceAccountName = r.getClusterServiceAccountName(cr)
 	setContainerAsPrivileged(container)
 	r.addClusterNameEnvVar(container, cr)
 
