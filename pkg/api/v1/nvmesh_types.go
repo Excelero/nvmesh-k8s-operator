@@ -21,9 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
@@ -31,9 +28,6 @@ import (
 // +kubebuilder:printcolumn:name="Mgmt",type=string,JSONPath=`.spec.management.version`
 // +kubebuilder:printcolumn:name="CSI",type=string,JSONPath=`.spec.csi.version`
 // +kubebuilder:printcolumn:name="TCP",type=boolean,JSONPath=`.spec.core.tcpOnly`,priority=10
-// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.reconcileStatus.status`,priority=10
-// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reconcileStatus.status`,priority=10
-
 // Represents a NVMesh Cluster
 type NVMesh struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -260,15 +254,49 @@ type NVMeshStatus struct {
 	// The URL of NVMesh Web GUI
 	WebUIURL string `json:"WebUIURL,omitempty"`
 
-	ReconcileStatus ReconcileStatus `json:"reconcileStatus,omitempty"`
-
+	// Represents the Status of actions
 	ActionsStatus map[string]ActionStatus `json:"actionsStatus,omitempty"`
+
+	// Represents the latest available observations of a NVMesh's current state.
+	// +optional
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	Conditions []ClusterCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,10,rep,name=conditions"`
 }
 
-type ReconcileStatus struct {
-	LastUpdate metav1.Time `json:"lastUpdate,omitempty"`
-	Reason     string      `json:"reason,omitempty"`
-	Status     string      `json:"status,omitempty"`
+type ClusterConditionType string
+
+// These are valid conditions of NVMesh.
+const (
+	Ready        ClusterConditionType = "Ready"
+	Uninstalling ClusterConditionType = "Uninstalling"
+)
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition;
+// "ConditionFalse" means a resource is not in the condition; "ConditionUnknown" means kubernetes
+// can't decide if a resource is in the condition or not. In the future, we could add other
+// intermediate conditions, e.g. ConditionDegraded.
+const (
+	ConditionTrue    v1.ConditionStatus = "True"
+	ConditionFalse   v1.ConditionStatus = "False"
+	ConditionUnknown v1.ConditionStatus = "Unknown"
+)
+
+// ClusterCondition describes the state of a NVMesh Cluster at a certain point.
+type ClusterCondition struct {
+	// Type of statefulset condition.
+	Type ClusterConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=ClusterConditionType"`
+	// Status of the condition, one of True, False, Unknown.
+	Status v1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	// Last time the condition transitioned from one status to another.
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,3,opt,name=lastTransitionTime"`
+	// The reason for the condition's last transition.
+	// +optional
+	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	// A human readable message indicating details about the transition.
+	// +optional
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
 func init() {

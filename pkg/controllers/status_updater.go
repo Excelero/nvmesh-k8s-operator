@@ -3,13 +3,13 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
 	"github.com/prometheus/common/log"
+
+	conditions "excelero.com/nvmesh-k8s-operator/pkg/conditions"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -24,16 +24,18 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result
 	if cr != nil {
 		generation = cr.ObjectMeta.GetGeneration()
 
-		cr.Status.ReconcileStatus = nvmeshv1.ReconcileStatus{
-			LastUpdate: metav1.Now(),
-			Status:     "Success",
+		isReadyCondition := nvmeshv1.ClusterCondition{
+			Type:   nvmeshv1.Ready,
+			Reason: "",
+			Status: nvmeshv1.ConditionTrue,
 		}
+		conditions.SetStatusCondition(&cr.Status.Conditions, &isReadyCondition)
 
-		r.setStatusOnCustomResource(cr)
-		err := r.UpdateStatus(*cr)
+		r.populateStatusFields(cr)
+		err := r.UpdateStatus(cr)
 
 		if err != nil && !k8serrors.IsNotFound(err) {
-			log.Error(err, "unable to update status")
+			log.Error(err, "Failed to update status")
 
 			// If we failed to update the status let's requeue and have the next cycle update the status
 			return reconcile.Result{
@@ -41,36 +43,36 @@ func (r *NVMeshReconciler) ManageSuccess(cr *nvmeshv1.NVMesh, result ctrl.Result
 				Requeue:      true,
 			}, nil
 		}
-
 	}
 
 	fmt.Printf("Reconcile Success. Cycle #: %d, Generation: %d\n", reconcileCycles, generation)
 	return result, nil
 }
 
+func (r *NVMeshReconciler) populateStatusFields(cr *nvmeshv1.NVMesh) {
+	cr.Status.WebUIURL = r.getManagementGUIURL(cr)
+}
+
 //ManageError - Handles Reconcile errors, updates CR status, prints to log, and returns reconcile.Result
-func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconcile.Result, error) {
+func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error, result ctrl.Result) (reconcile.Result, error) {
 	log := r.Log.WithName("ManageError")
-	var retryInterval time.Duration
 
 	log.Info(fmt.Sprintf("Reconcile cycle failed. %s", issue))
 
 	r.EventManager.Warning(cr, "ProcessingError", issue.Error())
 
-	lastUpdate := cr.Status.ReconcileStatus.LastUpdate.Time
-	lastStatus := cr.Status.ReconcileStatus.Status
-
-	newStatus := nvmeshv1.ReconcileStatus{
-		LastUpdate: metav1.Now(),
-		Reason:     issue.Error(),
-		Status:     "Failure",
+	newCondition := nvmeshv1.ClusterCondition{
+		Type:   nvmeshv1.Ready,
+		Reason: issue.Error(),
+		Status: nvmeshv1.ConditionFalse,
 	}
 
-	r.setStatusOnCustomResource(cr)
-	cr.Status.ReconcileStatus = newStatus
-	err := r.UpdateStatus(*cr)
+	conditions.SetStatusCondition(&cr.Status.Conditions, &newCondition)
 
-	if err != nil {
+	r.populateStatusFields(cr)
+	err := r.UpdateStatus(cr)
+
+	if err != nil && !k8serrors.IsNotFound(err) {
 		log.Error(err, "Failed to update status")
 
 		return reconcile.Result{
@@ -79,20 +81,11 @@ func (r *NVMeshReconciler) ManageError(cr *nvmeshv1.NVMesh, issue error) (reconc
 		}, nil
 	}
 
-	if lastUpdate.IsZero() || lastStatus == "Success" {
-		retryInterval = time.Second
-	} else {
-		retryInterval = newStatus.LastUpdate.Sub(lastUpdate).Round(time.Second)
-	}
-
-	maxTime := float64(time.Hour.Nanoseconds() * 6)
-	doubleLastTime := float64(retryInterval.Nanoseconds() * 2)
-	nextReconcile := time.Duration(math.Min(doubleLastTime, maxTime))
-	return Requeue(nextReconcile), nil
+	return result, nil
 }
 
 //UpdateStatus - Updates CR Status field
-func (r *NVMeshReconciler) UpdateStatus(cr nvmeshv1.NVMesh) error {
+func (r *NVMeshReconciler) UpdateStatus(cr *nvmeshv1.NVMesh) error {
 	handle_err := func(err error) error {
 		if k8serrors.IsNotFound(err) {
 			// if the object was deleted, failing to update it's status is not an error
@@ -102,15 +95,21 @@ func (r *NVMeshReconciler) UpdateStatus(cr nvmeshv1.NVMesh) error {
 	}
 
 	var updatedStatus nvmeshv1.NVMeshStatus = cr.Status
-
+	r.Log.V(VerboseLogging).Info(fmt.Sprintf("Updating status to %+v", updatedStatus))
+	firstTime := true
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: cr.GetName(), Namespace: cr.GetNamespace()}, &cr)
-		if err != nil {
-			return handle_err(err)
+		if !firstTime {
+			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: cr.GetName(), Namespace: cr.GetNamespace()}, cr)
+			if err != nil {
+				return handle_err(err)
+			}
 		}
 
+		firstTime = false
+
 		cr.Status = updatedStatus
-		err = r.Client.Status().Update(context.TODO(), &cr)
+		err := r.Client.Status().Update(context.TODO(), cr)
+		r.Log.V(VerboseLogging).Info(fmt.Sprintf("RetryOnConflict for Updating status to %+v, err=%+v", cr.Status, err))
 		return handle_err(err)
 	})
 

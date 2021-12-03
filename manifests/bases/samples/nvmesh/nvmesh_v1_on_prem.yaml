@@ -9,7 +9,8 @@ spec:
     version: 2.4.1-23
     imageVersionTag: 0.8.0-66
   csi:
-    version: v1.1.7
+    version: v1.2.0
+    imageRegistry: registry.excelero.com/dev
   management:
     version: 2.4.1-14
     imageRegistry: registry.excelero.com/dev

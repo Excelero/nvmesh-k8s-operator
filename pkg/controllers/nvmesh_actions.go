@@ -48,7 +48,7 @@ func (r *NVMeshReconciler) handleActions(cr *nvmeshv1.NVMesh) (ctrl.Result, erro
 
 			if result.Requeue || err != nil {
 				if result.Requeue {
-					r.UpdateStatus(*cr)
+					r.UpdateStatus(cr)
 				}
 				return result, err
 			}
@@ -106,7 +106,7 @@ func (r *NVMeshReconciler) removeFinishedActionStatuses(cr *nvmeshv1.NVMesh) ctr
 	}
 
 	if result.Requeue {
-		r.UpdateStatus(*cr)
+		r.UpdateStatus(cr)
 	}
 	return result
 }

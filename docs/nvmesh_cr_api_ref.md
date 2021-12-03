@@ -1,172 +1,9 @@
 Packages:
-* nvmesh.excelero.com/v1* [NVMesh](#nvmesh-excelero-com-v1-nvmesh)
+* nvmesh.excelero.com/v1
 <h1 id="nvmesh.excelero.com/v1">nvmesh.excelero.com/v1</h1>
 <div>
 <p>Package v1 contains API Schema definitions for the nvmesh v1 API group</p>
 </div>
-<h3 id="nvmesh-excelero-com-v1-nvmesh">NVMesh
-</h3>
-<div>
-<p>Represents a NVMesh Cluster</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>apiVersion</code></br>
-<span class="type">string<span>
-</td>
-<td>
-<code>
-nvmesh.excelero.com/v1
-</code>
-</td>
-</tr>
-<tr>
-<td>
-<code>kind</code></br>
-<span class="type">string<span>
-</td>
-<td><code>NVMesh</code></td>
-</tr>
-<tr>
-<td>
-<code>metadata</code><br/>
-<em>
-<a href="https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#ObjectMeta">
-Kubernetes meta/v1.ObjectMeta
-</a>
-</em>
-</td>
-<td>
-Refer to the Kubernetes API documentation for the fields of the
-<code>metadata</code> field.
-</td>
-</tr>
-<tr>
-<td>
-<code>spec</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-nvmeshspec">
-NVMeshSpec
-</a>
-</em>
-</td>
-<td>
-<br/>
-<br/>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>core</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-nvmeshcore">
-NVMeshCore
-</a>
-</em>
-</td>
-<td>
-<p>Controls deployment of NVMesh-Core components</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>management</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-nvmeshmanagement">
-NVMeshManagement
-</a>
-</em>
-</td>
-<td>
-<p>Controls deployment of NVMesh-Management</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>csi</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-nvmeshcsi">
-NVMeshCSI
-</a>
-</em>
-</td>
-<td>
-<p>Controls deployment of NVMesh CSI Driver</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>operator</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-nvmeshoperatorspec">
-NVMeshOperatorSpec
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Control the behavior of the NVMesh operator for this NVMesh Cluster</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>debug</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-debugoptions">
-DebugOptions
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Debug - debug options</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>actions</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-clusteraction">
-[]ClusterAction
-</a>
-</em>
-</td>
-<td>
-<p>Initiate actions such as collecting logs</p>
-</td>
-</tr>
-</tbody>
-</table>
-</td>
-</tr>
-<tr>
-<td>
-<code>status</code><br/>
-<em>
-<a href="#nvmesh-excelero-com-v1-nvmeshstatus">
-NVMeshStatus
-</a>
-</em>
-</td>
-<td>
-</td>
-</tr>
-</tbody>
-</table>
 <h3 id="nvmesh-excelero-com-v1-actionstatus">ActionStatus
 (<code>map[string]string</code> alias)</h3>
 <div class="alert alert-info col-md-8"><i class="fa fa-info-circle"></i> Appears In:
@@ -217,6 +54,112 @@ NVMeshStatus
 </td>
 </tr>
 </tbody>
+</table>
+<h3 id="nvmesh-excelero-com-v1-clustercondition">ClusterCondition
+</h3>
+<div class="alert alert-info col-md-8"><i class="fa fa-info-circle"></i> Appears In:
+<ul>
+<li><a href="#nvmesh-excelero-com-v1-nvmeshstatus">NVMeshStatus</a></li>
+</ul>
+</div>
+<div>
+<p>ClusterCondition describes the state of a NVMesh Cluster at a certain point.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>type</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-clusterconditiontype">
+ClusterConditionType
+</a>
+</em>
+</td>
+<td>
+<p>Type of statefulset condition.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>status</code><br/>
+<em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#conditionstatus-v1-core">
+Kubernetes core/v1.ConditionStatus
+</a>
+</em>
+</td>
+<td>
+<p>Status of the condition, one of True, False, Unknown.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>lastTransitionTime</code><br/>
+<em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#time-v1-meta">
+Kubernetes meta/v1.Time
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Last time the condition transitioned from one status to another.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>reason</code><br/>
+<em>
+<span class="type">string<span>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The reason for the condition&rsquo;s last transition.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>message</code><br/>
+<em>
+<span class="type">string<span>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>A human readable message indicating details about the transition.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="nvmesh-excelero-com-v1-clusterconditiontype">ClusterConditionType
+(<code>string</code> alias)</h3>
+<div class="alert alert-info col-md-8"><i class="fa fa-info-circle"></i> Appears In:
+<ul>
+<li><a href="#nvmesh-excelero-com-v1-clustercondition">ClusterCondition</a></li>
+</ul>
+</div>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr><td><p>&#34;Ready&#34;</p></td>
+<td></td>
+</tr><tr><td><p>&#34;Uninstalling&#34;</p></td>
+<td></td>
+</tr></tbody>
 </table>
 <h3 id="nvmesh-excelero-com-v1-debugoptions">DebugOptions
 </h3>
@@ -378,6 +321,151 @@ Kubernetes core/v1.PersistentVolumeClaimSpec
 <td>
 <em>(Optional)</em>
 <p>Overrides fields in the MongoDB data PVC</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="nvmesh-excelero-com-v1-nvmesh">NVMesh
+</h3>
+<div>
+<p>Represents a NVMesh Cluster</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>metadata</code><br/>
+<em>
+<a href="https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#ObjectMeta">
+Kubernetes meta/v1.ObjectMeta
+</a>
+</em>
+</td>
+<td>
+Refer to the Kubernetes API documentation for the fields of the
+<code>metadata</code> field.
+</td>
+</tr>
+<tr>
+<td>
+<code>spec</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-nvmeshspec">
+NVMeshSpec
+</a>
+</em>
+</td>
+<td>
+<br/>
+<br/>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>core</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-nvmeshcore">
+NVMeshCore
+</a>
+</em>
+</td>
+<td>
+<p>Controls deployment of NVMesh-Core components</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>management</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-nvmeshmanagement">
+NVMeshManagement
+</a>
+</em>
+</td>
+<td>
+<p>Controls deployment of NVMesh-Management</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>csi</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-nvmeshcsi">
+NVMeshCSI
+</a>
+</em>
+</td>
+<td>
+<p>Controls deployment of NVMesh CSI Driver</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>operator</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-nvmeshoperatorspec">
+NVMeshOperatorSpec
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Control the behavior of the NVMesh operator for this NVMesh Cluster</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>debug</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-debugoptions">
+DebugOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Debug - debug options</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>actions</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-clusteraction">
+[]ClusterAction
+</a>
+</em>
+</td>
+<td>
+<p>Initiate actions such as collecting logs</p>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+<code>status</code><br/>
+<em>
+<a href="#nvmesh-excelero-com-v1-nvmeshstatus">
+NVMeshStatus
+</a>
+</em>
+</td>
+<td>
 </td>
 </tr>
 </tbody>
@@ -910,26 +998,29 @@ DebugOptions
 </tr>
 <tr>
 <td>
-<code>reconcileStatus</code><br/>
+<code>actionsStatus</code><br/>
 <em>
-<a href="#nvmesh-excelero-com-v1-reconcilestatus">
-ReconcileStatus
+<a href="#nvmesh-excelero-com-v1-actionstatus">
+map[string]../../pkg/api/v1.ActionStatus
 </a>
 </em>
 </td>
 <td>
+<p>Represents the Status of actions</p>
 </td>
 </tr>
 <tr>
 <td>
-<code>actionsStatus</code><br/>
+<code>conditions</code><br/>
 <em>
-<a href="#nvmesh-excelero-com-v1-actionstatus">
-map[string]../../api/v1.ActionStatus
+<a href="#nvmesh-excelero-com-v1-clustercondition">
+[]ClusterCondition
 </a>
 </em>
 </td>
 <td>
+<em>(Optional)</em>
+<p>Represents the latest available observations of a NVMesh&rsquo;s current state.</p>
 </td>
 </tr>
 </tbody>
@@ -971,57 +1062,6 @@ map[string]../../api/v1.ActionStatus
 </td>
 <td>
 <p>Allows to connect to a self signed https server</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="nvmesh-excelero-com-v1-reconcilestatus">ReconcileStatus
-</h3>
-<div class="alert alert-info col-md-8"><i class="fa fa-info-circle"></i> Appears In:
-<ul>
-<li><a href="#nvmesh-excelero-com-v1-nvmeshstatus">NVMeshStatus</a></li>
-</ul>
-</div>
-<div>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>lastUpdate</code><br/>
-<em>
-<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#time-v1-meta">
-Kubernetes meta/v1.Time
-</a>
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>reason</code><br/>
-<em>
-<span class="type">string<span>
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>status</code><br/>
-<em>
-<span class="type">string<span>
-</em>
-</td>
-<td>
 </td>
 </tr>
 </tbody>

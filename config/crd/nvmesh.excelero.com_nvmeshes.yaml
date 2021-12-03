@@ -33,14 +33,6 @@ spec:
       name: TCP
       priority: 10
       type: boolean
-    - jsonPath: .status.reconcileStatus.status
-      name: Status
-      priority: 10
-      type: string
-    - jsonPath: .status.reconcileStatus.status
-      name: Reason
-      priority: 10
-      type: string
     name: v1
     schema:
       openAPIV3Schema:
@@ -338,13 +330,13 @@ spec:
                           backing this claim.
                         type: string
                     type: object
-                  disableAutoEvictMissingDrives:
-                    description: Auto-Evict Missing NVMe drives - This enables NVMesh
-                      to auto-rebuild volumes when drives were replaced (for example
-                      on the cloud after a machine was restarted)
+                  disableAutoEvictDrives:
+                    description: Disable Auto-Evict Missing NVMe drives - This enables
+                      NVMesh to auto-rebuild volumes when drives were replaced (for
+                      example on the cloud after a machine was restarted)
                     type: boolean
-                  disableAutoFromatDrives:
-                    description: Auto-Format NVMe drives as they are discovered
+                  disableAutoFormatDrives:
+                    description: Disable Auto-Format NVMe drives as they are discovered
                     type: boolean
                   disabled:
                     description: Disabled - if true NVMesh Management will not be
@@ -533,11 +525,6 @@ spec:
                           already deployed, and MongoAddress should be given, if false
                           - MongoDB will be automatically deployed
                         type: boolean
-                      replicas:
-                        description: The number of MongoDB replicas in the MongoDB
-                          Cluster - This field is ignored if management.mongoDB.external=true
-                        format: int32
-                        type: integer
                     type: object
                   noSSL:
                     description: Disable TLS/SSL on NVMesh-Management websocket and
@@ -605,17 +592,38 @@ spec:
                   additionalProperties:
                     type: string
                   type: object
+                description: Represents the Status of actions
                 type: object
-              reconcileStatus:
-                properties:
-                  lastUpdate:
-                    format: date-time
-                    type: string
-                  reason:
-                    type: string
-                  status:
-                    type: string
-                type: object
+              conditions:
+                description: Represents the latest available observations of a NVMesh's
+                  current state.
+                items:
+                  description: ClusterCondition describes the state of a NVMesh Cluster
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of statefulset condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
             type: object
         required:
         - spec

@@ -135,7 +135,7 @@ func (r *NVMeshMgmtReconciler) handleDBManipulations(cr *nvmeshv1.NVMesh) error 
 	err = mongoclient.FindOne(client, "globalSettings", filter, projection, &result)
 
 	if err != nil {
-		log.V(5).Info(fmt.Sprintf("Mongo FindOne failed: %s", err))
+		log.V(VerboseLogging).Info(fmt.Sprintf("Mongo FindOne failed: %s", err))
 		return err
 	}
 

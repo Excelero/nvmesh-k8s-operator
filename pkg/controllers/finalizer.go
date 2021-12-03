@@ -9,6 +9,7 @@ import (
 	errors "github.com/pkg/errors"
 
 	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
+	conditions "excelero.com/nvmesh-k8s-operator/pkg/conditions"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 
@@ -76,6 +77,21 @@ func (r *NVMeshReconciler) doBeforeDeletingNVMesh(nvmeshCluster *nvmeshv1.NVMesh
 	}
 
 	if result.Requeue {
+		uninstallingCondition := nvmeshv1.ClusterCondition{
+			Type:   nvmeshv1.Uninstalling,
+			Reason: "",
+			Status: nvmeshv1.ConditionTrue,
+		}
+
+		notReadyCondition := nvmeshv1.ClusterCondition{
+			Type:   nvmeshv1.Ready,
+			Reason: "",
+			Status: nvmeshv1.ConditionFalse,
+		}
+
+		conditions.SetStatusCondition(&nvmeshCluster.Status.Conditions, &notReadyCondition)
+		conditions.SetStatusCondition(&nvmeshCluster.Status.Conditions, &uninstallingCondition)
+
 		// Update the uninstall status
 		err := r.Client.Status().Update(context.TODO(), nvmeshCluster)
 		if err != nil {

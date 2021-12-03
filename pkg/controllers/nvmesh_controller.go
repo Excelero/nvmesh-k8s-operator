@@ -37,6 +37,7 @@ var (
 const (
 	clusterServiceAccountName = "nvmesh-cluster"
 	defaultRegistry           = "registry.excelero.com"
+	VerboseLogging            = 5
 )
 
 // NVMeshBaseReconciler - a base for NVMesh Component reconcilers
@@ -84,7 +85,7 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return r.ManageSuccess(nil, DoNotRequeue())
 		}
 		// Error reading the object - requeue the request.
-		return r.ManageError(cr, err)
+		return r.ManageError(cr, err, RequeueWithDefaultBackOff())
 	}
 
 	// Make sure all fields are initialized
@@ -93,19 +94,19 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	//Validate CustomResource
 	err = r.isValid(cr)
 	if err != nil {
-		return r.ManageError(cr, err)
+		return r.ManageError(cr, err, RequeueWithDefaultBackOff())
 	}
 
 	r.stopAllUnstructuredWatchers()
 
 	if err := r.makeSureServiceAccountExists(cr); err != nil {
-		return r.ManageError(cr, err)
+		return r.ManageError(cr, err, RequeueWithDefaultBackOff())
 	}
 
 	// Handle Cluster Deletion
 	finResult, err := r.handleFinalizer(cr)
 	if err != nil {
-		return r.ManageError(cr, err)
+		return r.ManageError(cr, err, RequeueWithDefaultBackOff())
 	}
 
 	if finResult.Requeue {
@@ -116,9 +117,8 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	result, err := r.reconcileAllcomponents(cr)
 
 	if result.Requeue {
-
 		if err != nil {
-			_, err = r.ManageError(cr, err)
+			_, err = r.ManageError(cr, err, result)
 		}
 
 		// drop the result returned by ManageError
@@ -135,7 +135,7 @@ func (r *NVMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if r.hasActions(cr) {
 		actionResult, err := r.handleActions(cr)
 		if err != nil {
-			return r.ManageError(cr, err)
+			return r.ManageError(cr, err, actionResult)
 		}
 
 		if actionResult.Requeue {
@@ -202,10 +202,6 @@ func (r *NVMeshReconciler) getManagementGUIURL(cr *nvmeshv1.NVMesh) string {
 
 	url := fmt.Sprintf("%s://%s:%d", protocol, address, port)
 	return url
-}
-
-func (r *NVMeshReconciler) setStatusOnCustomResource(cr *nvmeshv1.NVMesh) {
-	cr.Status.WebUIURL = r.getManagementGUIURL(cr)
 }
 
 //SetupWithManager - adds this reconciler to a manager
