@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
 	v1 "k8s.io/api/core/v1"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"

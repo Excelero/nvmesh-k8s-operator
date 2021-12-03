@@ -5,7 +5,7 @@ import (
 	goerrors "errors"
 	"fmt"
 
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"

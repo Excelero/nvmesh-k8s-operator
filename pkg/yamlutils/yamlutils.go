@@ -1,4 +1,4 @@
-package controllers
+package yamlutils
 
 import (
 	"bytes"
@@ -49,7 +49,7 @@ func YamlFileToString(filename string) (string, error) {
 	return yamlString, nil
 }
 
-func unstructuredToString(obj unstructured.Unstructured) string {
+func UnstructuredToString(obj unstructured.Unstructured) string {
 	buf := bytes.NewBufferString("")
 	enc := json.NewEncoder(buf)
 	enc.SetIndent("", "    ")

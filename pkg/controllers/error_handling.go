@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
 	"github.com/prometheus/common/log"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -6,19 +6,15 @@ import (
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
-	v1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -215,34 +211,26 @@ func (r *NVMeshReconciler) setStatusOnCustomResource(cr *nvmeshv1.NVMesh) {
 //SetupWithManager - adds this reconciler to a manager
 func (r *NVMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	// this handler will initiate Reconcile cycle whenever an object is Created, Deleted or Updated
-	handler := &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &v1.NVMesh{},
-	}
-
 	// Reconcile only if generation field changed - this is to prevent cycle loop after status updates
 	generationChangePredicate := predicate.GenerationChangedPredicate{}
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&nvmeshv1.NVMesh{}).
 		WithEventFilter(generationChangePredicate).
-		Watches(&source.Kind{Type: &appsv1.StatefulSet{}}, handler).
-		Watches(&source.Kind{Type: &appsv1.Deployment{}}, handler).
-		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, handler).
-		Watches(&source.Kind{Type: &corev1.Service{}}, handler).
-		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, handler).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, handler).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, handler).
-		Watches(&source.Kind{Type: &corev1.Service{}}, handler).
-		Watches(&source.Kind{Type: &rbac.ClusterRole{}}, handler).
-		Watches(&source.Kind{Type: &rbac.ClusterRoleBinding{}}, handler).
-		Watches(&source.Kind{Type: &rbac.Role{}}, handler).
-		Watches(&source.Kind{Type: &rbac.RoleBinding{}}, handler).
-		Watches(&source.Kind{Type: &storagev1.CSIDriver{}}, handler).
-		Watches(&source.Kind{Type: &storagev1.StorageClass{}}, handler).
-		Watches(&source.Kind{Type: &apiext.CustomResourceDefinition{}}, handler)
-
+		Owns(&appsv1.StatefulSet{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.DaemonSet{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.ServiceAccount{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&rbac.ClusterRole{}).
+		Owns(&rbac.ClusterRoleBinding{}).
+		Owns(&rbac.Role{}).
+		Owns(&rbac.RoleBinding{}).
+		Owns(&storagev1.CSIDriver{}).
+		Owns(&storagev1.StorageClass{})
 	return controllerBuilder.Complete(r)
 }
 

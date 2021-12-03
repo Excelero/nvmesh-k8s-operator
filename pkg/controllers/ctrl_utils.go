@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"time"
 
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
-
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
+	yamlutils "excelero.com/nvmesh-k8s-operator/pkg/yamlutils"
 	appsv1 "k8s.io/api/apps/v1"
 	rbac "k8s.io/api/rbac/v1"
 
@@ -198,9 +198,9 @@ func (r *NVMeshReconciler) reconcileYamlObjectsFromFile(cr *nvmeshv1.NVMesh, fil
 	log := r.Log.WithValues("method", "reconcileYamlObjectsFromFile", "filename", filename)
 
 	decoder := r.getDecoder()
-	objects, err := YamlFileToObjects(filename, decoder)
+	objects, err := yamlutils.YamlFileToObjects(filename, decoder)
 	if err != nil {
-		if _, ok := err.(*YamlFileParseError); ok {
+		if _, ok := err.(*yamlutils.YamlFileParseError); ok {
 			// this is ok
 			msg := fmt.Sprintf("Some Documents in the file failed to parse %+v", err)
 			log.Info(msg)
@@ -423,7 +423,7 @@ func (r *NVMeshReconciler) reconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 	}
 
 	for _, file := range files {
-		obj, gvk, err := YamlFileToUnstructured(file)
+		obj, gvk, err := yamlutils.YamlFileToUnstructured(file)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Error while trying to read Unstructured Object from YAML file %s", file))
 		}
@@ -452,7 +452,7 @@ func (r *NVMeshReconciler) reconcileUnstructuredObjects(cr *nvmeshv1.NVMesh, dir
 				setControllerReferenceOnUnstructured(cr, obj, gvk)
 				_, err = res.Create(context.TODO(), obj, metav1.CreateOptions{})
 				if err != nil {
-					objJSON := unstructuredToString(*obj)
+					objJSON := yamlutils.UnstructuredToString(*obj)
 					wrappedErr := errors.Wrap(err, fmt.Sprintf("Error while trying to create object using dynamic client %s. Object: %s", gvrMapping.Resource, objJSON))
 					errList = append(errList, wrappedErr)
 					log.Info(fmt.Sprintln(wrappedErr))

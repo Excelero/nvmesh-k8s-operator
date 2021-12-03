@@ -1,4 +1,4 @@
-package controllers
+package yamlutils
 
 import (
 	"reflect"

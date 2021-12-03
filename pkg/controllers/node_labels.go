@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	nvmeshv1 "excelero.com/nvmesh-k8s-operator/api/v1"
+	nvmeshv1 "excelero.com/nvmesh-k8s-operator/pkg/api/v1"
 	v1 "k8s.io/api/core/v1"
 	fields "k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"

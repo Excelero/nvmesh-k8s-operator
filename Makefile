@@ -39,6 +39,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 # Run tests
+.PHONY: test
 test:
 	go test ./... -test.short
 
