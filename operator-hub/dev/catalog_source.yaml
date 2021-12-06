@@ -10,5 +10,5 @@ spec:
   image: registry.excelero.com/dev/dev-os-catalog-source-index:0.8.0-20
   publisher: Excelero
   secrets:
-  - excelero-registry-cred
+    - excelero-registry-cred
   sourceType: grpc
