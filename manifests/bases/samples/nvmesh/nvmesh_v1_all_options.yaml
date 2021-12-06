@@ -43,7 +43,6 @@ spec:
     version: v1.1.6-3
   management:
     mongoDB:
-      replicas: 1
       # control parameters of the management backups volume PVC
       dataVolumeClaim:
         storageClassName: some-storage-class

@@ -10,7 +10,4 @@ spec:
   csi:
     version: v1.1.4-7
   management:
-    mongoDB:
-      replicas: 1
-    replicas: 1
     version: 2.2.0

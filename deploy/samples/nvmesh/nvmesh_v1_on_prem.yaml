@@ -6,11 +6,9 @@ spec:
   core:
     configuredNICs: ens4f0
     tcpOnly: true
-    version: 2.4.1-23
+    version: 2.4.1-39
     imageVersionTag: 0.8.0-66
   csi:
     version: v1.2.0
-    imageRegistry: registry.excelero.com
   management:
     version: 2.4.1-14
-    imageRegistry: registry.excelero.com
