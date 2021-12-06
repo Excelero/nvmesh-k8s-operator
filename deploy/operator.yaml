@@ -640,7 +640,7 @@ status:
 ---
 apiVersion: v1
 imagePullSecrets:
-- excelero-registry-cred
+- name: excelero-registry-cred
 kind: ServiceAccount
 metadata:
   name: nvmesh-operator
