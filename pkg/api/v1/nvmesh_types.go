@@ -146,7 +146,7 @@ type NVMeshManagement struct {
 
 	// Disable Auto-Evict Missing NVMe drives - This enables NVMesh to auto-rebuild volumes when drives were replaced (for example on the cloud after a machine was restarted)
 	// +optional
-	DisableAutoEvictDrives bool `json:"disableAutoEvictDrives,omitempty"`
+	DisableAutoEvictMissingDrives bool `json:"disableAutoEvictMissingDrives,omitempty"`
 }
 
 type NVMeshCSI struct {

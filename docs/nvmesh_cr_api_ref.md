@@ -790,7 +790,7 @@ Kubernetes core/v1.PersistentVolumeClaimSpec
 </tr>
 <tr>
 <td>
-<code>disableAutoEvictDrives</code><br/>
+<code>disableAutoEvictMissingDrives</code><br/>
 <em>
 <span class="type">bool<span>
 </em>

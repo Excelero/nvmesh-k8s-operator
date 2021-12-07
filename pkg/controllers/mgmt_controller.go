@@ -29,18 +29,18 @@ import (
 )
 
 const (
-	mgmtAssetsLocation          = "resources/management/"
-	mongoDBAssetsLocation       = "resources/mongodb"
-	mgmtStatefulSetName         = "nvmesh-management"
-	mgmtImageName               = "nvmesh-management"
-	mongoInstanceImageName      = "nvmesh-mongo-instance"
-	mgmtGuiServiceName          = "nvmesh-management-gui"
-	mgmtProtocol                = "https"
-	mgmtInitDbJobName           = "mgmt-init-db"
-	recursive                   = true
-	nonRecursive                = false
-	SettingsKeyAutoFromatDrives = "hidden.autoFormatDrive"
-	SettingsKeyAutoEvictDrives  = "hidden.autoEvictDrive"
+	mgmtAssetsLocation                = "resources/management/"
+	mongoDBAssetsLocation             = "resources/mongodb"
+	mgmtStatefulSetName               = "nvmesh-management"
+	mgmtImageName                     = "nvmesh-management"
+	mongoInstanceImageName            = "nvmesh-mongo-instance"
+	mgmtGuiServiceName                = "nvmesh-management-gui"
+	mgmtProtocol                      = "https"
+	mgmtInitDbJobName                 = "mgmt-init-db"
+	recursive                         = true
+	nonRecursive                      = false
+	SettingsKeyAutoFromatDrives       = "hidden.autoFormatDrive"
+	SettingsKeyAutoEvictMissingDrives = "hidden.autoEvictMissingDrive"
 )
 
 //NVMeshMgmtReconciler - Reconciler for NVMesh-Management
@@ -101,9 +101,9 @@ func (r *NVMeshMgmtReconciler) handleDBManipulations(cr *nvmeshv1.NVMesh) error 
 	var err error
 
 	type HiddenSettings struct {
-		AutoEvictDrive  bool `bson:"autoEvictDrive"`
-		AutoFormatDrive bool `bson:"autoFormatDrive"`
-		IsElectDisabled bool `bson:"isElectDisabled"`
+		AutoEvictMissingDrive bool `bson:"autoEvictMissingDrive"`
+		AutoFormatDrive       bool `bson:"autoFormatDrive"`
+		IsElectDisabled       bool `bson:"isElectDisabled"`
 	}
 
 	type FindResult struct {
@@ -142,11 +142,11 @@ func (r *NVMeshMgmtReconciler) handleDBManipulations(cr *nvmeshv1.NVMesh) error 
 	// We can now definitely delete any initDBJob that is left
 	r.deleteJob(cr.GetNamespace(), mgmtInitDbJobName)
 
-	if cr.Spec.Management.DisableAutoFormatDrives != !result.Hidden.AutoFormatDrive || cr.Spec.Management.DisableAutoEvictDrives != !result.Hidden.AutoEvictDrive {
-		log.Info(fmt.Sprintf("Updating AutoFormatDrives=%t and AutoEvictDrives=%t in the DB", !cr.Spec.Management.DisableAutoFormatDrives, !cr.Spec.Management.DisableAutoEvictDrives))
+	if cr.Spec.Management.DisableAutoFormatDrives != !result.Hidden.AutoFormatDrive || cr.Spec.Management.DisableAutoEvictMissingDrives != !result.Hidden.AutoEvictMissingDrive {
+		log.Info(fmt.Sprintf("Updating AutoFormatDrives=%t and AutoEvictMissingDrives=%t in the DB", !cr.Spec.Management.DisableAutoFormatDrives, !cr.Spec.Management.DisableAutoEvictMissingDrives))
 
 		update := bson.D{{"$set", bson.D{
-			{"hidden.autoEvictDrive", !cr.Spec.Management.DisableAutoEvictDrives},
+			{"hidden.autoEvictMissingDrive", !cr.Spec.Management.DisableAutoEvictMissingDrives},
 			{"hidden.autoFormatDrive", !cr.Spec.Management.DisableAutoFormatDrives}}}}
 		err = mongoclient.UpdateOne(client, "globalSettings", filter, &update)
 		if err != nil {
