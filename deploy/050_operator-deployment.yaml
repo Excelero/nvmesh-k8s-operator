@@ -19,6 +19,8 @@ spec:
       containers:
       - args:
         - --enable-leader-election
+        - --core-image-tag
+        - 0.8.0
         command:
         - /manager
         image: excelero/nvmesh-operator:0.8.0-20

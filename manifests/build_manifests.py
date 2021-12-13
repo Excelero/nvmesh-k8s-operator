@@ -128,6 +128,8 @@ def get_deployment_for_kubernetes():
 
     # For the kubectl deploy yamls we will use the image from docker hub
     operatorContainer['image'] = get_operator_image('excelero')
+    operatorContainer['args'].append("--core-image-tag")
+    operatorContainer['args'].append(version_info["core_image_tag"])
     return deployment
 
 def build_deploy_dir():
