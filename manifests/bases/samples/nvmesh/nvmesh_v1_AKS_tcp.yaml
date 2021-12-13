@@ -5,9 +5,8 @@ metadata:
 spec:
   core:
     configuredNICs: eth0
-    version: 2.4.1-23
+    version: 2.4.1-TCP
     tcpOnly: true
-    imageVersionTag: 0.8.0-66
     azureOptimized: true
     moduleParams: |
       options nvmeibs min_local_nvmeqs=32
@@ -25,6 +24,6 @@ spec:
       dataVolumeClaim:
         storageClassName: managed-premium
     replicas: 1
-    version: 2.4.1-14
+    version: 2.4.1
     backupsVolumeClaim:
       storageClassName: managed-premium

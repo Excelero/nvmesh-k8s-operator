@@ -4,7 +4,7 @@ metadata:
   name: cluster1
 spec:
   core:
-    version: 2.4.1
+    version: 2.4.1-TCP
   csi:
     version: v1.2.0
   management:

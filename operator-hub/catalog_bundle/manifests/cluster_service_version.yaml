@@ -4,7 +4,7 @@ apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.2.1"},"management":{"mongoDB":{"replicas":1},"version":"2.2.1-1","replicas":1},"csi":{"version":"v1.1.7","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
+    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.4.1"},"management":{"mongoDB":{"replicas":1},"version":"2.4.1","replicas":1},"csi":{"version":"v1.2.0","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
     containerImage: registry.excelero.com/dev/nvmesh-operator:0.8.0-20
@@ -445,7 +445,7 @@ spec:
                 - --enable-leader-election
                 - --openshift
                 - --core-image-tag
-                - 0.8.0-66
+                - 0.8.0
                 command:
                 - /manager
                 image: registry.excelero.com/dev/nvmesh-operator:0.8.0-20

@@ -5,10 +5,10 @@ metadata:
 spec:
   core:
     # The version for the Core components
-    version: 2.2.1
+    version: 2.4.1-TCP
 
     # Choose a specific version for the component images, please do not change this unless instructed by Excelero
-    imageVersionTag: 0.8.0-17
+    imageVersionTag: 0.8.0
 
     # Use TCP / IP - If false Infiniband is assumed
     tcpOnly: true
@@ -58,7 +58,7 @@ spec:
     replicas: 1
 
     # The version of the NVMesh-Management server
-    version: 2.2.0
+    version: 2.4.1
 
     # Disable Auto-Format NVMe drives as they are discovered
     disableAutoFormatDrives: true

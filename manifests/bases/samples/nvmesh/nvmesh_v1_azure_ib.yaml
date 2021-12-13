@@ -6,8 +6,8 @@ spec:
   core:
     azureOptimized: true
     configuredNICs: ib0
-    version: 2.2.1
+    version: 2.4.1-IB
   csi:
-    version: v1.1.4-7
+    version: v1.2.0
   management:
-    version: 2.2.0
+    version: 2.4.1

@@ -6,8 +6,9 @@ spec:
   core:
     azureOptimized: true
     tcpOnly: true
-    version: 2.2.1
+    configuredNICs: eth0
+    version: 2.4.1-TCP
   csi:
-    version: v1.1.4-7
+    version: v1.2.0
   management:
-    version: 2.2.0
+    version: 2.4.1
