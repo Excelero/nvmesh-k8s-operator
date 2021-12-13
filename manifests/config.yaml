@@ -29,7 +29,4 @@ bundle:
         controllerReplicas: 1
         version: v1.2.0
       management:
-        mongoDB:
-          replicas: 1
-        replicas: 1
         version: 2.4.1
