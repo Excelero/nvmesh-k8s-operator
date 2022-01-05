@@ -40,6 +40,10 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const (
+	leaderElectionConfigMapName = "nvmesh-operator-leader-lock"
+)
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -104,7 +108,7 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "85de6a51.excelero.com",
+		LeaderElectionID:   leaderElectionConfigMapName,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
