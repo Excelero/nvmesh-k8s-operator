@@ -337,7 +337,7 @@ func (r *NVMeshMgmtReconciler) initMgmtStatefulSet(cr *nvmeshv1.NVMesh, o *appsv
 	r.addKeepRunningAfterFailureEnvVar(cr, &o.Spec.Template.Spec.Containers[0])
 
 	overrideVolumeClaimFields(&o.Spec.VolumeClaimTemplates[0].Spec, &cr.Spec.Management.BackupsVolumeClaim)
-
+	r.addDeleteOnUninstallLabel(cr, &o.Spec.VolumeClaimTemplates[0])
 	return nil
 }
 
@@ -363,8 +363,18 @@ func (r *NVMeshMgmtReconciler) initMongoStatefulSet(cr *nvmeshv1.NVMesh, o *apps
 	o.Spec.Template.Spec.Containers[0].Image = r.getCoreFullImageName(cr, mongoInstanceImageName)
 
 	overrideVolumeClaimFields(&o.Spec.VolumeClaimTemplates[0].Spec, &cr.Spec.Management.MongoDB.DataVolumeClaim)
-
+	r.addDeleteOnUninstallLabel(cr, &o.Spec.VolumeClaimTemplates[0])
 	return nil
+}
+
+func (r *NVMeshMgmtReconciler) addDeleteOnUninstallLabel(cr *nvmeshv1.NVMesh, pvc *v1.PersistentVolumeClaim) {
+
+	if pvc.Labels == nil {
+		pvc.Labels = make(map[string]string)
+	}
+
+	pvc.Labels[deleteOnUninstallLabelKey] = ""
+	pvc.Labels[nvmeshClusterNameLabelKey] = cr.ClusterName
 }
 
 func (r *NVMeshMgmtReconciler) initMgmtGuiService(cr *nvmeshv1.NVMesh, svc *v1.Service) error {

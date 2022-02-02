@@ -45,6 +45,7 @@ const (
 	nvmeshClientLabelKey      = "nvmesh.excelero.com/nvmesh-client"
 	nvmeshTargetLabelKey      = "nvmesh.excelero.com/nvmesh-target"
 	nvmeshClusterNameLabelKey = "nvmesh.excelero.com/cluster-name"
+	deleteOnUninstallLabelKey = "nvmesh.excelero.com/delete-on-uninstall"
 
 	fileServerSecretName       = "nvmesh-file-server-cred"
 	exceleroRegistrySecretName = "excelero-registry-cred"

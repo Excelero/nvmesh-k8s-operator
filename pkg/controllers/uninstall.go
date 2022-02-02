@@ -78,6 +78,12 @@ func (r *NVMeshReconciler) uninstallCluster(nvmeshCluster *nvmeshv1.NVMesh) (ctr
 			},
 		},
 		{
+			"deletePVCs",
+			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+				return r.deletePVCs(cr)
+			},
+		},
+		{
 			"deleteClusterServiceAccount",
 			func(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
 				return r.deleteClusterServiceAccount(cr)
@@ -397,6 +403,33 @@ func (r *NVMeshReconciler) deleteClusterServiceAccount(cr *nvmeshv1.NVMesh) (ctr
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *NVMeshReconciler) deletePVCs(cr *nvmeshv1.NVMesh) (ctrl.Result, error) {
+	// Look for all PVCs with label of current cluster and the delete on uninstall label
+	deleteOnUninstallLabel, _ := labels.NewRequirement(deleteOnUninstallLabelKey, selection.Exists, []string{""})
+	matchLabels := client.MatchingLabelsSelector{Selector: labels.NewSelector().Add(*deleteOnUninstallLabel)}
+
+	pvcList := &corev1.PersistentVolumeClaimList{}
+	listOps := client.ListOptions{LabelSelector: matchLabels}
+	err := r.Client.List(context.TODO(), pvcList, &listOps)
+
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "Failed to list PersistentVolumeClaims to delete")
+	}
+
+	// Delete found PVCs
+	if len(pvcList.Items) > 0 {
+		for _, pvc := range pvcList.Items {
+			r.Log.Info(fmt.Sprintf("Deleting PVC %s", pvc.Name))
+			err := r.makeSureObjectRemoved(cr, client.Object(&pvc), nil)
+			if err != nil {
+				r.Log.Info(fmt.Sprintf("Failed to delete PVC %s", pvc.Name))
+			}
+		}
+	}
+
+	return ctrl.Result{}, err
 }
 
 func (r *NVMeshReconciler) getUninstallJobImageName(cr *nvmeshv1.NVMesh) string {
