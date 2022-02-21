@@ -7,12 +7,12 @@ metadata:
 spec:
   core:
     azureOptimized: true
-    version: 2.4.1
+    version: 2.5.0-TCP
   csi:
     controllerReplicas: 1
     version: v1.2.0
   management:
-    version: 2.4.1
+    version: 2.5.0
 status:
   actionsStatus: {}
   reconcileStatus: {}

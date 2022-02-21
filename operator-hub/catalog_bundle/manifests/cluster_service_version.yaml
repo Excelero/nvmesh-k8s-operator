@@ -4,7 +4,7 @@ apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.4.1"},"management":{"version":"2.4.1"},"csi":{"version":"v1.2.0","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
+    alm-examples: '[{"status":{"actionsStatus":{},"reconcileStatus":{}},"kind":"NVMesh","spec":{"core":{"azureOptimized":true,"version":"2.5.0-TCP"},"management":{"version":"2.5.0"},"csi":{"version":"v1.2.0","controllerReplicas":1}},"apiVersion":"nvmesh.excelero.com/v1","metadata":{"name":"cluster1"}}]'
     capabilities: Full Lifecycle
     categories: Storage
     containerImage: registry.excelero.com/dev/nvmesh-operator:0.8.0-20

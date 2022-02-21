@@ -5,7 +5,7 @@ metadata:
 spec:
   core:
     configuredNICs: eth0
-    version: 2.4.1-TCP
+    version: 2.5.0-TCP
     tcpOnly: true
     azureOptimized: true
     moduleParams: |
@@ -24,6 +24,6 @@ spec:
       dataVolumeClaim:
         storageClassName: managed-premium
     replicas: 1
-    version: 2.4.1
+    version: 2.5.0
     backupsVolumeClaim:
       storageClassName: managed-premium
